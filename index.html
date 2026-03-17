@@ -142,6 +142,53 @@
             width: 100%;
         }
 
+        /* CALENDARIO DINAMICO */
+        .calendar-widget {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            margin-bottom: 1rem;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+        }
+        .calendar-day-head { font-size: 0.6rem; color: var(--text-muted); padding-bottom: 5px; }
+        .calendar-day {
+            font-size: 0.75rem;
+            padding: 6px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .calendar-day:hover { background: var(--primary-light); color: var(--primary); }
+        .calendar-day.active { background: var(--primary); color: white; }
+        .calendar-day.today { font-weight: 800; text-decoration: underline; }
+        .calendar-day.has-tasks::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+        .calendar-day.active.has-tasks::after { background: white; }
+
         .grid-tools {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -243,7 +290,7 @@
                     <select id="task-sub"><option value="">Generale</option></select>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <input type="date" id="task-date">
+                    <input type="date" id="task-date" onchange="syncCalendarFromInput()">
                     <select id="task-pri">
                         <option value="low">Bassa</option>
                         <option value="med">Media</option>
@@ -251,6 +298,16 @@
                     </select>
                 </div>
                 <button class="btn-main" onclick="saveTask()">Salva</button>
+            </div>
+
+            <!-- Calendario Dinamico -->
+            <div class="calendar-widget">
+                <div class="calendar-header">
+                    <button class="btn-tool" style="width:auto;" onclick="prevMonth()">‹</button>
+                    <span id="month-name">Mese Anno</span>
+                    <button class="btn-tool" style="width:auto;" onclick="nextMonth()">›</button>
+                </div>
+                <div class="calendar-grid" id="calendar-days"></div>
             </div>
 
             <!-- Pulsanti Utility -->
@@ -304,7 +361,9 @@
         const STORE_KEY = 'omnimind_v2_layout';
         let state = { entries: [], theme: 'dark', sideWidth: 450, filter: 'Tutto' };
 
-        // Ripristinate tutte le categorie corrispondenti ai badge CSS
+        // Stato Calendario
+        let currentMonth = new Date();
+
         const CATS = {
             "App.ti": ["Visita", "Call"],
             "Casa": ["Spese", "Pulizia", "Manutenzione"],
@@ -340,7 +399,73 @@
             setupResizer();
             updateSubs();
             renderFilters();
+            renderCalendar();
             render();
+        }
+
+        // Funzioni Calendario
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-days');
+            const monthName = document.getElementById('month-name');
+            const selectedDate = document.getElementById('task-date').value;
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            grid.innerHTML = '';
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+
+            monthName.innerText = currentMonth.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+
+            // Intestazioni giorni
+            const days = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
+            days.forEach(d => {
+                const el = document.createElement('div');
+                el.className = 'calendar-day-head';
+                el.innerText = d;
+                grid.appendChild(el);
+            });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const lastDate = new Date(year, month + 1, 0).getDate();
+            const offset = firstDay === 0 ? 6 : firstDay - 1;
+
+            for (let i = 0; i < offset; i++) {
+                grid.appendChild(document.createElement('div'));
+            }
+
+            for (let day = 1; day <= lastDate; day++) {
+                const dObj = new Date(year, month, day);
+                const dStr = dObj.toISOString().split('T')[0];
+                const el = document.createElement('div');
+                el.className = 'calendar-day';
+                if (dStr === todayStr) el.classList.add('today');
+                if (dStr === selectedDate) el.classList.add('active');
+                
+                // Verifica se ci sono task per questo giorno
+                if (state.entries.some(e => e.date === dStr)) {
+                    el.classList.add('has-tasks');
+                }
+
+                el.innerText = day;
+                el.onclick = () => {
+                    document.getElementById('task-date').value = dStr;
+                    renderCalendar();
+                    render(); // Aggiorna il focus se necessario
+                };
+                grid.appendChild(el);
+            }
+        }
+
+        function prevMonth() { currentMonth.setMonth(currentMonth.getMonth() - 1); renderCalendar(); }
+        function nextMonth() { currentMonth.setMonth(currentMonth.getMonth() + 1); renderCalendar(); }
+        
+        function syncCalendarFromInput() {
+            const val = document.getElementById('task-date').value;
+            if(val) {
+                currentMonth = new Date(val);
+                renderCalendar();
+                render();
+            }
         }
 
         function setupResizer() {
@@ -372,7 +497,11 @@
                 (CATS[c] || []).map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
-        function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); render(); }
+        function save() { 
+            localStorage.setItem(STORE_KEY, JSON.stringify(state)); 
+            renderCalendar(); // Per aggiornare i puntini dei task
+            render(); 
+        }
 
         function saveTask() {
             const text = document.getElementById('task-text').value.trim();
@@ -404,12 +533,12 @@
         }
 
         function render() {
-            const today = new Date().toISOString().split('T')[0];
+            const selectedDate = document.getElementById('task-date').value;
             const search = document.getElementById('search-box').value.toLowerCase();
             const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
             
-            // Focus Oggi
-            const todayList = sorted.filter(e => e.date === today);
+            // Focus su Data Selezionata (non solo oggi)
+            const todayList = sorted.filter(e => e.date === selectedDate);
             document.getElementById('list-today').innerHTML = todayList.map(e => createCard(e, true)).join('');
             document.getElementById('count-today').innerText = todayList.filter(e => !e.done).length;
 
