@@ -176,7 +176,7 @@
 
     .field-inline-row {
       display: grid;
-      grid-template-columns: 1fr 72px;
+      grid-template-columns: 1fr 140px;
       gap: 8px;
       align-items: center;
     }
@@ -809,13 +809,13 @@
             <label class="sr-only" for="task-color">Colore task</label>
             <input class="task-color-input" type="color" id="task-color" value="#4f46e5" />
           </div>
-          <button class="btn-tool" type="button" onclick="resetTaskColor()">Reset colore</button>
+          <button class="btn-tool" type="button" onclick="resetTaskColor()">Colore categoria</button>
         </div>
 
         <div class="input-group">
           <div>
             <label class="sr-only" for="task-cat">Categoria</label>
-            <select class="select" id="task-cat" onchange="updateSubs()"></select>
+            <select class="select" id="task-cat" onchange="updateSubs(true)"></select>
           </div>
 
           <button class="btn-add-cat" type="button" onclick="openCatModal()" aria-label="Aggiungi nuova categoria">+</button>
@@ -863,7 +863,7 @@
 
         <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
         <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
-        <div class="helper-note">Puoi aggiungere un link e un colore personalizzato per singolo task.</div>
+        <div class="helper-note">Le categorie esistenti applicano il loro colore. Le nuove categorie usano il colore scelto nel selettore.</div>
       </section>
 
       <section class="calendar-widget">
@@ -951,7 +951,7 @@
   </div>
 
   <script>
-    const STORE_KEY = "omnimind_v8_data";
+    const STORE_KEY = "omnimind_v9_data";
 
     const INITIAL_CATS = {
       "App.ti": ["Visita", "Call"],
@@ -984,7 +984,7 @@
     const DEFAULT_TASK_COLOR = "#4f46e5";
 
     const DEFAULT_STATE = {
-      version: 8,
+      version: 9,
       entries: [],
       theme: "dark",
       sideWidth: 470,
@@ -1119,7 +1119,7 @@
       const customCats = sanitizeCats(data.customCats);
       const entries = safeArray(data.entries).map(sanitizeEntry);
       return {
-        version: 8,
+        version: 9,
         entries,
         theme: data.theme === "light" ? "light" : "dark",
         sideWidth: Number.isFinite(data.sideWidth) ? Math.min(860, Math.max(380, data.sideWidth)) : 470,
@@ -1173,6 +1173,7 @@
       document.getElementById("task-color").value = DEFAULT_TASK_COLOR;
 
       refreshCatSelects();
+      syncTaskColorFromCategory();
       renderColorSettings();
       setupResizer();
       bindKeyboardShortcuts();
@@ -1214,6 +1215,15 @@
       return String(str).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
     }
 
+    function getSelectedCategoryColor() {
+      const cat = document.getElementById("task-cat").value;
+      return state.catColors[cat] || DEFAULT_TASK_COLOR;
+    }
+
+    function syncTaskColorFromCategory() {
+      document.getElementById("task-color").value = getSelectedCategoryColor();
+    }
+
     function refreshCatSelects() {
       const catList = getSortedCategories();
       const taskCat = document.getElementById("task-cat");
@@ -1232,21 +1242,27 @@
         archiveFilter.value = "all";
       }
 
-      updateSubs();
+      updateSubs(true);
     }
 
-    function updateSubs() {
+    function updateSubs(syncTaskColor = true) {
       const selectedCat = document.getElementById("task-cat").value;
       const subs = safeArray(state.customCats[selectedCat]);
       const select = document.getElementById("task-sub");
       const current = select.value;
+
       select.innerHTML =
         `<option value="">Generale</option>` +
         subs.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+
       if (subs.includes(current)) {
         select.value = current;
       } else {
         select.value = "";
+      }
+
+      if (syncTaskColor) {
+        syncTaskColorFromCategory();
       }
     }
 
@@ -1256,7 +1272,7 @@
         cat: sanitizeString(document.getElementById("task-cat").value, "Lavoro"),
         sub: sanitizeString(document.getElementById("task-sub").value),
         link: sanitizeTaskLink(document.getElementById("task-link").value),
-        taskColor: sanitizeHexColor(document.getElementById("task-color").value, DEFAULT_TASK_COLOR),
+        taskColor: sanitizeHexColor(document.getElementById("task-color").value, getSelectedCategoryColor()),
         date: sanitizeDate(document.getElementById("task-date").value),
         pri: sanitizePriority(document.getElementById("task-pri").value),
         repeat: sanitizeRepeat(document.getElementById("task-repeat").value)
@@ -1273,14 +1289,13 @@
     }
 
     function resetTaskColor() {
-      document.getElementById("task-color").value = DEFAULT_TASK_COLOR;
+      syncTaskColorFromCategory();
     }
 
     function resetForm() {
       document.getElementById("task-id").value = "";
       document.getElementById("task-text").value = "";
       document.getElementById("task-link").value = "";
-      document.getElementById("task-color").value = DEFAULT_TASK_COLOR;
       document.getElementById("task-date").value = state.selectedFocusDate || todayStr();
       document.getElementById("task-pri").value = "low";
       document.getElementById("task-repeat").value = "none";
@@ -1293,7 +1308,8 @@
       if (cats.length) {
         document.getElementById("task-cat").value = cats[0];
       }
-      updateSubs();
+
+      updateSubs(true);
     }
 
     function saveTask() {
@@ -1335,13 +1351,15 @@
       document.getElementById("task-id").value = String(task.id);
       document.getElementById("task-text").value = task.text;
       document.getElementById("task-link").value = task.link || "";
-      document.getElementById("task-color").value = sanitizeHexColor(task.taskColor || "", DEFAULT_TASK_COLOR);
       document.getElementById("task-cat").value = task.cat;
-      updateSubs();
+      updateSubs(false);
       document.getElementById("task-sub").value = task.sub || "";
       document.getElementById("task-date").value = task.date;
       document.getElementById("task-pri").value = task.pri;
       document.getElementById("task-repeat").value = task.repeat;
+
+      const categoryColor = state.catColors[task.cat] || DEFAULT_TASK_COLOR;
+      document.getElementById("task-color").value = sanitizeHexColor(task.taskColor || "", categoryColor);
 
       document.getElementById("form-title").textContent = "Modifica task";
       document.getElementById("btn-save").textContent = "Aggiorna";
@@ -1575,6 +1593,12 @@
 
     function updateCatColor(cat, color) {
       state.catColors[cat] = sanitizeHexColor(color, state.catColors[cat] || DEFAULT_TASK_COLOR);
+
+      const currentSelected = document.getElementById("task-cat").value;
+      if (currentSelected === cat && !document.getElementById("task-id").value) {
+        syncTaskColorFromCategory();
+      }
+
       saveAndRender();
       renderColorSettings();
     }
@@ -1601,16 +1625,26 @@
       }
 
       if (!state.customCats[name]) {
+        const chosenColor = sanitizeHexColor(
+          document.getElementById("task-color").value,
+          DEFAULT_TASK_COLOR
+        );
+
         state.customCats[name] = [];
-        state.catColors[name] = randomColor();
+        state.catColors[name] = chosenColor;
+
         refreshCatSelects();
         renderColorSettings();
+
         document.getElementById("task-cat").value = name;
-        updateSubs();
+        updateSubs(true);
+
         saveAndRender();
         showToast("Categoria aggiunta");
       } else {
-        showToast("Categoria già presente", true);
+        document.getElementById("task-cat").value = name;
+        updateSubs(true);
+        showToast("Categoria già presente: applicato il suo colore");
       }
 
       closeCatModal();
@@ -1702,6 +1736,7 @@
 
           persistState();
           refreshCatSelects();
+          syncTaskColorFromCategory();
           renderColorSettings();
           currentMonth = new Date((state.selectedFocusDate || todayStr()) + "T00:00:00");
           renderCalendar();
