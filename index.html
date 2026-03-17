@@ -33,7 +33,7 @@
             --border: #334155;
         }
 
-        /* Badge Categories */
+        /* Badge Categories Colors */
         .badge-appti { background: #6366f1; }
         .badge-casa { background: #f59e0b; }
         .badge-disdire { background: #ef4444; }
@@ -68,7 +68,7 @@
             width: 100vw;
         }
 
-        /* COLONNA SINISTRA: INPUT & ARCHIVIO */
+        /* SIDEBAR SINISTRA */
         .col-left {
             width: 450px;
             min-width: 380px;
@@ -80,7 +80,7 @@
             overflow: hidden;
         }
 
-        /* COLONNA DESTRA: FOCUS OGGI */
+        /* AREA FOCUS DESTRA */
         .col-right {
             flex: 1;
             background: var(--bg-main);
@@ -157,9 +157,11 @@
             cursor: pointer;
             margin-top: 5px;
             display: none;
+            width: 100%;
+            text-align: center;
         }
 
-        /* CALENDARIO DINAMICO */
+        /* CALENDARIO */
         .calendar-widget {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -206,6 +208,7 @@
         }
         .calendar-day.active.has-tasks::after { background: white; }
 
+        /* UTILITY GRID */
         .grid-tools {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -230,33 +233,44 @@
             padding-right: 5px;
         }
 
+        /* TASK CARD */
         .task-card {
             background: var(--surface);
             border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
             border: 1px solid var(--border);
             display: flex;
-            gap: 12px;
+            gap: 10px;
             transition: all 0.2s;
         }
-        .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .task-card:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
         .task-card.priority-high { border-left: 4px solid var(--danger); }
-        .task-card.completed { opacity: 0.5; }
+        .task-card.completed { opacity: 0.4; }
+
+        /* ARCHIVE CATEGORY GROUP */
+        .archive-group {
+            margin-bottom: 1.5rem;
+        }
+        .archive-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+        .archive-group-title {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
 
         .badge { font-size: 0.6rem; font-weight: 800; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .task-title { font-weight: 700; font-size: 0.95rem; line-height: 1.3; cursor: pointer; }
+        .task-title { font-weight: 700; font-size: 0.9rem; line-height: 1.3; cursor: pointer; flex: 1; }
         .task-title:hover { color: var(--primary); }
 
-        .filter-pills {
-            display: flex;
-            overflow-x: auto;
-            gap: 6px;
-            padding-bottom: 8px;
-            margin-bottom: 1rem;
-        }
-        .filter-pills::-webkit-scrollbar { height: 0px; }
-        
         .pill {
             white-space: nowrap;
             font-size: 0.65rem;
@@ -267,7 +281,6 @@
             cursor: pointer;
             font-weight: 600;
         }
-        .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         .stats-footer {
             display: grid;
@@ -287,6 +300,14 @@
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        /* Filtri Archivio */
+        .archive-filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -294,12 +315,12 @@
     <div class="app-container">
         <!-- SINISTRA: INPUT & ARCHIVIO -->
         <aside class="col-left" id="sidebar">
-            <header style="margin-bottom: 1.5rem;">
+            <header style="margin-bottom: 1rem;">
                 <h1 style="font-weight: 800; color: var(--primary); font-size: 1.4rem;">OmniMind Lite</h1>
                 <p id="date-display" style="font-size: 0.75rem; color: var(--text-muted);"></p>
             </header>
 
-            <!-- Workspace: Creazione Task -->
+            <!-- Workspace: Creazione/Modifica Task -->
             <div class="creation-box" id="form-container">
                 <div class="section-title" id="form-title">✨ Nuovo Task</div>
                 <input type="hidden" id="task-id">
@@ -320,7 +341,7 @@
                 <button class="btn-cancel" id="btn-cancel" onclick="resetForm()">Annulla Modifica</button>
             </div>
 
-            <!-- Calendario Dinamico -->
+            <!-- Calendario -->
             <div class="calendar-widget">
                 <div class="calendar-header">
                     <button class="btn-tool" style="width:auto;" onclick="prevMonth()">‹</button>
@@ -330,7 +351,7 @@
                 <div class="calendar-grid" id="calendar-days"></div>
             </div>
 
-            <!-- Pulsanti Utility -->
+            <!-- Utility -->
             <div class="grid-tools">
                 <button class="btn-tool" onclick="toggleTheme()">🌓 Tema</button>
                 <button class="btn-tool" onclick="exportData()">💾 Backup</button>
@@ -339,26 +360,34 @@
                 <input type="file" id="imp" style="display:none" onchange="importData(event)">
             </div>
 
-            <!-- Archivio -->
+            <!-- Archivio Categorizzato -->
             <div class="section-title">
-                <span>📦 Archivio Generale</span>
+                <span>📦 Archivio</span>
                 <span id="count-all" class="pill">0</span>
             </div>
-            <input type="text" id="search-box" placeholder="Cerca nell'archivio..." oninput="render()">
-            <div class="filter-pills" id="filter-pills"></div>
+            
+            <div class="archive-filters">
+                <input type="text" id="search-box" placeholder="Cerca..." oninput="render()" style="margin-bottom:0;">
+                <select id="archive-cat-filter" onchange="render()" style="margin-bottom:0;">
+                    <option value="all">Tutte le Categorie</option>
+                </select>
+            </div>
             
             <div class="scroll-area" id="list-archive"></div>
         </aside>
 
         <div class="resizer" id="resizer"></div>
 
-        <!-- DESTRA: FOCUS OGGI -->
+        <!-- DESTRA: FOCUS OGGI/DATA SELEZIONATA -->
         <main class="col-right">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h2 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -0.03em;">Focus Oggi</h2>
+                <div>
+                    <h2 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -0.03em;">Focus Giornaliero</h2>
+                    <p id="focus-date-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"></p>
+                </div>
                 <div style="text-align: right;">
                     <span id="count-today" style="font-size: 2rem; font-weight: 800; color: var(--primary);">0</span>
-                    <p style="font-size: 0.6rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Task Rimanenti</p>
+                    <p style="font-size: 0.6rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Aperti</p>
                 </div>
             </div>
 
@@ -366,11 +395,11 @@
 
             <div class="stats-footer">
                 <div class="stat-mini">
-                    <span class="lab">Completate</span>
+                    <span class="lab">Totale Completate</span>
                     <span class="val" id="stat-done">0</span>
                 </div>
                 <div class="stat-mini">
-                    <span class="lab">Focus Score</span>
+                    <span class="lab">Focus Score Globale</span>
                     <span class="val" id="stat-score">0%</span>
                 </div>
             </div>
@@ -378,10 +407,9 @@
     </div>
 
     <script>
-        const STORE_KEY = 'omnimind_v2_layout';
-        let state = { entries: [], theme: 'dark', sideWidth: 450, filter: 'Tutto' };
+        const STORE_KEY = 'omnimind_v4_fixed';
+        let state = { entries: [], theme: 'dark', sideWidth: 450 };
 
-        // Stato Calendario
         let currentMonth = new Date();
 
         const CATS = {
@@ -410,20 +438,30 @@
             
             document.body.setAttribute('data-theme', state.theme);
             document.getElementById('sidebar').style.width = state.sideWidth + 'px';
-            document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+            
+            const todayStr = new Date().toISOString().split('T')[0];
+            if(!document.getElementById('task-date').value) {
+                document.getElementById('task-date').value = todayStr;
+            }
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
+            const catList = Object.keys(CATS).sort();
+            
+            // Popola select creazione
             const catSel = document.getElementById('task-cat');
-            catSel.innerHTML = Object.keys(CATS).sort().map(c => `<option value="${c}">${c}</option>`).join('');
+            catSel.innerHTML = catList.map(c => `<option value="${c}">${c}</option>`).join('');
+            
+            // Popola select filtro archivio
+            const filterSel = document.getElementById('archive-cat-filter');
+            filterSel.innerHTML = `<option value="all">Tutte le Categorie</option>` + 
+                catList.map(c => `<option value="${c}">${c}</option>`).join('');
             
             setupResizer();
             updateSubs();
-            renderFilters();
             renderCalendar();
             render();
         }
 
-        // Funzioni Calendario
         function renderCalendar() {
             const grid = document.getElementById('calendar-days');
             const monthName = document.getElementById('month-name');
@@ -436,7 +474,6 @@
 
             monthName.innerText = currentMonth.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
 
-            // Intestazioni giorni
             const days = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
             days.forEach(d => {
                 const el = document.createElement('div');
@@ -449,9 +486,7 @@
             const lastDate = new Date(year, month + 1, 0).getDate();
             const offset = firstDay === 0 ? 6 : firstDay - 1;
 
-            for (let i = 0; i < offset; i++) {
-                grid.appendChild(document.createElement('div'));
-            }
+            for (let i = 0; i < offset; i++) grid.appendChild(document.createElement('div'));
 
             for (let day = 1; day <= lastDate; day++) {
                 const dObj = new Date(year, month, day);
@@ -460,11 +495,7 @@
                 el.className = 'calendar-day';
                 if (dStr === todayStr) el.classList.add('today');
                 if (dStr === selectedDate) el.classList.add('active');
-                
-                // Verifica se ci sono task per questo giorno
-                if (state.entries.some(e => e.date === dStr)) {
-                    el.classList.add('has-tasks');
-                }
+                if (state.entries.some(e => e.date === dStr)) el.classList.add('has-tasks');
 
                 el.innerText = day;
                 el.onclick = () => {
@@ -495,7 +526,7 @@
 
             const onMouseMove = (e) => {
                 const newW = w + (e.clientX - x);
-                if(newW > 350 && newW < 700) {
+                if(newW > 380 && newW < 800) {
                     sidebar.style.width = newW + 'px';
                     state.sideWidth = newW;
                 }
@@ -526,7 +557,6 @@
         function editTask(id) {
             const e = state.entries.find(x => x.id === id);
             if(!e) return;
-
             document.getElementById('task-id').value = e.id;
             document.getElementById('task-text').value = e.text;
             document.getElementById('task-cat').value = e.cat;
@@ -534,15 +564,11 @@
             document.getElementById('task-sub').value = e.sub;
             document.getElementById('task-date').value = e.date;
             document.getElementById('task-pri').value = e.pri;
-
             document.getElementById('form-title').innerText = "✏️ Modifica Task";
             document.getElementById('btn-save').innerText = "Aggiorna";
             document.getElementById('btn-cancel').style.display = "block";
             document.getElementById('form-container').classList.add('editing');
-            
-            // Porta lo scroll in alto per vedere il form
             document.getElementById('sidebar').scrollTop = 0;
-            
             syncCalendarFromInput();
         }
 
@@ -553,15 +579,12 @@
             document.getElementById('btn-save').innerText = "Salva";
             document.getElementById('btn-cancel').style.display = "none";
             document.getElementById('form-container').classList.remove('editing');
-            // Mantiene la data corrente nel form per comodità
         }
 
         function saveTask() {
             const text = document.getElementById('task-text').value.trim();
             if(!text) return;
-
             const editId = document.getElementById('task-id').value;
-
             if(editId) {
                 const idx = state.entries.findIndex(x => x.id == editId);
                 if(idx !== -1) {
@@ -596,52 +619,83 @@
             save();
         }
 
-        function renderFilters() {
-            const f = ['Tutto', ...Object.keys(CATS).sort()];
-            document.getElementById('filter-pills').innerHTML = f.map(cat => `
-                <div class="pill ${state.filter === cat ? 'active' : ''}" onclick="state.filter='${cat}'; renderFilters(); render();">${cat}</div>
-            `).join('');
-        }
-
         function render() {
             const selectedDate = document.getElementById('task-date').value;
             const search = document.getElementById('search-box').value.toLowerCase();
+            const filterCat = document.getElementById('archive-cat-filter').value;
             const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
             
-            // Focus su Data Selezionata
+            // Focus Label
+            const dLabel = new Date(selectedDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('focus-date-label').innerText = dLabel;
+
+            // List Focus
             const todayList = sorted.filter(e => e.date === selectedDate);
-            document.getElementById('list-today').innerHTML = todayList.map(e => createCard(e, true)).join('');
+            document.getElementById('list-today').innerHTML = todayList.length ? todayList.map(e => createCard(e, true)).join('') : '<p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:2rem;">Nessun impegno per questa data.</p>';
             document.getElementById('count-today').innerText = todayList.filter(e => !e.done).length;
 
-            // Archivio
-            const archiveList = sorted.filter(e => {
-                const matchSearch = e.text.toLowerCase().includes(search);
-                const matchFilter = state.filter === 'Tutto' || e.cat === state.filter;
-                return matchSearch && matchFilter;
+            // Archivio Categorizzato
+            const archiveArea = document.getElementById('list-archive');
+            archiveArea.innerHTML = '';
+            
+            const categories = Object.keys(CATS).sort();
+            let hasResults = false;
+
+            categories.forEach(cat => {
+                // Controllo se la categoria deve essere mostrata (filtro dropdown)
+                if (filterCat !== 'all' && filterCat !== cat) return;
+
+                // Filtriamo i task che appartengono a questa categoria e matchano la ricerca testuale
+                const catTasks = sorted.filter(e => e.cat === cat && e.text.toLowerCase().includes(search));
+                
+                if (catTasks.length > 0) {
+                    hasResults = true;
+                    const group = document.createElement('div');
+                    group.className = 'archive-group';
+                    
+                    const bCls = cat.toLowerCase().replace('.','').replace(' ','');
+                    
+                    // Header della categoria
+                    const header = document.createElement('div');
+                    header.className = 'archive-group-header';
+                    header.innerHTML = `
+                        <span class="badge badge-${bCls}">${cat}</span>
+                        <span class="archive-group-title">${catTasks.length} task</span>
+                    `;
+                    group.appendChild(header);
+
+                    // Lista dei task
+                    const listContainer = document.createElement('div');
+                    listContainer.innerHTML = catTasks.map(e => createCard(e, false)).join('');
+                    group.appendChild(listContainer);
+                    
+                    archiveArea.appendChild(group);
+                }
             });
-            document.getElementById('list-archive').innerHTML = archiveList.map(e => createCard(e, false)).join('');
-            document.getElementById('count-all').innerText = state.entries.length;
+
+            if (!hasResults) {
+                archiveArea.innerHTML = '<p style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:2rem;">Nessun task trovato.</p>';
+            }
 
             // Stats
-            const done = state.entries.filter(e => e.done).length;
-            document.getElementById('stat-done').innerText = done;
-            document.getElementById('stat-score').innerText = state.entries.length ? Math.round((done/state.entries.length)*100)+'%' : '0%';
+            document.getElementById('count-all').innerText = state.entries.length;
+            const doneTotal = state.entries.filter(e => e.done).length;
+            document.getElementById('stat-done').innerText = doneTotal;
+            document.getElementById('stat-score').innerText = state.entries.length ? Math.round((doneTotal/state.entries.length)*100)+'%' : '0%';
         }
 
         function createCard(e, isFocus) {
-            const bCls = e.cat.toLowerCase().replace('.','').replace(' ','');
             return `
                 <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}">
-                    <input type="checkbox" ${e.done ? 'checked' : ''} onchange="toggleDone(${e.id})" style="width:18px; height:18px; margin-top:3px; cursor:pointer;">
-                    <div style="flex:1">
-                        <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
-                            <span class="badge badge-${bCls}">${e.cat}</span>
-                            ${e.sub ? `<span style="font-size:0.6rem; color:var(--text-muted); font-weight:600;">• ${e.sub}</span>` : ''}
-                            ${!isFocus ? `<span style="font-size:0.6rem; margin-left:auto; color:var(--text-muted)">${e.date}</span>` : ''}
+                    <input type="checkbox" ${e.done ? 'checked' : ''} onchange="toggleDone(${e.id})" style="width:16px; height:16px; margin-top:2px; cursor:pointer;">
+                    <div class="task-title" onclick="editTask(${e.id})">
+                        <div style="font-size: 0.85rem;">${e.text}</div>
+                        <div style="display:flex; gap:6px; align-items:center; margin-top:2px;">
+                            ${e.sub ? `<span style="font-size:0.55rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">${e.sub}</span>` : ''}
+                            ${!isFocus ? `<span style="font-size:0.55rem; color:var(--text-muted)">• ${e.date}</span>` : ''}
                         </div>
-                        <div class="task-title" onclick="editTask(${e.id})">${e.text}</div>
                     </div>
-                    <button onclick="del(${e.id})" style="background:none; border:none; cursor:pointer; color:var(--text-muted); padding:5px;">✕</button>
+                    <button onclick="del(${e.id})" style="background:none; border:none; cursor:pointer; color:var(--text-muted); padding:4px; font-size:0.8rem;">✕</button>
                 </div>
             `;
         }
@@ -661,12 +715,20 @@
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
             const a = document.createElement('a'); a.setAttribute("href", dataStr);
-            a.setAttribute("download", "omnimind_v2.json"); a.click();
+            a.setAttribute("download", "omnimind_backup.json"); a.click();
         }
 
         function importData(ev) {
             const reader = new FileReader();
-            reader.onload = e => { state = JSON.parse(e.target.result); save(); location.reload(); };
+            reader.onload = e => { 
+                try {
+                    state = JSON.parse(e.target.result); 
+                    save(); 
+                    location.reload(); 
+                } catch(err) {
+                    alert("Errore nel caricamento del file.");
+                }
+            };
             reader.readAsText(ev.target.files[0]);
         }
 
