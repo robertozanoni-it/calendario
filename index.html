@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniMind - Task Editor</title>
+    <title>OmniMind - Task Editor & Calendar</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -141,12 +141,13 @@
             border: 1px solid var(--border);
             box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.1);
             margin-bottom: 1.5rem;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
         }
         
         .creation-box.editing-mode {
             border: 2px solid var(--primary);
             background: var(--primary-light);
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
         }
 
         .stat-card {
@@ -175,6 +176,24 @@
         }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 
+        /* Calendar Input Styling */
+        input[type="date"] {
+            cursor: pointer;
+            position: relative;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
+        }
+
         .btn-main {
             background: var(--primary);
             color: white;
@@ -196,7 +215,7 @@
             font-size: 0.7rem;
             font-weight: 600;
             cursor: pointer;
-            margin-top: 5px;
+            margin-top: 10px;
             text-decoration: underline;
             display: none;
         }
@@ -316,43 +335,59 @@
 
                 <div class="creation-box" id="creation-ui">
                     <div class="section-title" id="form-title">✨ Nuova Attività</div>
-                    <input type="text" id="entry-text" placeholder="Qual è il prossimo obiettivo?">
+                    <input type="text" id="entry-text" placeholder="Cosa dobbiamo fare oggi?">
                     
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                        <select id="entry-category" onchange="updateSubcategories()">
-                            <!-- Generato da JS -->
-                        </select>
-                        <select id="entry-subcategory">
-                            <option value="">Sottocategoria...</option>
-                        </select>
-                        <input type="date" id="entry-date">
-                    </div>
-
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <select id="entry-priority">
-                            <option value="low">Priorità Bassa</option>
-                            <option value="med">Priorità Media</option>
-                            <option value="high">Priorità Alta</option>
-                        </select>
-                        <select id="entry-recur">
-                            <option value="none">Nessuna ricorrenza</option>
-                            <option value="daily">Ogni Giorno</option>
-                            <option value="weekly">Ogni Settimana</option>
-                            <option value="monthly">Ogni Mese</option>
-                        </select>
+                        <div>
+                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">CATEGORIA</label>
+                            <select id="entry-category" onchange="updateSubcategories()">
+                                <!-- Generato da JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">SOTTOCATEGORIA</label>
+                            <select id="entry-subcategory">
+                                <option value="">Generale</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <textarea id="entry-notes" style="height: 80px;" placeholder="Dettagli extra o link utili..."></textarea>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">SCADENZA (Calendario)</label>
+                            <input type="date" id="entry-date" title="Apri il calendario">
+                        </div>
+                        <div>
+                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">PRIORITÀ</label>
+                            <select id="entry-priority">
+                                <option value="low">Bassa</option>
+                                <option value="med">Media</option>
+                                <option value="high">Alta</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">RICORRENZA</label>
+                            <select id="entry-recur">
+                                <option value="none">No</option>
+                                <option value="daily">Giorno</option>
+                                <option value="weekly">Settimana</option>
+                                <option value="monthly">Mese</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <textarea id="entry-notes" style="height: 60px;" placeholder="Dettagli, link o appunti veloci..."></textarea>
+                    
                     <button class="btn-main" id="btn-save" onclick="handleSave()">Salva nell'Universo</button>
                     <div style="text-align: center;">
                         <button class="btn-cancel" id="btn-cancel" onclick="resetForm()">Annulla Modifica</button>
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 2rem;">
                     <button class="btn-sec" onclick="toggleTheme()">🌓 Tema</button>
-                    <button class="btn-sec" onclick="exportBackup()">💾 Esporta</button>
-                    <button class="btn-sec" onclick="document.getElementById('importInput').click()">📂 Importa</button>
+                    <button class="btn-sec" onclick="exportBackup()">💾 Backup</button>
+                    <button class="btn-sec" onclick="document.getElementById('importInput').click()">📂 Carica</button>
                     <button class="btn-sec" onclick="window.print()">🖨️ Stampa</button>
                     <input type="file" id="importInput" style="display:none" accept=".json" onchange="importBackup(event)">
                 </div>
@@ -417,7 +452,6 @@
 
         const CATEGORIES = Object.keys(CATEGORY_MAP);
 
-        // --- RESIZER LOGIC ---
         function initResizers() {
             const leftResizer = document.getElementById('resizer-left');
             const rightResizer = document.getElementById('resizer-right');
@@ -549,14 +583,12 @@
 
             editingId = id;
             
-            // UI Feedback
             const formUi = document.getElementById('creation-ui');
             formUi.classList.add('editing-mode');
             document.getElementById('form-title').innerText = "✏️ Modifica Attività";
             document.getElementById('btn-save').innerText = "Aggiorna Modifiche";
             document.getElementById('btn-cancel').style.display = "inline-block";
 
-            // Fill Form
             document.getElementById('entry-text').value = entry.text;
             document.getElementById('entry-category').value = entry.category;
             updateSubcategories(entry.subcategory);
@@ -565,7 +597,6 @@
             document.getElementById('entry-notes').value = entry.notes || "";
             document.getElementById('entry-recur').value = entry.recur || "none";
 
-            // Scroll to top
             document.getElementById('center-col').scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -646,7 +677,6 @@
 
             const todayEntries = sorted.filter(e => e.date === todayStr);
 
-            // Stats
             const total = state.entries.length;
             const completed = state.entries.filter(e => e.completed).length;
             document.getElementById('stats-done').innerText = completed;
@@ -667,7 +697,7 @@
                         <div style="display:flex; align-items:center; gap:6px; margin-bottom: 4px; flex-wrap: wrap;">
                             <span class="badge badge-${badgeKey}">${e.category}</span>
                             ${e.subcategory ? `<span class="sub-badge">${e.subcategory}</span>` : ''}
-                            <span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">${e.date.split('-').reverse().slice(0,2).join('/')}</span>
+                            <span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">📅 ${e.date.split('-').reverse().slice(0,2).join('/')}</span>
                         </div>
                         <div class="task-title">${e.text}</div>
                         ${e.notes ? `<span style="font-size:0.7rem; color:var(--text-muted); display:block; margin-top:4px; line-height:1.4">${e.notes}</span>` : ''}
@@ -684,7 +714,7 @@
             const blob = new Blob([JSON.stringify(state)], {type: 'application/json'});
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `omnimind_pro_backup.json`;
+            a.download = `omnimind_backup.json`;
             a.click();
         }
 
