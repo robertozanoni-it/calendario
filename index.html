@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniMind - Task Editor & Calendar</title>
+    <title>OmniMind - Focus & Archive</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Palette chiara (fallback) */
             --bg-main: #ffffff; 
-            --bg-col-left: #f8fafc;
-            --bg-col-right: #f1f5f9;
+            --bg-sidebar: #f8fafc;
             --surface: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
@@ -24,11 +22,9 @@
             --warning: #f59e0b;
         }
 
-        /* DEFAULT THEME (DARK/BLACK) */
-        [data-theme="dark"], body {
+        [data-theme="dark"] {
             --bg-main: #020617;
-            --bg-col-left: #111827;
-            --bg-col-right: #0f172a;
+            --bg-sidebar: #0f172a;
             --surface: #1e293b;
             --text-main: #f1f5f9;
             --text-muted: #94a3b8;
@@ -37,20 +33,7 @@
             --border: #334155;
         }
 
-        /* LIGHT THEME (OPZIONALE) */
-        [data-theme="light"] {
-            --bg-main: #ffffff; 
-            --bg-col-left: #f8fafc;
-            --bg-col-right: #f1f5f9;
-            --surface: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --primary: #4f46e5;
-            --primary-light: #eef2ff;
-            --border: #e2e8f0;
-        }
-
-        /* Badge Categories Colors */
+        /* Badge Categories */
         .badge-appti { background: #6366f1; }
         .badge-casa { background: #f59e0b; }
         .badge-disdire { background: #ef4444; }
@@ -77,67 +60,46 @@
             color: var(--text-main);
             height: 100vh;
             overflow: hidden;
-            user-select: none;
         }
 
         .app-container {
             display: flex;
             height: 100vh;
             width: 100vw;
+        }
+
+        /* COLONNA SINISTRA: WORKSPACE + ARCHIVIO */
+        .col-left {
+            width: 450px;
+            min-width: 380px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
             overflow: hidden;
         }
 
-        /* Colonne */
-        .col-archive {
-            width: 300px;
-            min-width: 220px;
-            max-width: 500px;
-            background: var(--bg-col-left);
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            border-right: 1px solid var(--border);
-        }
-
-        .col-work {
-            flex-grow: 1;
+        /* COLONNA DESTRA: FOCUS OGGI */
+        .col-right {
+            flex: 1;
             background: var(--bg-main);
+            display: flex;
+            flex-direction: column;
             padding: 2rem;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            overflow: hidden;
         }
 
-        .col-dash {
-            width: 320px;
-            min-width: 250px;
-            max-width: 500px;
-            background: var(--bg-col-right);
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid var(--border);
-        }
-
-        /* Resizers */
         .resizer {
             width: 6px;
             cursor: col-resize;
             background: transparent;
             z-index: 10;
-            transition: background 0.2s;
-            margin: 0 -3px;
         }
-        .resizer:hover, .resizer.resizing {
-            background: var(--primary);
-            opacity: 0.3;
-        }
-
-        .workspace-container { width: 100%; max-width: 700px; user-select: auto; }
+        .resizer:hover { background: var(--primary); opacity: 0.3; }
 
         .section-title {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 800;
             text-transform: uppercase;
             color: var(--text-muted);
@@ -148,598 +110,351 @@
             letter-spacing: 0.05em;
         }
 
-        /* Creation Elements */
+        /* Forms & Inputs */
         .creation-box {
             background: var(--surface);
-            padding: 1.5rem;
+            padding: 1.25rem;
             border-radius: var(--radius-lg);
             border: 1px solid var(--border);
-            box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.3);
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
         }
         
-        .creation-box.editing-mode {
-            border: 2px solid var(--primary);
-            background: var(--primary-light);
-            box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
-        }
-
-        .stat-card {
-            background: var(--surface);
-            padding: 1rem;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border);
-            margin-bottom: 0.75rem;
-            transition: transform 0.2s;
-        }
-        .stat-card:hover { transform: translateY(-2px); }
-        .stat-card .val { font-size: 1.4rem; font-weight: 800; display: block; }
-        .stat-card .lab { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
-
         input, select, textarea {
-            background: var(--bg-col-left);
+            background: var(--bg-main);
             border: 1px solid var(--border);
-            padding: 0.75rem;
-            border-radius: 10px;
+            padding: 0.6rem;
+            border-radius: 8px;
             color: var(--text-main);
             font-size: 0.85rem;
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             outline: none;
-            transition: border-color 0.2s;
-        }
-        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
-
-        /* Calendar Input Styling */
-        input[type="date"] {
-            cursor: pointer;
-            position: relative;
-        }
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            background: transparent;
-            bottom: 0;
-            color: transparent;
-            cursor: pointer;
-            height: auto;
-            left: 0;
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: auto;
-            filter: invert(1); /* Rende l'icona visibile su fondo scuro */
         }
 
         .btn-main {
             background: var(--primary);
             color: white;
-            padding: 0.9rem;
-            border-radius: 10px;
+            padding: 0.75rem;
+            border-radius: 8px;
             font-weight: 700;
             border: none;
             cursor: pointer;
             width: 100%;
-            margin-top: 5px;
-            transition: opacity 0.2s;
-        }
-        .btn-main:hover { opacity: 0.9; }
-        
-        .btn-cancel {
-            background: transparent;
-            color: var(--text-muted);
-            border: none;
-            font-size: 0.7rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
-            text-decoration: underline;
-            display: none;
         }
 
-        .btn-sec {
-            background: var(--surface);
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            padding: 0.6rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.7rem;
-            cursor: pointer;
-            text-align: center;
-            transition: background 0.2s;
+        .grid-tools {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 1.5rem;
         }
-        .btn-sec:hover { background: var(--bg-col-left); }
+
+        .btn-tool {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-main);
+        }
+
+        /* Liste */
+        .scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
 
         .task-card {
             background: var(--surface);
             border-radius: 12px;
-            padding: 0.85rem;
+            padding: 1rem;
             margin-bottom: 0.75rem;
             border: 1px solid var(--border);
             display: flex;
             gap: 12px;
-            align-items: flex-start;
-            user-select: auto;
             transition: all 0.2s;
-            position: relative;
         }
-        .task-card:hover { transform: scale(1.01); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        
-        .task-card.priority-high { border-left: 5px solid var(--danger); }
-        .task-card.priority-med { border-left: 5px solid var(--warning); }
-        .task-card.priority-low { border-left: 5px solid var(--success); }
-        .task-card.completed { opacity: 0.5; filter: grayscale(0.8); }
+        .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .task-card.priority-high { border-left: 4px solid var(--danger); }
+        .task-card.completed { opacity: 0.5; }
 
-        .badge { font-size: 0.55rem; font-weight: 800; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .sub-badge { font-size: 0.55rem; font-weight: 600; color: var(--text-muted); background: var(--primary-light); padding: 2px 6px; border-radius: 4px; }
-        .task-title { font-weight: 700; font-size: 0.85rem; line-height: 1.3; }
-        
-        .card-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        
-        .action-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 0.9rem;
-            padding: 4px;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-        .action-btn:hover { background: var(--bg-col-right); color: var(--primary); }
-        .action-btn.delete:hover { color: var(--danger); }
+        .badge { font-size: 0.6rem; font-weight: 800; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .task-title { font-weight: 700; font-size: 0.95rem; line-height: 1.3; }
 
         .filter-pills {
             display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
+            overflow-x: auto;
+            gap: 6px;
+            padding-bottom: 8px;
             margin-bottom: 1rem;
         }
+        .filter-pills::-webkit-scrollbar { height: 0px; }
+        
         .pill {
-            font-size: 0.6rem;
-            padding: 4px 8px;
-            background: var(--border);
+            white-space: nowrap;
+            font-size: 0.65rem;
+            padding: 4px 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 20px;
             cursor: pointer;
             font-weight: 600;
         }
-        .pill.active { background: var(--primary); color: white; }
+        .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        .search-container { margin-bottom: 1.5rem; }
-        #full-list { flex: 1; overflow-y: auto; padding-right: 5px; }
+        /* Analisi finale */
+        .stats-footer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+        .stat-mini {
+            background: var(--surface);
+            padding: 0.75rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .stat-mini .val { font-size: 1.2rem; font-weight: 800; display: block; }
+        .stat-mini .lab { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; }
 
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
     </style>
 </head>
 <body data-theme="dark">
 
-    <div class="app-container" id="main-container">
-        <!-- ARCHIVIO SINISTRA -->
-        <section class="col-archive" id="left-col">
-            <div class="search-container">
-                <div class="section-title">
-                    <span>📦 Archivio</span>
-                    <span id="full-count" class="badge" style="background: var(--text-muted)">0</span>
+    <div class="app-container">
+        <!-- SINISTRA: INPUT & ARCHIVIO -->
+        <aside class="col-left" id="sidebar">
+            <header style="margin-bottom: 1.5rem;">
+                <h1 style="font-weight: 800; color: var(--primary); font-size: 1.4rem;">OmniMind Lite</h1>
+                <p id="date-display" style="font-size: 0.75rem; color: var(--text-muted);"></p>
+            </header>
+
+            <!-- Workspace: Creazione -->
+            <div class="creation-box" id="form-container">
+                <div class="section-title">✨ Nuovo Task</div>
+                <input type="text" id="task-text" placeholder="Cosa facciamo?">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <select id="task-cat" onchange="updateSubs()"></select>
+                    <select id="task-sub"><option value="">Generale</option></select>
                 </div>
-                <input type="text" id="search-input" placeholder="Cerca tra le note..." oninput="render()">
-                
-                <div class="filter-pills" id="category-filters"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <input type="date" id="task-date">
+                    <select id="task-pri">
+                        <option value="low">Bassa</option>
+                        <option value="med">Media</option>
+                        <option value="high">Alta</option>
+                    </select>
+                </div>
+                <button class="btn-main" onclick="saveTask()">Salva</button>
             </div>
-            <div id="full-list"></div>
-        </section>
 
-        <div class="resizer" id="resizer-left"></div>
-
-        <!-- WORKSPACE CENTRO -->
-        <section class="col-work" id="center-col">
-            <div class="workspace-container" id="workspace">
-                <header style="text-align: center; margin-bottom: 2rem;">
-                    <h1 style="font-weight: 800; color: var(--primary); font-size: 1.5rem; letter-spacing: -0.02em;">OmniMind Lite</h1>
-                    <p id="date-display" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;"></p>
-                </header>
-
-                <div class="creation-box" id="creation-ui">
-                    <div class="section-title" id="form-title">✨ Nuova Attività</div>
-                    <input type="text" id="entry-text" placeholder="Cosa dobbiamo fare oggi?">
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div>
-                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">CATEGORIA</label>
-                            <select id="entry-category" onchange="updateSubcategories()"></select>
-                        </div>
-                        <div>
-                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">SOTTOCATEGORIA</label>
-                            <select id="entry-subcategory">
-                                <option value="">Generale</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
-                        <div>
-                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">SCADENZA</label>
-                            <input type="date" id="entry-date" title="Apri il calendario">
-                        </div>
-                        <div>
-                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">PRIORITÀ</label>
-                            <select id="entry-priority">
-                                <option value="low">Bassa</option>
-                                <option value="med">Media</option>
-                                <option value="high">Alta</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size: 0.6rem; font-weight: 700; color: var(--text-muted); margin-left: 5px; display: block; margin-bottom: 4px;">RICORRENZA</label>
-                            <select id="entry-recur">
-                                <option value="none">No</option>
-                                <option value="daily">Giorno</option>
-                                <option value="weekly">Settimana</option>
-                                <option value="monthly">Mese</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <textarea id="entry-notes" style="height: 60px;" placeholder="Dettagli, link o appunti veloci..."></textarea>
-                    
-                    <button class="btn-main" id="btn-save" onclick="handleSave()">Salva nell'Universo</button>
-                    <div style="text-align: center;">
-                        <button class="btn-cancel" id="btn-cancel" onclick="resetForm()">Annulla Modifica</button>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 2rem;">
-                    <button class="btn-sec" onclick="toggleTheme()">🌓 Tema</button>
-                    <button class="btn-sec" onclick="exportBackup()">💾 Backup</button>
-                    <button class="btn-sec" onclick="document.getElementById('importInput').click()">📂 Carica</button>
-                    <button class="btn-sec" onclick="window.print()">🖨️ Stampa</button>
-                    <input type="file" id="importInput" style="display:none" accept=".json" onchange="importBackup(event)">
-                </div>
+            <!-- Pulsanti Utility -->
+            <div class="grid-tools">
+                <button class="btn-tool" onclick="toggleTheme()">🌓 Tema</button>
+                <button class="btn-tool" onclick="exportData()">💾 Back</button>
+                <button class="btn-tool" onclick="document.getElementById('imp').click()">📂 Imp</button>
+                <button class="btn-tool" onclick="window.print()">🖨️ Stampa</button>
+                <input type="file" id="imp" style="display:none" onchange="importData(event)">
             </div>
-        </section>
 
-        <div class="resizer" id="resizer-right"></div>
-
-        <!-- DASHBOARD DESTRA -->
-        <section class="col-dash" id="right-col">
+            <!-- Archivio (Spostato qui) -->
             <div class="section-title">
-                <span>🔥 Focus Oggi</span>
-                <span id="today-count" class="badge" style="background: var(--primary);">0</span>
+                <span>📦 Archivio Generale</span>
+                <span id="count-all" class="pill">0</span>
             </div>
-            <div id="today-list"></div>
+            <input type="text" id="search-box" placeholder="Cerca nell'archivio..." oninput="render()">
+            <div class="filter-pills" id="filter-pills"></div>
+            
+            <div class="scroll-area" id="list-archive"></div>
+        </aside>
 
-            <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
-                <div class="section-title">📊 Analisi</div>
-                <div class="stat-card">
-                    <span class="lab">Completate</span>
-                    <span class="val" id="stats-done">0</span>
-                </div>
-                <div class="stat-card">
-                    <span class="lab">Focus Score</span>
-                    <span class="val" id="stats-perc">0%</span>
+        <div class="resizer" id="resizer"></div>
+
+        <!-- DESTRA: FOCUS OGGI (SPAZIO MASSIMO) -->
+        <main class="col-right">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -0.03em;">Focus Oggi</h2>
+                <div style="text-align: right;">
+                    <span id="count-today" style="font-size: 2rem; font-weight: 800; color: var(--primary);">0</span>
+                    <p style="font-size: 0.6rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Task Rimanenti</p>
                 </div>
             </div>
-        </section>
+
+            <div class="scroll-area" id="list-today"></div>
+
+            <div class="stats-footer">
+                <div class="stat-mini">
+                    <span class="lab">Completate</span>
+                    <span class="val" id="stat-done">0</span>
+                </div>
+                <div class="stat-mini">
+                    <span class="lab">Focus Score</span>
+                    <span class="val" id="stat-score">0%</span>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
-        const KEY = 'omnimind_pro_v1';
-        let state = { 
-            entries: [], 
-            theme: 'dark', // Impostato a DARK di default
-            layout: { left: 300, right: 320 },
-            activeFilter: 'Tutto'
-        };
-        
-        let editingId = null;
+        const STORE_KEY = 'omnimind_v2_layout';
+        let state = { entries: [], theme: 'dark', sideWidth: 450, filter: 'Tutto' };
 
-        const CATEGORY_MAP = {
-            "App.ti": ["Visita", "Call", "Meeting"],
-            "Casa": ["Manutenzione", "Spese", "Pulizia"],
-            "Clienti": ["Preventivo", "Fattura", "Revisione", "Supporto"],
-            "disdire": ["Abbonamento", "Servizio"],
-            "Famiglia": ["Evento", "Commissione"],
-            "Idee": ["Web Design", "SEO", "Copywriting"],
-            "Kate": ["Personale", "Lavoro"],
-            "Lavoro": ["Social Media", "Elementor", "Sito Web"],
-            "Mattia": ["Scuola", "Sport"],
-            "Pagare": ["Bollette", "Fornitori"],
-            "Personale": ["Hobby", "Benessere"],
-            "Riscuotere": ["Credito", "Rimborso"],
-            "Salute": ["Visita", "Farmacia"],
-            "Spesa": ["Alimentari", "Casa"],
-            "Tasse": ["IVA", "INPS", "Dichiarazione"],
-            "Tel": ["Call commerciale", "Recupero"],
-            "Viaggi": ["Prenotazione", "Itinerario"]
+        const CATS = {
+            "App.ti": ["Visita", "Call"], "Casa": ["Spese", "Pulizia"], "Clienti": ["Fattura", "Social"],
+            "Lavoro": ["SEO", "Web Design", "Copy"], "Tasse": ["IVA", "INPS"], "Personale": ["Hobby"]
         };
-
-        const CATEGORIES = Object.keys(CATEGORY_MAP);
 
         function init() {
-            try {
-                const saved = localStorage.getItem(KEY);
-                if (saved) {
-                    state = JSON.parse(saved);
-                } else {
-                    // Primo avvio assoluto
-                    state.theme = 'dark';
-                }
-            } catch(e) {}
+            const saved = localStorage.getItem(STORE_KEY);
+            if(saved) state = JSON.parse(saved);
             
-            // Forza il tema dark se non diversamente specificato nel caricamento
-            const currentTheme = state.theme || 'dark';
-            document.body.setAttribute('data-theme', currentTheme);
-            
-            if(state.layout) {
-                document.getElementById('left-col').style.width = (state.layout.left || 300) + 'px';
-                document.getElementById('right-col').style.width = (state.layout.right || 320) + 'px';
-            }
+            document.body.setAttribute('data-theme', state.theme);
+            document.getElementById('sidebar').style.width = state.sideWidth + 'px';
+            document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('date-display').innerText = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
-            document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('date-display').innerText = new Date().toLocaleDateString('it-IT', { 
-                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' 
-            });
+            const catSel = document.getElementById('task-cat');
+            catSel.innerHTML = Object.keys(CATS).map(c => `<option value="${c}">${c}</option>`).join('');
             
-            const catSelect = document.getElementById('entry-category');
-            catSelect.innerHTML = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
-            
-            initResizers();
-            updateSubcategories();
+            setupResizer();
+            updateSubs();
             renderFilters();
             render();
         }
 
-        function initResizers() {
-            const leftResizer = document.getElementById('resizer-left');
-            const rightResizer = document.getElementById('resizer-right');
-            const leftCol = document.getElementById('left-col');
-            const rightCol = document.getElementById('right-col');
+        function setupResizer() {
+            const resizer = document.getElementById('resizer');
+            const sidebar = document.getElementById('sidebar');
+            let x = 0, w = 0;
 
-            let isResizingLeft = false;
-            let isResizingRight = false;
-
-            leftResizer.addEventListener('mousedown', () => isResizingLeft = true);
-            rightResizer.addEventListener('mousedown', () => isResizingRight = true);
-
-            document.addEventListener('mousemove', (e) => {
-                if (isResizingLeft) {
-                    const w = e.clientX;
-                    if (w > 200 && w < 500) {
-                        leftCol.style.width = w + 'px';
-                        state.layout.left = w;
-                    }
+            const onMouseMove = (e) => {
+                const newW = w + (e.clientX - x);
+                if(newW > 350 && newW < 700) {
+                    sidebar.style.width = newW + 'px';
+                    state.sideWidth = newW;
                 }
-                if (isResizingRight) {
-                    const w = window.innerWidth - e.clientX;
-                    if (w > 250 && w < 500) {
-                        rightCol.style.width = w + 'px';
-                        state.layout.right = w;
-                    }
-                }
-            });
-
-            document.addEventListener('mouseup', () => {
-                if (isResizingLeft || isResizingRight) {
-                    isResizingLeft = isResizingRight = false;
-                    save();
-                }
+            };
+            const onMouseUp = () => {
+                document.removeEventListener('mousemove', onMouseMove);
+                save();
+            };
+            resizer.addEventListener('mousedown', (e) => {
+                x = e.clientX; w = sidebar.getBoundingClientRect().width;
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
             });
         }
 
-        function updateSubcategories(selectedSub = "") {
-            const cat = document.getElementById('entry-category').value;
-            const subSelect = document.getElementById('entry-subcategory');
-            const subs = CATEGORY_MAP[cat] || [];
-            subSelect.innerHTML = `<option value="">Generale</option>` + subs.map(s => `
-                <option value="${s}" ${s === selectedSub ? 'selected' : ''}>${s}</option>
-            `).join('');
+        function updateSubs() {
+            const c = document.getElementById('task-cat').value;
+            document.getElementById('task-sub').innerHTML = `<option value="">Generale</option>` + 
+                (CATS[c] || []).map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
-        function save() {
-            localStorage.setItem(KEY, JSON.stringify(state));
-            render();
+        function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); render(); }
+
+        function saveTask() {
+            const text = document.getElementById('task-text').value.trim();
+            if(!text) return;
+            state.entries.push({
+                id: Date.now(),
+                text,
+                cat: document.getElementById('task-cat').value,
+                sub: document.getElementById('task-sub').value,
+                date: document.getElementById('task-date').value,
+                pri: document.getElementById('task-pri').value,
+                done: false
+            });
+            document.getElementById('task-text').value = '';
+            save();
         }
 
         function toggleTheme() {
-            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            state.theme = state.theme === 'dark' ? 'light' : 'dark';
             document.body.setAttribute('data-theme', state.theme);
             save();
         }
 
         function renderFilters() {
-            const container = document.getElementById('category-filters');
-            const filters = ['Tutto', ...CATEGORIES];
-            container.innerHTML = filters.map(f => `
-                <span class="pill ${state.activeFilter === f ? 'active' : ''}" onclick="setFilter('${f}')">${f}</span>
+            const f = ['Tutto', ...Object.keys(CATS)];
+            document.getElementById('filter-pills').innerHTML = f.map(cat => `
+                <div class="pill ${state.filter === cat ? 'active' : ''}" onclick="state.filter='${cat}'; renderFilters(); render();">${cat}</div>
             `).join('');
         }
 
-        function setFilter(f) {
-            state.activeFilter = f;
-            renderFilters();
-            render();
-        }
-
-        function handleSave() {
-            if (editingId) updateEntry();
-            else addEntry();
-        }
-
-        function addEntry() {
-            const text = document.getElementById('entry-text').value.trim();
-            const category = document.getElementById('entry-category').value;
-            const subcategory = document.getElementById('entry-subcategory').value;
-            const date = document.getElementById('entry-date').value;
-            const priority = document.getElementById('entry-priority').value;
-            const notes = document.getElementById('entry-notes').value.trim();
-            const recur = document.getElementById('entry-recur').value;
-
-            if (!text || !date) return;
-
-            state.entries.push({
-                id: Date.now(), text, category, subcategory, date, priority, notes, recur,
-                completed: false
-            });
-
-            resetForm();
-            save();
-        }
-
-        function startEdit(id) {
-            const entry = state.entries.find(e => e.id === id);
-            if (!entry) return;
-            editingId = id;
-            
-            const formUi = document.getElementById('creation-ui');
-            formUi.classList.add('editing-mode');
-            document.getElementById('form-title').innerText = "✏️ Modifica Attività";
-            document.getElementById('btn-save').innerText = "Aggiorna Modifiche";
-            document.getElementById('btn-cancel').style.display = "inline-block";
-
-            document.getElementById('entry-text').value = entry.text;
-            document.getElementById('entry-category').value = entry.category;
-            updateSubcategories(entry.subcategory);
-            document.getElementById('entry-date').value = entry.date;
-            document.getElementById('entry-priority').value = entry.priority;
-            document.getElementById('entry-notes').value = entry.notes || "";
-            document.getElementById('entry-recur').value = entry.recur || "none";
-            document.getElementById('center-col').scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function updateEntry() {
-            const entry = state.entries.find(e => e.id === editingId);
-            if (entry) {
-                entry.text = document.getElementById('entry-text').value.trim();
-                entry.category = document.getElementById('entry-category').value;
-                entry.subcategory = document.getElementById('entry-subcategory').value;
-                entry.date = document.getElementById('entry-date').value;
-                entry.priority = document.getElementById('entry-priority').value;
-                entry.notes = document.getElementById('entry-notes').value.trim();
-                entry.recur = document.getElementById('entry-recur').value;
-            }
-            resetForm();
-            save();
-        }
-
-        function resetForm() {
-            editingId = null;
-            document.getElementById('creation-ui').classList.remove('editing-mode');
-            document.getElementById('form-title').innerText = "✨ Nuova Attività";
-            document.getElementById('btn-save').innerText = "Salva nell'Universo";
-            document.getElementById('btn-cancel').style.display = "none";
-            document.getElementById('entry-text').value = '';
-            document.getElementById('entry-notes').value = '';
-            document.getElementById('entry-date').value = new Date().toISOString().split('T')[0];
-            document.getElementById('entry-category').selectedIndex = 0;
-            updateSubcategories();
-            document.getElementById('entry-priority').value = 'low';
-            document.getElementById('entry-recur').value = 'none';
-        }
-
-        function toggleComplete(id) {
-            const entry = state.entries.find(e => e.id === id);
-            if (entry) {
-                entry.completed = !entry.completed;
-                if (entry.completed && entry.recur !== 'none') {
-                    let next = new Date(entry.date);
-                    if (entry.recur === 'daily') next.setDate(next.getDate() + 1);
-                    else if (entry.recur === 'weekly') next.setDate(next.getDate() + 7);
-                    else if (entry.recur === 'monthly') next.setMonth(next.getMonth() + 1);
-                    state.entries.push({
-                        ...entry, id: Date.now() + 1,
-                        date: next.toISOString().split('T')[0],
-                        completed: false
-                    });
-                }
-            }
-            save();
-        }
-
-        function deleteEntry(id) {
-            if (editingId === id) resetForm();
-            state.entries = state.entries.filter(e => e.id !== id);
-            save();
-        }
-
         function render() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const search = document.getElementById('search-input').value.toLowerCase();
-            const sorted = [...state.entries].sort((a, b) => {
-                if (a.completed !== b.completed) return a.completed ? 1 : -1;
-                const pMap = { high: 0, med: 1, low: 2 };
-                if (pMap[a.priority] !== pMap[b.priority]) return pMap[a.priority] - pMap[b.priority];
-                return new Date(a.date) - new Date(b.date);
+            const today = new Date().toISOString().split('T')[0];
+            const search = document.getElementById('search-box').value.toLowerCase();
+            
+            const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
+            
+            // Focus Oggi
+            const todayList = sorted.filter(e => e.date === today);
+            document.getElementById('list-today').innerHTML = todayList.map(e => createCard(e, true)).join('');
+            document.getElementById('count-today').innerText = todayList.filter(e => !e.done).length;
+
+            // Archivio
+            const archiveList = sorted.filter(e => {
+                const matchSearch = e.text.toLowerCase().includes(search);
+                const matchFilter = state.filter === 'Tutto' || e.cat === state.filter;
+                return matchSearch && matchFilter;
             });
+            document.getElementById('list-archive').innerHTML = archiveList.map(e => createCard(e, false)).join('');
+            document.getElementById('count-all').innerText = state.entries.length;
 
-            const filtered = sorted.filter(e => {
-                const matchesSearch = e.text.toLowerCase().includes(search) || (e.notes && e.notes.toLowerCase().includes(search));
-                const matchesFilter = state.activeFilter === 'Tutto' || e.category === state.activeFilter;
-                return matchesSearch && matchesFilter;
-            });
-
-            const todayEntries = sorted.filter(e => e.date === todayStr);
-            const total = state.entries.length;
-            const completed = state.entries.filter(e => e.completed).length;
-
-            document.getElementById('stats-done').innerText = completed;
-            document.getElementById('stats-perc').innerText = total > 0 ? Math.round((completed / total) * 100) + '%' : '0%';
-            document.getElementById('today-count').innerText = todayEntries.filter(e => !e.completed).length;
-            document.getElementById('full-count').innerText = total;
-
-            document.getElementById('today-list').innerHTML = todayEntries.map(e => createCard(e)).join('');
-            document.getElementById('full-list').innerHTML = filtered.map(e => createCard(e)).join('');
+            // Stats
+            const done = state.entries.filter(e => e.done).length;
+            document.getElementById('stat-done').innerText = done;
+            document.getElementById('stat-score').innerText = state.entries.length ? Math.round((done/state.entries.length)*100)+'%' : '0%';
         }
 
-        function createCard(e) {
-            const badgeKey = e.category.toLowerCase().replace('.', '').replace(' ', '');
+        function createCard(e, isFocus) {
+            const bCls = e.cat.toLowerCase().replace('.','').replace(' ','');
             return `
-                <div class="task-card ${e.completed ? 'completed' : ''} priority-${e.priority}" id="task-${e.id}">
-                    <input type="checkbox" ${e.completed ? 'checked' : ''} onclick="toggleComplete(${e.id})" style="cursor:pointer; width:18px; height:18px; margin-top:2px;">
+                <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}">
+                    <input type="checkbox" ${e.done ? 'checked' : ''} onchange="toggleDone(${e.id})" style="width:18px; height:18px; margin-top:3px; cursor:pointer;">
                     <div style="flex:1">
-                        <div style="display:flex; align-items:center; gap:6px; margin-bottom: 4px; flex-wrap: wrap;">
-                            <span class="badge badge-${badgeKey}">${e.category}</span>
-                            ${e.subcategory ? `<span class="sub-badge">${e.subcategory}</span>` : ''}
-                            <span style="font-size: 0.6rem; color: var(--text-muted); font-weight: 600;">📅 ${e.date.split('-').reverse().slice(0,2).join('/')}</span>
+                        <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+                            <span class="badge badge-${bCls}">${e.cat}</span>
+                            ${e.sub ? `<span style="font-size:0.6rem; color:var(--text-muted); font-weight:600;">• ${e.sub}</span>` : ''}
+                            ${!isFocus ? `<span style="font-size:0.6rem; margin-left:auto; color:var(--text-muted)">${e.date}</span>` : ''}
                         </div>
                         <div class="task-title">${e.text}</div>
-                        ${e.notes ? `<span style="font-size:0.7rem; color:var(--text-muted); display:block; margin-top:4px; line-height:1.4">${e.notes}</span>` : ''}
                     </div>
-                    <div class="card-actions">
-                        <button class="action-btn" title="Modifica" onclick="startEdit(${e.id})">✏️</button>
-                        <button class="action-btn delete" title="Elimina" onclick="deleteEntry(${e.id})">✕</button>
-                    </div>
+                    <button onclick="del(${e.id})" style="background:none; border:none; cursor:pointer; color:var(--text-muted); padding:5px;">✕</button>
                 </div>
             `;
         }
 
-        function exportBackup() {
-            const blob = new Blob([JSON.stringify(state)], {type: 'application/json'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `omnimind_backup.json`;
-            a.click();
+        function toggleDone(id) { 
+            const e = state.entries.find(x => x.id === id); 
+            if(e) e.done = !e.done; 
+            save(); 
+        }
+        
+        function del(id) { 
+            state.entries = state.entries.filter(x => x.id !== id); 
+            save(); 
         }
 
-        function importBackup(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const a = document.createElement('a'); a.setAttribute("href", dataStr);
+            a.setAttribute("download", "omnimind_v2.json"); a.click();
+        }
+
+        function importData(ev) {
             const reader = new FileReader();
-            reader.onload = e => {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if (imported.entries) {
-                        state = imported;
-                        save();
-                        location.reload();
-                    }
-                } catch (err) { alert("File JSON non valido."); }
-            };
-            reader.readAsText(file);
+            reader.onload = e => { state = JSON.parse(e.target.result); save(); location.reload(); };
+            reader.readAsText(ev.target.files[0]);
         }
 
         window.onload = init;
