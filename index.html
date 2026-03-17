@@ -219,6 +219,9 @@
             font-weight: 700;
             cursor: pointer;
             color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .scroll-area {
@@ -238,6 +241,7 @@
             transition: all 0.2s;
             position: relative;
             overflow: hidden;
+            align-items: center;
         }
         .task-card::before {
             content: '';
@@ -249,24 +253,6 @@
         .task-card:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
         .task-card.priority-high { border-right: 2px solid var(--danger); }
         .task-card.completed { opacity: 0.4; }
-
-        .archive-group {
-            margin-bottom: 1.5rem;
-        }
-        .archive-group-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.75rem;
-            padding-bottom: 4px;
-            border-bottom: 1px solid var(--border);
-        }
-        .archive-group-title {
-            font-size: 0.7rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
 
         .badge { font-size: 0.6rem; font-weight: 800; color: white; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; background: var(--cat-color, #666); }
         .task-title { font-weight: 700; font-size: 0.9rem; line-height: 1.3; cursor: pointer; flex: 1; }
@@ -334,7 +320,7 @@
             font-size: 0.85rem;
             font-weight: 700;
             display: none;
-            z-index: 1000;
+            z-index: 3000;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
@@ -394,13 +380,20 @@
             font-weight: 800;
             font-size: 1.2rem;
         }
+        .trash-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--danger);
+            font-size: 0.9rem;
+            padding: 4px;
+        }
     </style>
 </head>
 <body data-theme="dark">
 
     <div id="toast">Operazione completata!</div>
 
-    <!-- Modal Conferma Svuota -->
     <div id="modal-confirm">
         <div class="modal-content">
             <h3 style="margin-bottom: 10px;">Pulizia Archivio</h3>
@@ -415,7 +408,6 @@
         </div>
     </div>
 
-    <!-- Modal Nuova Categoria -->
     <div id="modal-input">
         <div class="modal-content">
             <h3 style="margin-bottom: 15px;">Nuova Categoria</h3>
@@ -540,30 +532,15 @@
         const STORE_KEY = 'omnimind_v6_data';
         
         const INITIAL_CATS = {
-            "App.ti": ["Visita", "Call"],
-            "Casa": ["Spese", "Pulizia", "Manutenzione"],
-            "Clienti": ["Fattura", "Social", "Revisione"],
-            "Disdire": ["Abbonamento", "Servizio"],
-            "Famiglia": ["Evento", "Ricorrenza"],
-            "Idee": ["Web App", "Contenuto", "SEO"],
-            "Kate": ["Task", "Memo"],
-            "Lavoro": ["SEO", "Web Design", "Copywriter"],
-            "Mattia": ["Scuola", "Sport"],
-            "Pagare": ["Bolletta", "Fornitore"],
-            "Personale": ["Hobby", "Benessere"],
-            "Riscuotere": ["Credito", "Rimborso"],
-            "Salute": ["Visita", "Farmacia"],
-            "Spesa": ["Alimentari", "Casa"],
-            "Tasse": ["IVA", "INPS", "Commercialista"],
-            "Tel": ["Chiamata", "Messaggio"],
-            "Viaggi": ["Prenotazione", "Itinerario"]
+            "App.ti": ["Visita", "Call"], "Casa": ["Spese", "Pulizia"], "Clienti": ["Fattura", "Social"],
+            "Disdire": ["Abbonamento"], "Famiglia": ["Evento"], "Idee": ["Web App"], "Lavoro": ["SEO", "Copywriter"],
+            "Salute": ["Visita"], "Spesa": ["Alimentari"], "Tasse": ["IVA", "INPS"], "Tel": ["Chiamata"]
         };
 
         const INITIAL_COLORS = {
             "App.ti": "#6366f1", "Casa": "#f59e0b", "Clienti": "#2563eb", "Disdire": "#ef4444",
-            "Famiglia": "#f97316", "Idee": "#ca8a04", "Kate": "#a855f7", "Lavoro": "#3b82f6",
-            "Mattia": "#ec4899", "Pagare": "#dc2626", "Personale": "#10b981", "Riscuotere": "#8b5cf6",
-            "Salute": "#059669", "Spesa": "#16a34a", "Tasse": "#475569", "Tel": "#06b6d4", "Viaggi": "#e11d48"
+            "Famiglia": "#f97316", "Idee": "#ca8a04", "Lavoro": "#3b82f6", "Salute": "#059669",
+            "Spesa": "#16a34a", "Tasse": "#475569", "Tel": "#06b6d4"
         };
 
         let state = { 
@@ -600,6 +577,12 @@
             render();
         }
 
+        function save() { 
+            localStorage.setItem(STORE_KEY, JSON.stringify(state)); 
+            renderCalendar(); 
+            render(); 
+        }
+
         function refreshCatSelects() {
             const catList = Object.keys(state.customCats).sort();
             document.getElementById('task-cat').innerHTML = catList.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -607,62 +590,169 @@
             updateSubs();
         }
 
-        function openCatModal() { document.getElementById('modal-input').style.display = 'flex'; document.getElementById('new-cat-name').focus(); }
-        function closeCatModal() { document.getElementById('modal-input').style.display = 'none'; document.getElementById('new-cat-name').value = ''; }
-        
-        function addNewCategory() {
-            const name = document.getElementById('new-cat-name').value.trim();
-            if(!name) return;
-            if(!state.customCats[name]) {
-                state.customCats[name] = [];
-                state.catColors[name] = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
-                save();
-                refreshCatSelects();
-                renderColorSettings();
-                document.getElementById('task-cat').value = name;
-                updateSubs();
-            }
-            closeCatModal();
+        function updateSubs() {
+            const c = document.getElementById('task-cat').value;
+            const subs = state.customCats[c] || [];
+            document.getElementById('task-sub').innerHTML = `<option value="">Generale</option>` + subs.map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
-        function openConfirm() { document.getElementById('modal-confirm').style.display = 'flex'; }
-        function closeConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
-        
-        function clearArchive() {
-            const today = new Date().toISOString().split('T')[0];
-            // Filtro: tieni solo i task che sono nel futuro RISPETTO A OGGI
-            // O tieni i task di oggi che NON sono completati
-            state.entries = state.entries.filter(e => {
-                const isFuture = e.date > today;
-                const isTodayNotDone = (e.date === today && !e.done);
-                const isRecurring = (e.repeat && e.repeat !== 'none');
-                return isFuture || isTodayNotDone || isRecurring;
-            });
-            save();
-            closeConfirm();
-            showToast("Archivio pulito: salvati i task futuri!");
+        function render() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            document.getElementById('focus-date-label').innerText = todayStr === (archiveFilterDate || todayStr) ? "Oggi" : archiveFilterDate;
+
+            const query = document.getElementById('search-box').value.toLowerCase();
+            const catFilter = document.getElementById('archive-cat-filter').value;
+
+            // Filtra per il Focus (Oggi o data selezionata)
+            const targetDate = archiveFilterDate || todayStr;
+            const focusTasks = state.entries.filter(e => isTaskActiveAt(e, targetDate));
+            
+            // Filtra per l'Archivio
+            const archiveTasks = state.entries.filter(e => {
+                const matchesSearch = e.text.toLowerCase().includes(query);
+                const matchesCat = catFilter === 'all' || e.cat === catFilter;
+                const matchesDate = !archiveFilterDate || e.date === archiveFilterDate;
+                return matchesSearch && matchesCat && matchesDate;
+            }).sort((a,b) => b.id - a.id);
+
+            // Render Focus
+            const focusList = document.getElementById('list-today');
+            focusList.innerHTML = focusTasks.length ? focusTasks.map(e => createCard(e, true)).join('') : '<p style="text-align:center; color:var(--text-muted); padding:20px;">Nessun task per questa data</p>';
+
+            // Render Archive
+            const archiveList = document.getElementById('list-archive');
+            archiveList.innerHTML = archiveTasks.map(e => createCard(e, false)).join('');
+
+            // Stats
+            const doneCount = state.entries.filter(e => e.done).length;
+            const total = state.entries.length;
+            document.getElementById('stat-done').innerText = doneCount;
+            document.getElementById('stat-score').innerText = total ? Math.round((doneCount/total)*100) + '%' : '0%';
+            document.getElementById('count-today').innerText = focusTasks.filter(e => !e.done).length;
+            document.getElementById('count-all').innerText = archiveTasks.length;
+            document.getElementById('reset-filter-btn').style.display = archiveFilterDate ? 'block' : 'none';
         }
 
-        function toggleColorSettings() {
-            const panel = document.getElementById('color-panel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-        }
-
-        function renderColorSettings() {
-            const list = document.getElementById('color-list');
-            list.innerHTML = Object.keys(state.catColors).sort().map(cat => `
-                <div class="color-row">
-                    <span>${cat}</span>
-                    <input type="color" value="${state.catColors[cat]}" onchange="updateCatColor('${cat}', this.value)">
+        function createCard(e, isFocusArea) {
+            const color = state.catColors[e.cat] || '#666';
+            const dateDisplay = new Date(e.date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+            return `
+                <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}" style="--cat-color: ${color}">
+                    <input type="checkbox" ${e.done ? 'checked' : ''} onclick="toggleDone(${e.id})" style="width:20px; height:20px; cursor:pointer;">
+                    <div style="flex:1">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <span class="badge">${e.cat}</span>
+                            <span style="font-size:0.6rem; color:var(--text-muted); font-weight:700;">${dateDisplay}</span>
+                        </div>
+                        <div class="task-title" onclick="editTask(${e.id})">${e.text}</div>
+                        ${e.sub ? `<div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;"># ${e.sub}</div>` : ''}
+                    </div>
+                    <button class="trash-btn" onclick="deleteTask(${e.id})">✕</button>
                 </div>
-            `).join('');
+            `;
         }
 
-        function updateCatColor(cat, color) { state.catColors[cat] = color; save(); render(); }
+        function saveTask() {
+            const text = document.getElementById('task-text').value.trim();
+            if(!text) return;
+            const editId = document.getElementById('task-id').value;
+            const payload = {
+                text,
+                cat: document.getElementById('task-cat').value,
+                sub: document.getElementById('task-sub').value,
+                date: document.getElementById('task-date').value,
+                pri: document.getElementById('task-pri').value,
+                repeat: document.getElementById('task-repeat').value
+            };
+            if(editId) {
+                const idx = state.entries.findIndex(x => x.id == editId);
+                if(idx !== -1) state.entries[idx] = { ...state.entries[idx], ...payload };
+                resetForm();
+            } else {
+                state.entries.push({ id: Date.now(), ...payload, done: false });
+                document.getElementById('task-text').value = '';
+            }
+            save();
+            showToast("Task salvato!");
+        }
+
+        function toggleDone(id) {
+            const idx = state.entries.findIndex(e => e.id == id);
+            if(idx !== -1) {
+                state.entries[idx].done = !state.entries[idx].done;
+                save();
+            }
+        }
+
+        function editTask(id) {
+            const t = state.entries.find(e => e.id == id);
+            if(!t) return;
+            document.getElementById('task-id').value = t.id;
+            document.getElementById('task-text').value = t.text;
+            document.getElementById('task-cat').value = t.cat;
+            updateSubs();
+            document.getElementById('task-sub').value = t.sub;
+            document.getElementById('task-date').value = t.date;
+            document.getElementById('task-pri').value = t.pri;
+            document.getElementById('task-repeat').value = t.repeat;
+            
+            document.getElementById('form-title').innerText = "✍️ Modifica Task";
+            document.getElementById('btn-save').innerText = "Aggiorna";
+            document.getElementById('btn-cancel').style.display = "block";
+            document.getElementById('form-container').classList.add('editing');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteTask(id) {
+            state.entries = state.entries.filter(e => e.id != id);
+            save();
+        }
+
+        function resetForm() {
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-text').value = '';
+            document.getElementById('form-title').innerText = "✨ Nuovo Task";
+            document.getElementById('btn-save').innerText = "Salva";
+            document.getElementById('btn-cancel').style.display = "none";
+            document.getElementById('form-container').classList.remove('editing');
+        }
+
+        function exportData() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `omnimind_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            showToast("Backup scaricato!");
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.entries) {
+                        state = { ...state, ...imported };
+                        save();
+                        init();
+                        showToast("Dati caricati correttamente!");
+                    } else {
+                        throw new Error("Formato non valido");
+                    }
+                } catch (err) {
+                    showToast("Errore nel caricamento del file!");
+                }
+            };
+            reader.readAsText(file);
+        }
 
         function isTaskActiveAt(task, dateStr) {
             if (task.date === dateStr) return true;
-            if (task.repeat === 'none' || !task.repeat) return false;
+            if (!task.repeat || task.repeat === 'none') return false;
             const tDate = new Date(task.date);
             const targetDate = new Date(dateStr);
             if (tDate > targetDate) return false;
@@ -709,15 +799,6 @@
             }
         }
 
-        function resetArchiveFilter() { archiveFilterDate = null; render(); }
-        function prevMonth() { currentMonth.setMonth(currentMonth.getMonth() - 1); renderCalendar(); }
-        function nextMonth() { currentMonth.setMonth(currentMonth.getMonth() + 1); renderCalendar(); }
-        
-        function syncCalendarFromInput() {
-            const val = document.getElementById('task-date').value;
-            if(val) { currentMonth = new Date(val); archiveFilterDate = val; renderCalendar(); render(); }
-        }
-
         function setupResizer() {
             const resizer = document.getElementById('resizer');
             const sidebar = document.getElementById('sidebar');
@@ -734,171 +815,72 @@
             });
         }
 
-        function updateSubs() {
-            const c = document.getElementById('task-cat').value;
-            const subs = state.customCats[c] || [];
-            document.getElementById('task-sub').innerHTML = `<option value="">Generale</option>` + subs.map(s => `<option value="${s}">${s}</option>`).join('');
+        function toggleTheme() {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', state.theme);
+            save();
         }
 
-        function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); renderCalendar(); render(); }
+        function toggleColorSettings() {
+            const panel = document.getElementById('color-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
 
+        function renderColorSettings() {
+            const list = document.getElementById('color-list');
+            list.innerHTML = Object.keys(state.catColors).sort().map(cat => `
+                <div class="color-row">
+                    <span>${cat}</span>
+                    <input type="color" value="${state.catColors[cat]}" onchange="updateCatColor('${cat}', this.value)">
+                </div>
+            `).join('');
+        }
+
+        function updateCatColor(cat, color) { state.catColors[cat] = color; save(); }
+        function openCatModal() { document.getElementById('modal-input').style.display = 'flex'; document.getElementById('new-cat-name').focus(); }
+        function closeCatModal() { document.getElementById('modal-input').style.display = 'none'; document.getElementById('new-cat-name').value = ''; }
+        function openConfirm() { document.getElementById('modal-confirm').style.display = 'flex'; }
+        function closeConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
+        function prevMonth() { currentMonth.setMonth(currentMonth.getMonth() - 1); renderCalendar(); }
+        function nextMonth() { currentMonth.setMonth(currentMonth.getMonth() + 1); renderCalendar(); }
+        function resetArchiveFilter() { archiveFilterDate = null; render(); }
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.innerText = msg; t.style.display = 'block';
             setTimeout(() => t.style.display = 'none', 3000);
         }
 
-        function saveTask() {
-            const text = document.getElementById('task-text').value.trim();
-            if(!text) return;
-            const editId = document.getElementById('task-id').value;
-            const payload = {
-                text,
-                cat: document.getElementById('task-cat').value,
-                sub: document.getElementById('task-sub').value,
-                date: document.getElementById('task-date').value,
-                pri: document.getElementById('task-pri').value,
-                repeat: document.getElementById('task-repeat').value
-            };
-            if(editId) {
-                const idx = state.entries.findIndex(x => x.id == editId);
-                if(idx !== -1) state.entries[idx] = { ...state.entries[idx], ...payload };
-                resetForm();
-            } else {
-                state.entries.push({ id: Date.now(), ...payload, done: false });
-                document.getElementById('task-text').value = '';
+        function addNewCategory() {
+            const name = document.getElementById('new-cat-name').value.trim();
+            if(!name) return;
+            if(!state.customCats[name]) {
+                state.customCats[name] = [];
+                state.catColors[name] = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                save();
+                refreshCatSelects();
+                renderColorSettings();
+                document.getElementById('task-cat').value = name;
+                updateSubs();
             }
-            save();
-            showToast("Task salvato!");
+            closeCatModal();
         }
 
-        function resetForm() {
-            document.getElementById('task-id').value = '';
-            document.getElementById('task-text').value = '';
-            document.getElementById('form-title').innerText = "✨ Nuovo Task";
-            document.getElementById('btn-save').innerText = "Salva";
-            document.getElementById('btn-cancel').style.display = "none";
-            document.getElementById('form-container').classList.remove('editing');
-        }
-
-        function createCard(e, isFocusArea) {
-            const color = state.catColors[e.cat] || '#666';
-            const dateDisplay = new Date(e.date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-            return `
-                <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}" style="--cat-color: ${color}">
-                    <input type="checkbox" ${e.done ? 'checked' : ''} onclick="toggleDone(${e.id})" style="width:20px; cursor:pointer;">
-                    <div style="flex:1">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                            <span class="badge">${e.cat}</span>
-                            <span style="font-size:0.6rem; color:var(--text-muted); font-weight:700;">${dateDisplay}</span>
-                        </div>
-                        <div class="task-title" onclick="editTask(${e.id})">${e.text}</div>
-                        ${e.sub ? `<div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;"># ${e.sub}</div>` : ''}
-                    </div>
-                    <button class="btn-tool" onclick="deleteTask(${e.id})" style="border:none; background:transparent; opacity:0.5;">🗑️</button>
-                </div>
-            `;
-        }
-
-        function toggleDone(id) {
-            const idx = state.entries.findIndex(x => x.id == id);
-            if(idx !== -1) { state.entries[idx].done = !state.entries[idx].done; save(); }
-        }
-
-        function deleteTask(id) {
-            state.entries = state.entries.filter(x => x.id != id);
-            save();
-        }
-
-        function editTask(id) {
-            const task = state.entries.find(x => x.id == id);
-            if(!task) return;
-            document.getElementById('task-id').value = task.id;
-            document.getElementById('task-text').value = task.text;
-            document.getElementById('task-cat').value = task.cat;
-            updateSubs();
-            document.getElementById('task-sub').value = task.sub;
-            document.getElementById('task-date').value = task.date;
-            document.getElementById('task-pri').value = task.pri;
-            document.getElementById('task-repeat').value = task.repeat;
-            
-            document.getElementById('form-title').innerText = "✏️ Modifica Task";
-            document.getElementById('btn-save').innerText = "Aggiorna";
-            document.getElementById('btn-cancel').style.display = "block";
-            document.getElementById('form-container').classList.add('editing');
-        }
-
-        function render() {
-            const selectedDate = document.getElementById('task-date').value;
-            const search = document.getElementById('search-box').value.toLowerCase();
-            const filterCat = document.getElementById('archive-cat-filter').value;
-            const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
-            
-            document.getElementById('focus-date-label').innerText = new Date(selectedDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-
-            const todayList = sorted.filter(e => isTaskActiveAt(e, selectedDate));
-            document.getElementById('list-today').innerHTML = todayList.length ? todayList.map(e => createCard(e, true)).join('') : '<p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:2rem;">Nessun impegno.</p>';
-            document.getElementById('count-today').innerText = todayList.filter(e => !e.done).length;
-
-            const resetBtn = document.getElementById('reset-filter-btn');
-            const archiveLabel = document.getElementById('archive-label');
-            resetBtn.style.display = archiveFilterDate ? 'block' : 'none';
-            archiveLabel.innerText = archiveFilterDate ? `📦 Archivio del ${new Date(archiveFilterDate).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'})}` : '📦 Archivio Globale';
-
-            const archiveArea = document.getElementById('list-archive');
-            archiveArea.innerHTML = '';
-            
-            const cats = Object.keys(state.customCats).sort();
-            cats.forEach(cat => {
-                if(filterCat !== 'all' && filterCat !== cat) return;
-                const tasks = sorted.filter(e => e.cat === cat && e.text.toLowerCase().includes(search) && (!archiveFilterDate || isTaskActiveAt(e, archiveFilterDate)));
-                if(tasks.length) {
-                    archiveArea.innerHTML += `
-                        <div class="archive-group">
-                            <div class="archive-group-header">
-                                <span class="archive-group-title">${cat}</span>
-                                <span class="pill">${tasks.length}</span>
-                            </div>
-                            ${tasks.map(e => createCard(e, false)).join('')}
-                        </div>
-                    `;
-                }
+        function clearArchive() {
+            const today = new Date().toISOString().split('T')[0];
+            state.entries = state.entries.filter(e => {
+                const isFuture = e.date > today;
+                const isTodayNotDone = (e.date === today && !e.done);
+                const isRecurring = (e.repeat && e.repeat !== 'none');
+                return isFuture || isTodayNotDone || isRecurring;
             });
-
-            const doneTotal = state.entries.filter(e => e.done).length;
-            document.getElementById('stat-done').innerText = doneTotal;
-            const score = state.entries.length ? Math.round((doneTotal / state.entries.length) * 100) : 0;
-            document.getElementById('stat-score').innerText = score + '%';
-            document.getElementById('count-all').innerText = state.entries.length;
-        }
-
-        function toggleTheme() {
-            state.theme = state.theme === 'dark' ? 'light' : 'dark';
-            document.body.setAttribute('data-theme', state.theme);
             save();
+            closeConfirm();
+            showToast("Archivio pulito!");
         }
 
-        function exportData() {
-            const blob = new Blob([JSON.stringify(state)], {type:'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `omnimind_backup_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-        }
-
-        function importData(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (re) => {
-                try {
-                    const data = JSON.parse(re.target.result);
-                    state = data;
-                    save();
-                    location.reload();
-                } catch(err) { showToast("Errore nel file!"); }
-            };
-            reader.readAsText(file);
+        function syncCalendarFromInput() {
+            const val = document.getElementById('task-date').value;
+            if(val) { currentMonth = new Date(val); archiveFilterDate = val; renderCalendar(); render(); }
         }
 
         window.onload = init;
