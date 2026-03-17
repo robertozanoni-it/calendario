@@ -127,6 +127,24 @@
             width: 100%;
         }
 
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
         .btn-cancel {
             background: transparent;
             color: var(--text-muted);
@@ -330,6 +348,24 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
+        #modal-confirm {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background: var(--surface);
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
@@ -344,6 +380,17 @@
 <body data-theme="dark">
 
     <div id="toast">Operazione completata!</div>
+
+    <div id="modal-confirm">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 10px;">Sei sicuro?</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">Questa azione cancellerà definitivamente tutti i task presenti nell'archivio. Non potrai tornare indietro.</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-main" onclick="closeConfirm()" style="background: var(--bg-sidebar); color: var(--text-main); border: 1px solid var(--border);">Annulla</button>
+                <button class="btn-main" onclick="clearArchive()" style="background: var(--danger);">Sì, Svuota Tutto</button>
+            </div>
+        </div>
+    </div>
 
     <div class="app-container">
         <aside class="col-left" id="sidebar">
@@ -416,6 +463,8 @@
             </div>
             
             <div class="scroll-area" id="list-archive"></div>
+            
+            <button class="btn-danger" onclick="openConfirm()">🗑️ Svuota Archivio</button>
         </aside>
 
         <div class="resizer" id="resizer"></div>
@@ -515,6 +564,16 @@
             updateSubs();
             renderCalendar();
             render();
+        }
+
+        function openConfirm() { document.getElementById('modal-confirm').style.display = 'flex'; }
+        function closeConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
+        
+        function clearArchive() {
+            state.entries = [];
+            save();
+            closeConfirm();
+            showToast("Archivio svuotato!");
         }
 
         function toggleColorSettings() {
@@ -749,14 +808,12 @@
                     const data = JSON.parse(e.target.result);
                     if (data && data.entries) {
                         state = { ...state, ...data };
-                        // Persistenza nel tool
                         localStorage.setItem(STORE_KEY, JSON.stringify(state));
-                        // Aggiornamento UI senza ricarica per evitare perdite
                         renderCalendar();
                         render();
                         renderColorSettings();
                         showToast("Dati importati con successo!");
-                        ev.target.value = ""; // Elimina backup dalla coda input
+                        ev.target.value = ""; 
                     }
                 } catch (err) { showToast("Errore caricamento"); }
             };
