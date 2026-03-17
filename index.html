@@ -282,16 +282,6 @@
             font-weight: 600;
         }
 
-        .repeat-badge {
-            background: var(--primary-light);
-            color: var(--primary);
-            font-size: 0.5rem;
-            padding: 2px 5px;
-            border-radius: 4px;
-            text-transform: uppercase;
-            font-weight: 800;
-        }
-
         .stats-footer {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -348,7 +338,7 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
-        #modal-confirm {
+        #modal-confirm, #modal-input {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.8);
@@ -362,12 +352,10 @@
             padding: 2rem;
             border-radius: var(--radius-lg);
             max-width: 400px;
+            width: 90%;
             text-align: center;
             border: 1px solid var(--border);
         }
-
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
         .archive-filters {
             display: grid;
@@ -389,19 +377,52 @@
             width: 100%;
             display: none;
         }
+
+        .input-group {
+            display: flex;
+            gap: 5px;
+            align-items: flex-start;
+        }
+        .btn-add-cat {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body data-theme="dark">
 
     <div id="toast">Operazione completata!</div>
 
+    <!-- Modal Conferma Svuota -->
     <div id="modal-confirm">
         <div class="modal-content">
-            <h3 style="margin-bottom: 10px;">Sei sicuro?</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">Questa azione cancellerà definitivamente tutti i task presenti nell'archivio. Non potrai tornare indietro.</p>
+            <h3 style="margin-bottom: 10px;">Pulizia Archivio</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">
+                Verranno eliminati solo i task passati e quelli odierni completati.<br>
+                <strong>I task programmati per il futuro non verranno toccati.</strong>
+            </p>
             <div style="display: flex; gap: 10px;">
                 <button class="btn-main" onclick="closeConfirm()" style="background: var(--bg-sidebar); color: var(--text-main); border: 1px solid var(--border);">Annulla</button>
-                <button class="btn-main" onclick="clearArchive()" style="background: var(--danger);">Sì, Svuota Tutto</button>
+                <button class="btn-main" onclick="clearArchive()" style="background: var(--danger);">Procedi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nuova Categoria -->
+    <div id="modal-input">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px;">Nuova Categoria</h3>
+            <input type="text" id="new-cat-name" placeholder="Nome categoria...">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-main" onclick="closeCatModal()" style="background: var(--bg-sidebar); color: var(--text-main); border: 1px solid var(--border);">Chiudi</button>
+                <button class="btn-main" onclick="addNewCategory()">Aggiungi</button>
             </div>
         </div>
     </div>
@@ -425,10 +446,13 @@
                 <div class="section-title" id="form-title">✨ Nuovo Task</div>
                 <input type="hidden" id="task-id">
                 <input type="text" id="task-text" placeholder="Cosa facciamo?">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                
+                <div class="input-group">
                     <select id="task-cat" onchange="updateSubs()"></select>
+                    <button class="btn-add-cat" onclick="openCatModal()" title="Nuova Categoria">+</button>
                     <select id="task-sub"><option value="">Generale</option></select>
                 </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                     <input type="date" id="task-date" onchange="syncCalendarFromInput()">
                     <select id="task-pri">
@@ -480,7 +504,7 @@
             
             <div class="scroll-area" id="list-archive"></div>
             
-            <button class="btn-danger" onclick="openConfirm()">🗑️ Svuota Archivio</button>
+            <button class="btn-danger" onclick="openConfirm()">🗑️ Svuota Archivio (Solo Passati)</button>
         </aside>
 
         <div class="resizer" id="resizer"></div>
@@ -513,9 +537,9 @@
     </div>
 
     <script>
-        const STORE_KEY = 'omnimind_v5_colors';
+        const STORE_KEY = 'omnimind_v6_data';
         
-        const DEFAULT_CATS = {
+        const INITIAL_CATS = {
             "App.ti": ["Visita", "Call"],
             "Casa": ["Spese", "Pulizia", "Manutenzione"],
             "Clienti": ["Fattura", "Social", "Revisione"],
@@ -535,7 +559,7 @@
             "Viaggi": ["Prenotazione", "Itinerario"]
         };
 
-        const DEFAULT_COLORS = {
+        const INITIAL_COLORS = {
             "App.ti": "#6366f1", "Casa": "#f59e0b", "Clienti": "#2563eb", "Disdire": "#ef4444",
             "Famiglia": "#f97316", "Idee": "#ca8a04", "Kate": "#a855f7", "Lavoro": "#3b82f6",
             "Mattia": "#ec4899", "Pagare": "#dc2626", "Personale": "#10b981", "Riscuotere": "#8b5cf6",
@@ -546,11 +570,12 @@
             entries: [], 
             theme: 'dark', 
             sideWidth: 450, 
-            catColors: { ...DEFAULT_COLORS } 
+            catColors: { ...INITIAL_COLORS },
+            customCats: { ...INITIAL_CATS }
         };
 
         let currentMonth = new Date();
-        let archiveFilterDate = null; // null significa "mostra tutto"
+        let archiveFilterDate = null;
 
         function init() {
             const saved = localStorage.getItem(STORE_KEY);
@@ -561,36 +586,61 @@
                 } catch(e) { console.error("Errore storage"); }
             }
             
-            if(!state.catColors) state.catColors = { ...DEFAULT_COLORS };
-
             document.body.setAttribute('data-theme', state.theme);
             document.getElementById('sidebar').style.width = state.sideWidth + 'px';
             
             const todayStr = new Date().toISOString().split('T')[0];
-            if(!document.getElementById('task-date').value) {
-                document.getElementById('task-date').value = todayStr;
-            }
+            document.getElementById('task-date').value = todayStr;
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
-            const catList = Object.keys(DEFAULT_CATS).sort();
-            document.getElementById('task-cat').innerHTML = catList.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('archive-cat-filter').innerHTML = `<option value="all">Tutte le Categorie</option>` + catList.map(c => `<option value="${c}">${c}</option>`).join('');
-            
+            refreshCatSelects();
             renderColorSettings();
             setupResizer();
-            updateSubs();
             renderCalendar();
             render();
+        }
+
+        function refreshCatSelects() {
+            const catList = Object.keys(state.customCats).sort();
+            document.getElementById('task-cat').innerHTML = catList.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('archive-cat-filter').innerHTML = `<option value="all">Tutte le Categorie</option>` + catList.map(c => `<option value="${c}">${c}</option>`).join('');
+            updateSubs();
+        }
+
+        function openCatModal() { document.getElementById('modal-input').style.display = 'flex'; document.getElementById('new-cat-name').focus(); }
+        function closeCatModal() { document.getElementById('modal-input').style.display = 'none'; document.getElementById('new-cat-name').value = ''; }
+        
+        function addNewCategory() {
+            const name = document.getElementById('new-cat-name').value.trim();
+            if(!name) return;
+            if(!state.customCats[name]) {
+                state.customCats[name] = [];
+                state.catColors[name] = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                save();
+                refreshCatSelects();
+                renderColorSettings();
+                document.getElementById('task-cat').value = name;
+                updateSubs();
+            }
+            closeCatModal();
         }
 
         function openConfirm() { document.getElementById('modal-confirm').style.display = 'flex'; }
         function closeConfirm() { document.getElementById('modal-confirm').style.display = 'none'; }
         
         function clearArchive() {
-            state.entries = [];
+            const today = new Date().toISOString().split('T')[0];
+            // Filtro: tieni solo i task che sono nel futuro RISPETTO A OGGI
+            // O tieni i task di oggi che NON sono completati
+            state.entries = state.entries.filter(e => {
+                const isFuture = e.date > today;
+                const isTodayNotDone = (e.date === today && !e.done);
+                const isRecurring = (e.repeat && e.repeat !== 'none');
+                return isFuture || isTodayNotDone || isRecurring;
+            });
             save();
             closeConfirm();
-            showToast("Archivio svuotato!");
+            showToast("Archivio pulito: salvati i task futuri!");
         }
 
         function toggleColorSettings() {
@@ -608,7 +658,7 @@
             `).join('');
         }
 
-        function updateCatColor(cat, color) { state.catColors[cat] = color; save(); }
+        function updateCatColor(cat, color) { state.catColors[cat] = color; save(); render(); }
 
         function isTaskActiveAt(task, dateStr) {
             if (task.date === dateStr) return true;
@@ -651,7 +701,7 @@
                 el.innerText = day;
                 el.onclick = () => {
                     document.getElementById('task-date').value = dStr;
-                    archiveFilterDate = dStr; // Quando clicchi un giorno, filtra l'archivio per quel giorno
+                    archiveFilterDate = dStr;
                     renderCalendar(); 
                     render();
                 };
@@ -659,22 +709,13 @@
             }
         }
 
-        function resetArchiveFilter() {
-            archiveFilterDate = null;
-            render();
-        }
-
+        function resetArchiveFilter() { archiveFilterDate = null; render(); }
         function prevMonth() { currentMonth.setMonth(currentMonth.getMonth() - 1); renderCalendar(); }
         function nextMonth() { currentMonth.setMonth(currentMonth.getMonth() + 1); renderCalendar(); }
         
         function syncCalendarFromInput() {
             const val = document.getElementById('task-date').value;
-            if(val) { 
-                currentMonth = new Date(val); 
-                archiveFilterDate = val; // Sincronizza anche l'archivio quando cambi data manualmente
-                renderCalendar(); 
-                render(); 
-            }
+            if(val) { currentMonth = new Date(val); archiveFilterDate = val; renderCalendar(); render(); }
         }
 
         function setupResizer() {
@@ -695,23 +736,16 @@
 
         function updateSubs() {
             const c = document.getElementById('task-cat').value;
-            document.getElementById('task-sub').innerHTML = `<option value="">Generale</option>` + (DEFAULT_CATS[c] || []).map(s => `<option value="${s}">${s}</option>`).join('');
+            const subs = state.customCats[c] || [];
+            document.getElementById('task-sub').innerHTML = `<option value="">Generale</option>` + subs.map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
-        function save() { 
-            localStorage.setItem(STORE_KEY, JSON.stringify(state)); 
-            renderCalendar(); 
-            render(); 
-        }
+        function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); renderCalendar(); render(); }
 
-        function resetForm() {
-            document.getElementById('task-id').value = '';
-            document.getElementById('task-text').value = '';
-            document.getElementById('task-repeat').value = 'none';
-            document.getElementById('form-title').innerText = "✨ Nuovo Task";
-            document.getElementById('btn-save').innerText = "Salva";
-            document.getElementById('btn-cancel').style.display = "none";
-            document.getElementById('form-container').classList.remove('editing');
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg; t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
         }
 
         function saveTask() {
@@ -735,12 +769,63 @@
                 document.getElementById('task-text').value = '';
             }
             save();
+            showToast("Task salvato!");
         }
 
-        function toggleTheme() {
-            state.theme = state.theme === 'dark' ? 'light' : 'dark';
-            document.body.setAttribute('data-theme', state.theme);
+        function resetForm() {
+            document.getElementById('task-id').value = '';
+            document.getElementById('task-text').value = '';
+            document.getElementById('form-title').innerText = "✨ Nuovo Task";
+            document.getElementById('btn-save').innerText = "Salva";
+            document.getElementById('btn-cancel').style.display = "none";
+            document.getElementById('form-container').classList.remove('editing');
+        }
+
+        function createCard(e, isFocusArea) {
+            const color = state.catColors[e.cat] || '#666';
+            const dateDisplay = new Date(e.date).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+            return `
+                <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}" style="--cat-color: ${color}">
+                    <input type="checkbox" ${e.done ? 'checked' : ''} onclick="toggleDone(${e.id})" style="width:20px; cursor:pointer;">
+                    <div style="flex:1">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <span class="badge">${e.cat}</span>
+                            <span style="font-size:0.6rem; color:var(--text-muted); font-weight:700;">${dateDisplay}</span>
+                        </div>
+                        <div class="task-title" onclick="editTask(${e.id})">${e.text}</div>
+                        ${e.sub ? `<div style="font-size:0.7rem; color:var(--text-muted); font-weight:600;"># ${e.sub}</div>` : ''}
+                    </div>
+                    <button class="btn-tool" onclick="deleteTask(${e.id})" style="border:none; background:transparent; opacity:0.5;">🗑️</button>
+                </div>
+            `;
+        }
+
+        function toggleDone(id) {
+            const idx = state.entries.findIndex(x => x.id == id);
+            if(idx !== -1) { state.entries[idx].done = !state.entries[idx].done; save(); }
+        }
+
+        function deleteTask(id) {
+            state.entries = state.entries.filter(x => x.id != id);
             save();
+        }
+
+        function editTask(id) {
+            const task = state.entries.find(x => x.id == id);
+            if(!task) return;
+            document.getElementById('task-id').value = task.id;
+            document.getElementById('task-text').value = task.text;
+            document.getElementById('task-cat').value = task.cat;
+            updateSubs();
+            document.getElementById('task-sub').value = task.sub;
+            document.getElementById('task-date').value = task.date;
+            document.getElementById('task-pri').value = task.pri;
+            document.getElementById('task-repeat').value = task.repeat;
+            
+            document.getElementById('form-title').innerText = "✏️ Modifica Task";
+            document.getElementById('btn-save').innerText = "Aggiorna";
+            document.getElementById('btn-cancel').style.display = "block";
+            document.getElementById('form-container').classList.add('editing');
         }
 
         function render() {
@@ -749,156 +834,71 @@
             const filterCat = document.getElementById('archive-cat-filter').value;
             const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
             
-            // UI Update for Focus Date
             document.getElementById('focus-date-label').innerText = new Date(selectedDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
 
-            // Right column: Daily Focus (Sempre filtrato per la data selezionata)
             const todayList = sorted.filter(e => isTaskActiveAt(e, selectedDate));
             document.getElementById('list-today').innerHTML = todayList.length ? todayList.map(e => createCard(e, true)).join('') : '<p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:2rem;">Nessun impegno.</p>';
             document.getElementById('count-today').innerText = todayList.filter(e => !e.done).length;
 
-            // Sidebar column: Archive (Filtrato o Globale)
             const resetBtn = document.getElementById('reset-filter-btn');
             const archiveLabel = document.getElementById('archive-label');
-            
-            if (archiveFilterDate) {
-                resetBtn.style.display = 'block';
-                const d = new Date(archiveFilterDate).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
-                archiveLabel.innerText = `📦 Archivio del ${d}`;
-            } else {
-                resetBtn.style.display = 'none';
-                archiveLabel.innerText = '📦 Archivio Globale';
-            }
+            resetBtn.style.display = archiveFilterDate ? 'block' : 'none';
+            archiveLabel.innerText = archiveFilterDate ? `📦 Archivio del ${new Date(archiveFilterDate).toLocaleDateString('it-IT', {day:'2-digit', month:'2-digit'})}` : '📦 Archivio Globale';
 
             const archiveArea = document.getElementById('list-archive');
             archiveArea.innerHTML = '';
-            let hasResults = false;
             
-            Object.keys(DEFAULT_CATS).sort().forEach(cat => {
-                if (filterCat !== 'all' && filterCat !== cat) return;
-                
-                const catTasks = sorted.filter(e => {
-                    const matchesSearch = e.text.toLowerCase().includes(search);
-                    const isCorrectCat = e.cat === cat;
-                    let matchesDate = true;
-                    
-                    if (archiveFilterDate) {
-                        matchesDate = isTaskActiveAt(e, archiveFilterDate);
-                    } else {
-                        // Se non c'è filtro data, mostriamo tutto quello che è "futuro" o oggi
-                        // (o tutto l'archivio per semplicità)
-                    }
-                    
-                    return isCorrectCat && matchesSearch && matchesDate;
-                });
-
-                if (catTasks.length > 0) {
-                    hasResults = true;
+            const cats = Object.keys(state.customCats).sort();
+            cats.forEach(cat => {
+                if(filterCat !== 'all' && filterCat !== cat) return;
+                const tasks = sorted.filter(e => e.cat === cat && e.text.toLowerCase().includes(search) && (!archiveFilterDate || isTaskActiveAt(e, archiveFilterDate)));
+                if(tasks.length) {
                     archiveArea.innerHTML += `
                         <div class="archive-group">
                             <div class="archive-group-header">
-                                <span class="badge" style="--cat-color: ${state.catColors[cat]}">${cat}</span>
-                                <span class="archive-group-title">${catTasks.length} task</span>
+                                <span class="archive-group-title">${cat}</span>
+                                <span class="pill">${tasks.length}</span>
                             </div>
-                            <div>${catTasks.map(e => createCard(e, false)).join('')}</div>
+                            ${tasks.map(e => createCard(e, false)).join('')}
                         </div>
                     `;
                 }
             });
-            
-            if (!hasResults) archiveArea.innerHTML = '<p style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:2rem;">Nessun task trovato per questa visualizzazione.</p>';
-            
-            document.getElementById('count-all').innerText = state.entries.length;
+
             const doneTotal = state.entries.filter(e => e.done).length;
             document.getElementById('stat-done').innerText = doneTotal;
-            document.getElementById('stat-score').innerText = state.entries.length ? Math.round((doneTotal/state.entries.length)*100)+'%' : '0%';
+            const score = state.entries.length ? Math.round((doneTotal / state.entries.length) * 100) : 0;
+            document.getElementById('stat-score').innerText = score + '%';
+            document.getElementById('count-all').innerText = state.entries.length;
         }
 
-        function createCard(e, isFocus) {
-            const catColor = state.catColors[e.cat] || '#666';
-            return `
-                <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}" style="--cat-color: ${catColor}">
-                    <input type="checkbox" ${e.done ? 'checked' : ''} onchange="toggleDone(${e.id})" style="width:16px; height:16px; margin-top:2px; cursor:pointer;">
-                    <div class="task-title" onclick="editTask(${e.id})">
-                        <div style="font-size: 0.85rem;">${e.text}</div>
-                        <div style="display:flex; gap:6px; align-items:center; margin-top:2px;">
-                            ${e.repeat && e.repeat !== 'none' ? `<span class="repeat-badge">🔄 ${e.repeat}</span>` : ''}
-                            <span style="font-size:0.55rem; color:${catColor}; font-weight:800; text-transform:uppercase;">${e.cat} ${e.sub ? '/ '+e.sub : ''}</span>
-                        </div>
-                    </div>
-                    <button onclick="del(${e.id})" style="background:none; border:none; cursor:pointer; color:var(--text-muted); padding:4px; font-size:0.8rem;">✕</button>
-                </div>
-            `;
-        }
-
-        function toggleDone(id) { 
-            const e = state.entries.find(x => x.id === id); 
-            if(e) {
-                e.done = !e.done;
-                if(e.done && e.repeat && e.repeat !== 'none') {
-                    const nextDate = new Date(e.date);
-                    if(e.repeat === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-                    else if(e.repeat === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
-                    else if(e.repeat === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
-                    state.entries.push({ ...e, id: Date.now() + 1, date: nextDate.toISOString().split('T')[0], done: false });
-                    e.repeat = 'none';
-                }
-            } 
-            save(); 
-        }
-        
-        function del(id) { state.entries = state.entries.filter(x => x.id !== id); save(); }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 3000);
+        function toggleTheme() {
+            state.theme = state.theme === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', state.theme);
+            save();
         }
 
         function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-            const a = document.createElement('a'); a.href = dataStr; a.download = "omnimind_backup.json"; a.click();
-            showToast("Backup salvato!");
+            const blob = new Blob([JSON.stringify(state)], {type:'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `omnimind_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
         }
 
-        function importData(ev) {
-            const file = ev.target.files[0];
-            if (!file) return;
+        function importData(e) {
+            const file = e.target.files[0];
+            if(!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = (re) => {
                 try {
-                    const data = JSON.parse(e.target.result);
-                    if (data && data.entries) {
-                        state = { ...state, ...data };
-                        localStorage.setItem(STORE_KEY, JSON.stringify(state));
-                        renderCalendar();
-                        render();
-                        renderColorSettings();
-                        showToast("Dati importati con successo!");
-                        ev.target.value = ""; 
-                    }
-                } catch (err) { showToast("Errore caricamento"); }
+                    const data = JSON.parse(re.target.result);
+                    state = data;
+                    save();
+                    location.reload();
+                } catch(err) { showToast("Errore nel file!"); }
             };
             reader.readAsText(file);
-        }
-
-        function editTask(id) {
-            const e = state.entries.find(x => x.id === id);
-            if(!e) return;
-            document.getElementById('task-id').value = e.id;
-            document.getElementById('task-text').value = e.text;
-            document.getElementById('task-cat').value = e.cat;
-            updateSubs();
-            document.getElementById('task-sub').value = e.sub;
-            document.getElementById('task-date').value = e.date;
-            document.getElementById('task-pri').value = e.pri;
-            document.getElementById('task-repeat').value = e.repeat || 'none';
-            document.getElementById('form-title').innerText = "✏️ Modifica Task";
-            document.getElementById('btn-save').innerText = "Aggiorna";
-            document.getElementById('btn-cancel').style.display = "block";
-            document.getElementById('form-container').classList.add('editing');
-            syncCalendarFromInput();
         }
 
         window.onload = init;
