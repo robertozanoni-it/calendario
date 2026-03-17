@@ -68,7 +68,7 @@
             width: 100vw;
         }
 
-        /* COLONNA SINISTRA: WORKSPACE + ARCHIVIO */
+        /* COLONNA SINISTRA: INPUT & ARCHIVIO */
         .col-left {
             width: 450px;
             min-width: 380px;
@@ -110,7 +110,6 @@
             letter-spacing: 0.05em;
         }
 
-        /* Forms & Inputs */
         .creation-box {
             background: var(--surface);
             padding: 1.25rem;
@@ -161,7 +160,6 @@
             color: var(--text-main);
         }
 
-        /* Liste */
         .scroll-area {
             flex: 1;
             overflow-y: auto;
@@ -206,7 +204,6 @@
         }
         .pill.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* Analisi finale */
         .stats-footer {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -237,7 +234,7 @@
                 <p id="date-display" style="font-size: 0.75rem; color: var(--text-muted);"></p>
             </header>
 
-            <!-- Workspace: Creazione -->
+            <!-- Workspace: Creazione Task -->
             <div class="creation-box" id="form-container">
                 <div class="section-title">✨ Nuovo Task</div>
                 <input type="text" id="task-text" placeholder="Cosa facciamo?">
@@ -259,13 +256,13 @@
             <!-- Pulsanti Utility -->
             <div class="grid-tools">
                 <button class="btn-tool" onclick="toggleTheme()">🌓 Tema</button>
-                <button class="btn-tool" onclick="exportData()">💾 Back</button>
-                <button class="btn-tool" onclick="document.getElementById('imp').click()">📂 Imp</button>
+                <button class="btn-tool" onclick="exportData()">💾 Backup</button>
+                <button class="btn-tool" onclick="document.getElementById('imp').click()">📂 Carica</button>
                 <button class="btn-tool" onclick="window.print()">🖨️ Stampa</button>
                 <input type="file" id="imp" style="display:none" onchange="importData(event)">
             </div>
 
-            <!-- Archivio (Spostato qui) -->
+            <!-- Archivio -->
             <div class="section-title">
                 <span>📦 Archivio Generale</span>
                 <span id="count-all" class="pill">0</span>
@@ -278,7 +275,7 @@
 
         <div class="resizer" id="resizer"></div>
 
-        <!-- DESTRA: FOCUS OGGI (SPAZIO MASSIMO) -->
+        <!-- DESTRA: FOCUS OGGI -->
         <main class="col-right">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h2 style="font-weight: 800; font-size: 1.8rem; letter-spacing: -0.03em;">Focus Oggi</h2>
@@ -307,9 +304,25 @@
         const STORE_KEY = 'omnimind_v2_layout';
         let state = { entries: [], theme: 'dark', sideWidth: 450, filter: 'Tutto' };
 
+        // Ripristinate tutte le categorie corrispondenti ai badge CSS
         const CATS = {
-            "App.ti": ["Visita", "Call"], "Casa": ["Spese", "Pulizia"], "Clienti": ["Fattura", "Social"],
-            "Lavoro": ["SEO", "Web Design", "Copy"], "Tasse": ["IVA", "INPS"], "Personale": ["Hobby"]
+            "App.ti": ["Visita", "Call"],
+            "Casa": ["Spese", "Pulizia", "Manutenzione"],
+            "Clienti": ["Fattura", "Social", "Revisione"],
+            "Disdire": ["Abbonamento", "Servizio"],
+            "Famiglia": ["Evento", "Ricorrenza"],
+            "Idee": ["Web App", "Contenuto", "SEO"],
+            "Kate": ["Task", "Memo"],
+            "Lavoro": ["SEO", "Web Design", "Copywriter"],
+            "Mattia": ["Scuola", "Sport"],
+            "Pagare": ["Bolletta", "Fornitore"],
+            "Personale": ["Hobby", "Benessere"],
+            "Riscuotere": ["Credito", "Rimborso"],
+            "Salute": ["Visita", "Farmacia"],
+            "Spesa": ["Alimentari", "Casa"],
+            "Tasse": ["IVA", "INPS", "Commercialista"],
+            "Tel": ["Chiamata", "Messaggio"],
+            "Viaggi": ["Prenotazione", "Itinerario"]
         };
 
         function init() {
@@ -322,7 +335,7 @@
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
             const catSel = document.getElementById('task-cat');
-            catSel.innerHTML = Object.keys(CATS).map(c => `<option value="${c}">${c}</option>`).join('');
+            catSel.innerHTML = Object.keys(CATS).sort().map(c => `<option value="${c}">${c}</option>`).join('');
             
             setupResizer();
             updateSubs();
@@ -384,7 +397,7 @@
         }
 
         function renderFilters() {
-            const f = ['Tutto', ...Object.keys(CATS)];
+            const f = ['Tutto', ...Object.keys(CATS).sort()];
             document.getElementById('filter-pills').innerHTML = f.map(cat => `
                 <div class="pill ${state.filter === cat ? 'active' : ''}" onclick="state.filter='${cat}'; renderFilters(); render();">${cat}</div>
             `).join('');
@@ -393,7 +406,6 @@
         function render() {
             const today = new Date().toISOString().split('T')[0];
             const search = document.getElementById('search-box').value.toLowerCase();
-            
             const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
             
             // Focus Oggi
