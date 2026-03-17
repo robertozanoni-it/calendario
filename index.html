@@ -375,6 +375,20 @@
             gap: 8px;
             margin-bottom: 10px;
         }
+        
+        .reset-filter-btn {
+            background: var(--primary-light);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 0.4rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 10px;
+            width: 100%;
+            display: none;
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -451,9 +465,11 @@
             </div>
 
             <div class="section-title">
-                <span>📦 Archivio</span>
+                <span id="archive-label">📦 Archivio</span>
                 <span id="count-all" class="pill">0</span>
             </div>
+            
+            <button id="reset-filter-btn" class="reset-filter-btn" onclick="resetArchiveFilter()">🔍 Mostra tutto l'archivio</button>
             
             <div class="archive-filters">
                 <input type="text" id="search-box" placeholder="Cerca..." oninput="render()" style="margin-bottom:0;">
@@ -534,6 +550,7 @@
         };
 
         let currentMonth = new Date();
+        let archiveFilterDate = null; // null significa "mostra tutto"
 
         function init() {
             const saved = localStorage.getItem(STORE_KEY);
@@ -634,10 +651,17 @@
                 el.innerText = day;
                 el.onclick = () => {
                     document.getElementById('task-date').value = dStr;
-                    renderCalendar(); render();
+                    archiveFilterDate = dStr; // Quando clicchi un giorno, filtra l'archivio per quel giorno
+                    renderCalendar(); 
+                    render();
                 };
                 grid.appendChild(el);
             }
+        }
+
+        function resetArchiveFilter() {
+            archiveFilterDate = null;
+            render();
         }
 
         function prevMonth() { currentMonth.setMonth(currentMonth.getMonth() - 1); renderCalendar(); }
@@ -645,7 +669,12 @@
         
         function syncCalendarFromInput() {
             const val = document.getElementById('task-date').value;
-            if(val) { currentMonth = new Date(val); renderCalendar(); render(); }
+            if(val) { 
+                currentMonth = new Date(val); 
+                archiveFilterDate = val; // Sincronizza anche l'archivio quando cambi data manualmente
+                renderCalendar(); 
+                render(); 
+            }
         }
 
         function setupResizer() {
@@ -719,18 +748,50 @@
             const search = document.getElementById('search-box').value.toLowerCase();
             const filterCat = document.getElementById('archive-cat-filter').value;
             const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
+            
+            // UI Update for Focus Date
             document.getElementById('focus-date-label').innerText = new Date(selectedDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
 
+            // Right column: Daily Focus (Sempre filtrato per la data selezionata)
             const todayList = sorted.filter(e => isTaskActiveAt(e, selectedDate));
             document.getElementById('list-today').innerHTML = todayList.length ? todayList.map(e => createCard(e, true)).join('') : '<p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:2rem;">Nessun impegno.</p>';
             document.getElementById('count-today').innerText = todayList.filter(e => !e.done).length;
 
+            // Sidebar column: Archive (Filtrato o Globale)
+            const resetBtn = document.getElementById('reset-filter-btn');
+            const archiveLabel = document.getElementById('archive-label');
+            
+            if (archiveFilterDate) {
+                resetBtn.style.display = 'block';
+                const d = new Date(archiveFilterDate).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+                archiveLabel.innerText = `📦 Archivio del ${d}`;
+            } else {
+                resetBtn.style.display = 'none';
+                archiveLabel.innerText = '📦 Archivio Globale';
+            }
+
             const archiveArea = document.getElementById('list-archive');
             archiveArea.innerHTML = '';
             let hasResults = false;
+            
             Object.keys(DEFAULT_CATS).sort().forEach(cat => {
                 if (filterCat !== 'all' && filterCat !== cat) return;
-                const catTasks = sorted.filter(e => e.cat === cat && e.text.toLowerCase().includes(search));
+                
+                const catTasks = sorted.filter(e => {
+                    const matchesSearch = e.text.toLowerCase().includes(search);
+                    const isCorrectCat = e.cat === cat;
+                    let matchesDate = true;
+                    
+                    if (archiveFilterDate) {
+                        matchesDate = isTaskActiveAt(e, archiveFilterDate);
+                    } else {
+                        // Se non c'è filtro data, mostriamo tutto quello che è "futuro" o oggi
+                        // (o tutto l'archivio per semplicità)
+                    }
+                    
+                    return isCorrectCat && matchesSearch && matchesDate;
+                });
+
                 if (catTasks.length > 0) {
                     hasResults = true;
                     archiveArea.innerHTML += `
@@ -744,7 +805,9 @@
                     `;
                 }
             });
-            if (!hasResults) archiveArea.innerHTML = '<p style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:2rem;">Nessun task.</p>';
+            
+            if (!hasResults) archiveArea.innerHTML = '<p style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:2rem;">Nessun task trovato per questa visualizzazione.</p>';
+            
             document.getElementById('count-all').innerText = state.entries.length;
             const doneTotal = state.entries.filter(e => e.done).length;
             document.getElementById('stat-done').innerText = doneTotal;
