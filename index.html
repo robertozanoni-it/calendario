@@ -49,7 +49,6 @@
             width: 100vw;
         }
 
-        /* SIDEBAR SINISTRA */
         .col-left {
             width: 450px;
             min-width: 380px;
@@ -61,7 +60,6 @@
             overflow: hidden;
         }
 
-        /* AREA FOCUS DESTRA */
         .col-right {
             flex: 1;
             background: var(--bg-main);
@@ -142,7 +140,6 @@
             text-align: center;
         }
 
-        /* CALENDARIO */
         .calendar-widget {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -188,7 +185,6 @@
             border-radius: 50%;
         }
 
-        /* UTILITY GRID */
         .grid-tools {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -213,7 +209,6 @@
             padding-right: 5px;
         }
 
-        /* TASK CARD */
         .task-card {
             background: var(--surface);
             border-radius: 12px;
@@ -237,7 +232,6 @@
         .task-card.priority-high { border-right: 2px solid var(--danger); }
         .task-card.completed { opacity: 0.4; }
 
-        /* ARCHIVE CATEGORY GROUP */
         .archive-group {
             margin-bottom: 1.5rem;
         }
@@ -296,7 +290,6 @@
         .stat-mini .val { font-size: 1.2rem; font-weight: 800; display: block; }
         .stat-mini .lab { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; }
 
-        /* Color Settings Panel */
         .color-settings {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -321,6 +314,22 @@
             background: transparent;
         }
 
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--success);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
@@ -334,8 +343,9 @@
 </head>
 <body data-theme="dark">
 
+    <div id="toast">Operazione completata!</div>
+
     <div class="app-container">
-        <!-- SINISTRA: INPUT & ARCHIVIO -->
         <aside class="col-left" id="sidebar">
             <header style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
@@ -345,13 +355,11 @@
                 <button class="btn-tool" onclick="toggleColorSettings()" title="Colori Categorie">🎨</button>
             </header>
 
-            <!-- Settings Colori (Toggleable) -->
             <div id="color-panel" class="color-settings">
                 <div class="section-title">🎨 Colori Categorie</div>
                 <div id="color-list" style="max-height: 200px; overflow-y: auto; padding-right: 5px;"></div>
             </div>
 
-            <!-- Workspace -->
             <div class="creation-box" id="form-container">
                 <div class="section-title" id="form-title">✨ Nuovo Task</div>
                 <input type="hidden" id="task-id">
@@ -378,7 +386,6 @@
                 <button class="btn-cancel" id="btn-cancel" onclick="resetForm()">Annulla Modifica</button>
             </div>
 
-            <!-- Calendario -->
             <div class="calendar-widget">
                 <div class="calendar-header">
                     <button class="btn-tool" style="width:auto;" onclick="prevMonth()">‹</button>
@@ -388,16 +395,14 @@
                 <div class="calendar-grid" id="calendar-days"></div>
             </div>
 
-            <!-- Utility -->
             <div class="grid-tools">
                 <button class="btn-tool" onclick="toggleTheme()">🌓 Tema</button>
                 <button class="btn-tool" onclick="exportData()">💾 Backup</button>
                 <button class="btn-tool" onclick="document.getElementById('imp').click()">📂 Carica</button>
                 <button class="btn-tool" onclick="window.print()">🖨️ Stampa</button>
-                <input type="file" id="imp" style="display:none" onchange="importData(event)">
+                <input type="file" id="imp" style="display:none" onchange="importData(event)" accept=".json">
             </div>
 
-            <!-- Archivio -->
             <div class="section-title">
                 <span>📦 Archivio</span>
                 <span id="count-all" class="pill">0</span>
@@ -415,7 +420,6 @@
 
         <div class="resizer" id="resizer"></div>
 
-        <!-- DESTRA: FOCUS -->
         <main class="col-right">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <div>
@@ -484,9 +488,13 @@
 
         function init() {
             const saved = localStorage.getItem(STORE_KEY);
-            if(saved) state = JSON.parse(saved);
+            if(saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                } catch(e) { console.error("Errore storage"); }
+            }
             
-            // Fix per i nuovi stati
             if(!state.catColors) state.catColors = { ...DEFAULT_COLORS };
 
             document.body.setAttribute('data-theme', state.theme);
@@ -499,13 +507,8 @@
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
             const catList = Object.keys(DEFAULT_CATS).sort();
-            
-            const catSel = document.getElementById('task-cat');
-            catSel.innerHTML = catList.map(c => `<option value="${c}">${c}</option>`).join('');
-            
-            const filterSel = document.getElementById('archive-cat-filter');
-            filterSel.innerHTML = `<option value="all">Tutte le Categorie</option>` + 
-                catList.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('task-cat').innerHTML = catList.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('archive-cat-filter').innerHTML = `<option value="all">Tutte le Categorie</option>` + catList.map(c => `<option value="${c}">${c}</option>`).join('');
             
             renderColorSettings();
             setupResizer();
@@ -529,10 +532,7 @@
             `).join('');
         }
 
-        function updateCatColor(cat, color) {
-            state.catColors[cat] = color;
-            save();
-        }
+        function updateCatColor(cat, color) { state.catColors[cat] = color; save(); }
 
         function isTaskActiveAt(task, dateStr) {
             if (task.date === dateStr) return true;
@@ -607,32 +607,13 @@
 
         function updateSubs() {
             const c = document.getElementById('task-cat').value;
-            document.getElementById('task-sub').innerHTML = `<option value="">Generale</option>` + 
-                (DEFAULT_CATS[c] || []).map(s => `<option value="${s}">${s}</option>`).join('');
+            document.getElementById('task-sub').innerHTML = `<option value="">Generale</option>` + (DEFAULT_CATS[c] || []).map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
         function save() { 
             localStorage.setItem(STORE_KEY, JSON.stringify(state)); 
-            renderCalendar(); render(); 
-        }
-
-        function editTask(id) {
-            const e = state.entries.find(x => x.id === id);
-            if(!e) return;
-            document.getElementById('task-id').value = e.id;
-            document.getElementById('task-text').value = e.text;
-            document.getElementById('task-cat').value = e.cat;
-            updateSubs();
-            document.getElementById('task-sub').value = e.sub;
-            document.getElementById('task-date').value = e.date;
-            document.getElementById('task-pri').value = e.pri;
-            document.getElementById('task-repeat').value = e.repeat || 'none';
-            document.getElementById('form-title').innerText = "✏️ Modifica Task";
-            document.getElementById('btn-save').innerText = "Aggiorna";
-            document.getElementById('btn-cancel').style.display = "block";
-            document.getElementById('form-container').classList.add('editing');
-            document.getElementById('sidebar').scrollTop = 0;
-            syncCalendarFromInput();
+            renderCalendar(); 
+            render(); 
         }
 
         function resetForm() {
@@ -679,8 +660,7 @@
             const search = document.getElementById('search-box').value.toLowerCase();
             const filterCat = document.getElementById('archive-cat-filter').value;
             const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
-            const dLabel = new Date(selectedDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-            document.getElementById('focus-date-label').innerText = dLabel;
+            document.getElementById('focus-date-label').innerText = new Date(selectedDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
 
             const todayList = sorted.filter(e => isTaskActiveAt(e, selectedDate));
             document.getElementById('list-today').innerHTML = todayList.length ? todayList.map(e => createCard(e, true)).join('') : '<p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:2rem;">Nessun impegno.</p>';
@@ -694,16 +674,15 @@
                 const catTasks = sorted.filter(e => e.cat === cat && e.text.toLowerCase().includes(search));
                 if (catTasks.length > 0) {
                     hasResults = true;
-                    const group = document.createElement('div');
-                    group.className = 'archive-group';
-                    group.innerHTML = `
-                        <div class="archive-group-header">
-                            <span class="badge" style="--cat-color: ${state.catColors[cat]}">${cat}</span>
-                            <span class="archive-group-title">${catTasks.length} task</span>
+                    archiveArea.innerHTML += `
+                        <div class="archive-group">
+                            <div class="archive-group-header">
+                                <span class="badge" style="--cat-color: ${state.catColors[cat]}">${cat}</span>
+                                <span class="archive-group-title">${catTasks.length} task</span>
+                            </div>
+                            <div>${catTasks.map(e => createCard(e, false)).join('')}</div>
                         </div>
-                        <div>${catTasks.map(e => createCard(e, false)).join('')}</div>
                     `;
-                    archiveArea.appendChild(group);
                 }
             });
             if (!hasResults) archiveArea.innerHTML = '<p style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:2rem;">Nessun task.</p>';
@@ -714,7 +693,6 @@
         }
 
         function createCard(e, isFocus) {
-            const repeatIcon = e.repeat && e.repeat !== 'none' ? `<span class="repeat-badge">🔄 ${e.repeat}</span>` : '';
             const catColor = state.catColors[e.cat] || '#666';
             return `
                 <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}" style="--cat-color: ${catColor}">
@@ -722,9 +700,8 @@
                     <div class="task-title" onclick="editTask(${e.id})">
                         <div style="font-size: 0.85rem;">${e.text}</div>
                         <div style="display:flex; gap:6px; align-items:center; margin-top:2px;">
-                            ${repeatIcon}
+                            ${e.repeat && e.repeat !== 'none' ? `<span class="repeat-badge">🔄 ${e.repeat}</span>` : ''}
                             <span style="font-size:0.55rem; color:${catColor}; font-weight:800; text-transform:uppercase;">${e.cat} ${e.sub ? '/ '+e.sub : ''}</span>
-                            ${!isFocus ? `<span style="font-size:0.55rem; color:var(--text-muted)">• ${e.date}</span>` : ''}
                         </div>
                     </div>
                     <button onclick="del(${e.id})" style="background:none; border:none; cursor:pointer; color:var(--text-muted); padding:4px; font-size:0.8rem;">✕</button>
@@ -739,8 +716,8 @@
                 if(e.done && e.repeat && e.repeat !== 'none') {
                     const nextDate = new Date(e.date);
                     if(e.repeat === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-                    if(e.repeat === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
-                    if(e.repeat === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
+                    else if(e.repeat === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+                    else if(e.repeat === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
                     state.entries.push({ ...e, id: Date.now() + 1, date: nextDate.toISOString().split('T')[0], done: false });
                     e.repeat = 'none';
                 }
@@ -748,18 +725,60 @@
             save(); 
         }
         
-        function del(id) { state.entries = state.entries.filter(x => x.id !== id); if(document.getElementById('task-id').value == id) resetForm(); save(); }
+        function del(id) { state.entries = state.entries.filter(x => x.id !== id); save(); }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
 
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-            const a = document.createElement('a'); a.setAttribute("href", dataStr);
-            a.setAttribute("download", "omnimind_backup.json"); a.click();
+            const a = document.createElement('a'); a.href = dataStr; a.download = "omnimind_backup.json"; a.click();
+            showToast("Backup salvato!");
         }
 
         function importData(ev) {
+            const file = ev.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
-            reader.onload = e => { try { state = JSON.parse(e.target.result); save(); location.reload(); } catch(err){ alert('Errore file'); } };
-            reader.readAsText(ev.target.files[0]);
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data && data.entries) {
+                        state = { ...state, ...data };
+                        // Persistenza nel tool
+                        localStorage.setItem(STORE_KEY, JSON.stringify(state));
+                        // Aggiornamento UI senza ricarica per evitare perdite
+                        renderCalendar();
+                        render();
+                        renderColorSettings();
+                        showToast("Dati importati con successo!");
+                        ev.target.value = ""; // Elimina backup dalla coda input
+                    }
+                } catch (err) { showToast("Errore caricamento"); }
+            };
+            reader.readAsText(file);
+        }
+
+        function editTask(id) {
+            const e = state.entries.find(x => x.id === id);
+            if(!e) return;
+            document.getElementById('task-id').value = e.id;
+            document.getElementById('task-text').value = e.text;
+            document.getElementById('task-cat').value = e.cat;
+            updateSubs();
+            document.getElementById('task-sub').value = e.sub;
+            document.getElementById('task-date').value = e.date;
+            document.getElementById('task-pri').value = e.pri;
+            document.getElementById('task-repeat').value = e.repeat || 'none';
+            document.getElementById('form-title').innerText = "✏️ Modifica Task";
+            document.getElementById('btn-save').innerText = "Aggiorna";
+            document.getElementById('btn-cancel').style.display = "block";
+            document.getElementById('form-container').classList.add('editing');
+            syncCalendarFromInput();
         }
 
         window.onload = init;
