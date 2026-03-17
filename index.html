@@ -53,7 +53,8 @@
     button:focus-visible,
     input:focus-visible,
     select:focus-visible,
-    textarea:focus-visible {
+    textarea:focus-visible,
+    a:focus-visible {
       outline: 2px solid var(--primary);
       outline-offset: 2px;
     }
@@ -65,9 +66,9 @@
     }
 
     .col-left {
-      width: 450px;
+      width: 470px;
       min-width: 380px;
-      max-width: 820px;
+      max-width: 860px;
       background: var(--bg-sidebar);
       border-right: 1px solid var(--border);
       display: flex;
@@ -113,13 +114,8 @@
       letter-spacing: -0.02em;
     }
 
-    .muted {
-      color: var(--text-muted);
-    }
-
-    .small {
-      font-size: 0.78rem;
-    }
+    .muted { color: var(--text-muted); }
+    .small { font-size: 0.78rem; }
 
     .section-title {
       font-size: 0.75rem;
@@ -178,9 +174,25 @@
       min-height: 42px;
     }
 
-    .textarea {
-      resize: vertical;
-      min-height: 90px;
+    .field-inline-row {
+      display: grid;
+      grid-template-columns: 1fr 72px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .color-input-wrap {
+      margin-bottom: 8px;
+    }
+
+    .task-color-input {
+      width: 100%;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-main);
+      cursor: pointer;
+      padding: 4px;
     }
 
     .field-row-3 {
@@ -215,6 +227,7 @@
       padding: 0.78rem;
       margin-top: 6px;
     }
+
     .btn-main:hover { filter: brightness(1.05); }
 
     .btn-secondary {
@@ -246,6 +259,7 @@
       font-size: 0.72rem;
       min-height: 40px;
     }
+
     .btn-tool:hover,
     .btn-secondary:hover {
       background: var(--surface-2);
@@ -273,6 +287,7 @@
       font-size: 0.76rem;
       padding: 0.7rem;
     }
+
     .btn-danger:hover {
       background: var(--danger);
       color: white;
@@ -422,7 +437,7 @@
       top: 0;
       bottom: 0;
       width: 4px;
-      background: var(--cat-color, var(--primary));
+      background: var(--task-color, var(--cat-color, var(--primary)));
     }
 
     .task-card.completed {
@@ -459,7 +474,7 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
       color: white;
-      background: var(--cat-color, #666);
+      background: var(--task-color, var(--cat-color, #666));
       border-radius: 999px;
       padding: 0.3rem 0.55rem;
     }
@@ -496,6 +511,22 @@
       border-radius: 999px;
       padding: 0.22rem 0.5rem;
       background: var(--surface-2);
+    }
+
+    .task-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 0.45rem;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .task-link:hover {
+      text-decoration: underline;
     }
 
     .task-actions {
@@ -697,6 +728,7 @@
       .field-row-3 { grid-template-columns: 1fr; }
       .grid-tools { grid-template-columns: repeat(2, 1fr); }
       .stats-footer { grid-template-columns: 1fr; }
+      .field-inline-row { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 860px) {
@@ -769,6 +801,17 @@
         <label class="sr-only" for="task-text">Titolo task</label>
         <input class="field" type="text" id="task-text" placeholder="Cosa devi fare?" />
 
+        <label class="sr-only" for="task-link">Link task</label>
+        <input class="field" type="url" id="task-link" placeholder="https://esempio.it o link interno" />
+
+        <div class="field-inline-row">
+          <div class="color-input-wrap">
+            <label class="sr-only" for="task-color">Colore task</label>
+            <input class="task-color-input" type="color" id="task-color" value="#4f46e5" />
+          </div>
+          <button class="btn-tool" type="button" onclick="resetTaskColor()">Reset colore</button>
+        </div>
+
         <div class="input-group">
           <div>
             <label class="sr-only" for="task-cat">Categoria</label>
@@ -820,7 +863,7 @@
 
         <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
         <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
-        <div class="helper-note">I task ricorrenti mantengono il completamento separato per ogni data.</div>
+        <div class="helper-note">Puoi aggiungere un link e un colore personalizzato per singolo task.</div>
       </section>
 
       <section class="calendar-widget">
@@ -908,7 +951,7 @@
   </div>
 
   <script>
-    const STORE_KEY = "omnimind_v7_data";
+    const STORE_KEY = "omnimind_v8_data";
 
     const INITIAL_CATS = {
       "App.ti": ["Visita", "Call"],
@@ -938,11 +981,13 @@
       "Tel": "#06b6d4"
     };
 
+    const DEFAULT_TASK_COLOR = "#4f46e5";
+
     const DEFAULT_STATE = {
-      version: 7,
+      version: 8,
       entries: [],
       theme: "dark",
-      sideWidth: 450,
+      sideWidth: 470,
       catColors: { ...INITIAL_COLORS },
       customCats: { ...INITIAL_CATS },
       selectedFocusDate: "",
@@ -988,7 +1033,7 @@
       return typeof value === "string" ? value.trim() : fallback;
     }
 
-    function sanitizeHexColor(value, fallback = "#4f46e5") {
+    function sanitizeHexColor(value, fallback = DEFAULT_TASK_COLOR) {
       return /^#[0-9a-fA-F]{6}$/.test(String(value || "")) ? value : fallback;
     }
 
@@ -1002,6 +1047,18 @@
 
     function sanitizeDate(value) {
       return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? value : todayStr();
+    }
+
+    function normalizeUrl(value) {
+      const raw = sanitizeString(value);
+      if (!raw) return "";
+      if (/^(https?:\/\/|mailto:|tel:)/i.test(raw)) return raw;
+      if (/^[\w.-]+\.[a-z]{2,}/i.test(raw)) return "https://" + raw;
+      return raw;
+    }
+
+    function sanitizeTaskLink(value) {
+      return normalizeUrl(value);
     }
 
     function ensureCompletedDates(entry) {
@@ -1021,6 +1078,8 @@
         text: sanitizeString(entry.text, "Task senza titolo"),
         cat: sanitizeString(entry.cat, "Lavoro"),
         sub: sanitizeString(entry.sub, ""),
+        link: sanitizeTaskLink(entry.link),
+        taskColor: sanitizeHexColor(entry.taskColor || entry.color || "", ""),
         date: sanitizeDate(entry.date),
         pri: sanitizePriority(entry.pri),
         repeat: sanitizeRepeat(entry.repeat),
@@ -1060,10 +1119,10 @@
       const customCats = sanitizeCats(data.customCats);
       const entries = safeArray(data.entries).map(sanitizeEntry);
       return {
-        version: 7,
+        version: 8,
         entries,
         theme: data.theme === "light" ? "light" : "dark",
-        sideWidth: Number.isFinite(data.sideWidth) ? Math.min(820, Math.max(380, data.sideWidth)) : 450,
+        sideWidth: Number.isFinite(data.sideWidth) ? Math.min(860, Math.max(380, data.sideWidth)) : 470,
         customCats,
         catColors: sanitizeColors(data.catColors, customCats),
         selectedFocusDate: data.selectedFocusDate ? sanitizeDate(data.selectedFocusDate) : todayStr(),
@@ -1111,6 +1170,7 @@
 
       document.getElementById("task-date").value = state.selectedFocusDate;
       document.getElementById("archive-date-filter").value = state.archiveFilterDate || "";
+      document.getElementById("task-color").value = DEFAULT_TASK_COLOR;
 
       refreshCatSelects();
       renderColorSettings();
@@ -1195,6 +1255,8 @@
         text: sanitizeString(document.getElementById("task-text").value),
         cat: sanitizeString(document.getElementById("task-cat").value, "Lavoro"),
         sub: sanitizeString(document.getElementById("task-sub").value),
+        link: sanitizeTaskLink(document.getElementById("task-link").value),
+        taskColor: sanitizeHexColor(document.getElementById("task-color").value, DEFAULT_TASK_COLOR),
         date: sanitizeDate(document.getElementById("task-date").value),
         pri: sanitizePriority(document.getElementById("task-pri").value),
         repeat: sanitizeRepeat(document.getElementById("task-repeat").value)
@@ -1210,9 +1272,15 @@
       return true;
     }
 
+    function resetTaskColor() {
+      document.getElementById("task-color").value = DEFAULT_TASK_COLOR;
+    }
+
     function resetForm() {
       document.getElementById("task-id").value = "";
       document.getElementById("task-text").value = "";
+      document.getElementById("task-link").value = "";
+      document.getElementById("task-color").value = DEFAULT_TASK_COLOR;
       document.getElementById("task-date").value = state.selectedFocusDate || todayStr();
       document.getElementById("task-pri").value = "low";
       document.getElementById("task-repeat").value = "none";
@@ -1252,6 +1320,7 @@
           createdAt: todayStr()
         });
         document.getElementById("task-text").value = "";
+        document.getElementById("task-link").value = "";
         document.getElementById("task-text").focus();
         showToast("Task salvato");
       }
@@ -1265,6 +1334,8 @@
 
       document.getElementById("task-id").value = String(task.id);
       document.getElementById("task-text").value = task.text;
+      document.getElementById("task-link").value = task.link || "";
+      document.getElementById("task-color").value = sanitizeHexColor(task.taskColor || "", DEFAULT_TASK_COLOR);
       document.getElementById("task-cat").value = task.cat;
       updateSubs();
       document.getElementById("task-sub").value = task.sub || "";
@@ -1355,7 +1426,7 @@
 
       return state.entries
         .filter(e => {
-          const haystack = [e.text, e.cat, e.sub].join(" ").toLowerCase();
+          const haystack = [e.text, e.cat, e.sub, e.link].join(" ").toLowerCase();
           const matchesSearch = !query || haystack.includes(query);
           const matchesCat = catFilter === "all" || e.cat === catFilter;
           const matchesDate = !dateFilter || e.date === dateFilter;
@@ -1415,7 +1486,8 @@
     }
 
     function createCard(task, isFocusArea, effectiveDate) {
-      const color = state.catColors[task.cat] || "#666666";
+      const categoryColor = state.catColors[task.cat] || "#666666";
+      const taskColor = sanitizeHexColor(task.taskColor || "", categoryColor);
       const done = isTaskCompletedForDate(task, effectiveDate);
       const dateDisplay = formatHumanDate(task.date, { day: "2-digit", month: "2-digit", year: "2-digit" });
 
@@ -1427,8 +1499,12 @@
         meta.push(`<span class="meta-chip">origine ${escapeHtml(dateDisplay)}</span>`);
       }
 
+      const linkHtml = task.link
+        ? `<a class="task-link" href="${escapeHtml(task.link)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">🔗 ${escapeHtml(task.link)}</a>`
+        : "";
+
       return `
-        <div class="task-card ${done ? "completed" : ""} priority-${escapeHtml(task.pri)}" style="--cat-color:${escapeHtml(color)}">
+        <div class="task-card ${done ? "completed" : ""} priority-${escapeHtml(task.pri)}" style="--cat-color:${escapeHtml(categoryColor)}; --task-color:${escapeHtml(taskColor)}">
           <input
             class="task-check"
             type="checkbox"
@@ -1448,6 +1524,8 @@
             <div class="task-meta">
               ${meta.join("")}
             </div>
+
+            ${linkHtml}
           </div>
 
           <div class="task-actions">
@@ -1490,13 +1568,13 @@
       list.innerHTML = getSortedCategories().map(cat => `
         <div class="color-row">
           <span>${escapeHtml(cat)}</span>
-          <input type="color" value="${escapeHtml(state.catColors[cat] || "#4f46e5")}" onchange="updateCatColor('${escapeJs(cat)}', this.value)" />
+          <input type="color" value="${escapeHtml(state.catColors[cat] || DEFAULT_TASK_COLOR)}" onchange="updateCatColor('${escapeJs(cat)}', this.value)" />
         </div>
       `).join("");
     }
 
     function updateCatColor(cat, color) {
-      state.catColors[cat] = sanitizeHexColor(color, state.catColors[cat] || "#4f46e5");
+      state.catColors[cat] = sanitizeHexColor(color, state.catColors[cat] || DEFAULT_TASK_COLOR);
       saveAndRender();
       renderColorSettings();
     }
@@ -1753,7 +1831,7 @@
 
       function onMouseMove(e) {
         const nextWidth = startWidth + (e.clientX - startX);
-        if (nextWidth >= 380 && nextWidth <= 820) {
+        if (nextWidth >= 380 && nextWidth <= 860) {
           sidebar.style.width = nextWidth + "px";
           state.sideWidth = nextWidth;
         }
