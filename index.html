@@ -33,25 +33,6 @@
             --border: #334155;
         }
 
-        /* Badge Categories Colors */
-        .badge-appti { background: #6366f1; }
-        .badge-casa { background: #f59e0b; }
-        .badge-disdire { background: #ef4444; }
-        .badge-famiglia { background: #f97316; }
-        .badge-kate { background: #a855f7; }
-        .badge-lavoro { background: #3b82f6; }
-        .badge-mattia { background: #ec4899; }
-        .badge-pagare { background: #dc2626; }
-        .badge-personale { background: #10b981; }
-        .badge-riscuotere { background: #8b5cf6; }
-        .badge-salute { background: #059669; }
-        .badge-tel { background: #06b6d4; }
-        .badge-tasse { background: #475569; }
-        .badge-spesa { background: #16a34a; }
-        .badge-viaggi { background: #e11d48; }
-        .badge-idee { background: #ca8a04; }
-        .badge-clienti { background: #2563eb; }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
@@ -206,7 +187,6 @@
             background: var(--primary);
             border-radius: 50%;
         }
-        .calendar-day.active.has-tasks::after { background: white; }
 
         /* UTILITY GRID */
         .grid-tools {
@@ -243,9 +223,18 @@
             display: flex;
             gap: 10px;
             transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .task-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            background: var(--cat-color, var(--primary));
         }
         .task-card:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-        .task-card.priority-high { border-left: 4px solid var(--danger); }
+        .task-card.priority-high { border-right: 2px solid var(--danger); }
         .task-card.completed { opacity: 0.4; }
 
         /* ARCHIVE CATEGORY GROUP */
@@ -267,9 +256,8 @@
             color: var(--text-muted);
         }
 
-        .badge { font-size: 0.6rem; font-weight: 800; color: white; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+        .badge { font-size: 0.6rem; font-weight: 800; color: white; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; background: var(--cat-color, #666); }
         .task-title { font-weight: 700; font-size: 0.9rem; line-height: 1.3; cursor: pointer; flex: 1; }
-        .task-title:hover { color: var(--primary); }
 
         .pill {
             white-space: nowrap;
@@ -308,10 +296,34 @@
         .stat-mini .val { font-size: 1.2rem; font-weight: 800; display: block; }
         .stat-mini .lab { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; }
 
+        /* Color Settings Panel */
+        .color-settings {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .color-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+        }
+        .color-row input[type="color"] {
+            width: 30px;
+            height: 20px;
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+        }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
-        /* Filtri Archivio */
         .archive-filters {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -325,12 +337,21 @@
     <div class="app-container">
         <!-- SINISTRA: INPUT & ARCHIVIO -->
         <aside class="col-left" id="sidebar">
-            <header style="margin-bottom: 1rem;">
-                <h1 style="font-weight: 800; color: var(--primary); font-size: 1.4rem;">OmniMind Lite</h1>
-                <p id="date-display" style="font-size: 0.75rem; color: var(--text-muted);"></p>
+            <header style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1 style="font-weight: 800; color: var(--primary); font-size: 1.4rem;">OmniMind Lite</h1>
+                    <p id="date-display" style="font-size: 0.75rem; color: var(--text-muted);"></p>
+                </div>
+                <button class="btn-tool" onclick="toggleColorSettings()" title="Colori Categorie">🎨</button>
             </header>
 
-            <!-- Workspace: Creazione/Modifica Task -->
+            <!-- Settings Colori (Toggleable) -->
+            <div id="color-panel" class="color-settings">
+                <div class="section-title">🎨 Colori Categorie</div>
+                <div id="color-list" style="max-height: 200px; overflow-y: auto; padding-right: 5px;"></div>
+            </div>
+
+            <!-- Workspace -->
             <div class="creation-box" id="form-container">
                 <div class="section-title" id="form-title">✨ Nuovo Task</div>
                 <input type="hidden" id="task-id">
@@ -376,7 +397,7 @@
                 <input type="file" id="imp" style="display:none" onchange="importData(event)">
             </div>
 
-            <!-- Archivio Categorizzato -->
+            <!-- Archivio -->
             <div class="section-title">
                 <span>📦 Archivio</span>
                 <span id="count-all" class="pill">0</span>
@@ -394,7 +415,7 @@
 
         <div class="resizer" id="resizer"></div>
 
-        <!-- DESTRA: FOCUS OGGI/DATA SELEZIONATA -->
+        <!-- DESTRA: FOCUS -->
         <main class="col-right">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <div>
@@ -423,12 +444,9 @@
     </div>
 
     <script>
-        const STORE_KEY = 'omnimind_v4_recurring';
-        let state = { entries: [], theme: 'dark', sideWidth: 450 };
-
-        let currentMonth = new Date();
-
-        const CATS = {
+        const STORE_KEY = 'omnimind_v5_colors';
+        
+        const DEFAULT_CATS = {
             "App.ti": ["Visita", "Call"],
             "Casa": ["Spese", "Pulizia", "Manutenzione"],
             "Clienti": ["Fattura", "Social", "Revisione"],
@@ -448,10 +466,29 @@
             "Viaggi": ["Prenotazione", "Itinerario"]
         };
 
+        const DEFAULT_COLORS = {
+            "App.ti": "#6366f1", "Casa": "#f59e0b", "Clienti": "#2563eb", "Disdire": "#ef4444",
+            "Famiglia": "#f97316", "Idee": "#ca8a04", "Kate": "#a855f7", "Lavoro": "#3b82f6",
+            "Mattia": "#ec4899", "Pagare": "#dc2626", "Personale": "#10b981", "Riscuotere": "#8b5cf6",
+            "Salute": "#059669", "Spesa": "#16a34a", "Tasse": "#475569", "Tel": "#06b6d4", "Viaggi": "#e11d48"
+        };
+
+        let state = { 
+            entries: [], 
+            theme: 'dark', 
+            sideWidth: 450, 
+            catColors: { ...DEFAULT_COLORS } 
+        };
+
+        let currentMonth = new Date();
+
         function init() {
             const saved = localStorage.getItem(STORE_KEY);
             if(saved) state = JSON.parse(saved);
             
+            // Fix per i nuovi stati
+            if(!state.catColors) state.catColors = { ...DEFAULT_COLORS };
+
             document.body.setAttribute('data-theme', state.theme);
             document.getElementById('sidebar').style.width = state.sideWidth + 'px';
             
@@ -461,7 +498,7 @@
             }
             document.getElementById('date-display').innerText = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
 
-            const catList = Object.keys(CATS).sort();
+            const catList = Object.keys(DEFAULT_CATS).sort();
             
             const catSel = document.getElementById('task-cat');
             catSel.innerHTML = catList.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -470,32 +507,42 @@
             filterSel.innerHTML = `<option value="all">Tutte le Categorie</option>` + 
                 catList.map(c => `<option value="${c}">${c}</option>`).join('');
             
+            renderColorSettings();
             setupResizer();
             updateSubs();
             renderCalendar();
             render();
         }
 
-        // Funzione per calcolare se un task appare in una certa data (considerando ripetizioni)
+        function toggleColorSettings() {
+            const panel = document.getElementById('color-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function renderColorSettings() {
+            const list = document.getElementById('color-list');
+            list.innerHTML = Object.keys(state.catColors).sort().map(cat => `
+                <div class="color-row">
+                    <span>${cat}</span>
+                    <input type="color" value="${state.catColors[cat]}" onchange="updateCatColor('${cat}', this.value)">
+                </div>
+            `).join('');
+        }
+
+        function updateCatColor(cat, color) {
+            state.catColors[cat] = color;
+            save();
+        }
+
         function isTaskActiveAt(task, dateStr) {
             if (task.date === dateStr) return true;
             if (task.repeat === 'none' || !task.repeat) return false;
-
             const tDate = new Date(task.date);
             const targetDate = new Date(dateStr);
-
-            // Se la data di inizio è futura rispetto alla data cercata, no
             if (tDate > targetDate) return false;
-
-            if (task.repeat === 'weekly') {
-                return tDate.getDay() === targetDate.getDay();
-            }
-            if (task.repeat === 'monthly') {
-                return tDate.getDate() === targetDate.getDate();
-            }
-            if (task.repeat === 'yearly') {
-                return tDate.getDate() === targetDate.getDate() && tDate.getMonth() === targetDate.getMonth();
-            }
+            if (task.repeat === 'weekly') return tDate.getDay() === targetDate.getDay();
+            if (task.repeat === 'monthly') return tDate.getDate() === targetDate.getDate();
+            if (task.repeat === 'yearly') return tDate.getDate() === targetDate.getDate() && tDate.getMonth() === targetDate.getMonth();
             return false;
         }
 
@@ -504,27 +551,19 @@
             const monthName = document.getElementById('month-name');
             const selectedDate = document.getElementById('task-date').value;
             const todayStr = new Date().toISOString().split('T')[0];
-
             grid.innerHTML = '';
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
-
             monthName.innerText = currentMonth.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
-
-            const daysHead = ['L', 'M', 'M', 'G', 'V', 'S', 'D'];
-            daysHead.forEach(d => {
+            ['L', 'M', 'M', 'G', 'V', 'S', 'D'].forEach(d => {
                 const el = document.createElement('div');
-                el.className = 'calendar-day-head';
-                el.innerText = d;
+                el.className = 'calendar-day-head'; el.innerText = d;
                 grid.appendChild(el);
             });
-
             const firstDay = new Date(year, month, 1).getDay();
             const lastDate = new Date(year, month + 1, 0).getDate();
             const offset = firstDay === 0 ? 6 : firstDay - 1;
-
             for (let i = 0; i < offset; i++) grid.appendChild(document.createElement('div'));
-
             for (let day = 1; day <= lastDate; day++) {
                 const dObj = new Date(year, month, day);
                 const dStr = dObj.toISOString().split('T')[0];
@@ -532,15 +571,11 @@
                 el.className = 'calendar-day';
                 if (dStr === todayStr) el.classList.add('today');
                 if (dStr === selectedDate) el.classList.add('active');
-                
-                // Controllo task normali o ricorrenti
                 if (state.entries.some(e => isTaskActiveAt(e, dStr))) el.classList.add('has-tasks');
-
                 el.innerText = day;
                 el.onclick = () => {
                     document.getElementById('task-date').value = dStr;
-                    renderCalendar();
-                    render();
+                    renderCalendar(); render();
                 };
                 grid.appendChild(el);
             }
@@ -551,29 +586,18 @@
         
         function syncCalendarFromInput() {
             const val = document.getElementById('task-date').value;
-            if(val) {
-                currentMonth = new Date(val);
-                renderCalendar();
-                render();
-            }
+            if(val) { currentMonth = new Date(val); renderCalendar(); render(); }
         }
 
         function setupResizer() {
             const resizer = document.getElementById('resizer');
             const sidebar = document.getElementById('sidebar');
             let x = 0, w = 0;
-
             const onMouseMove = (e) => {
                 const newW = w + (e.clientX - x);
-                if(newW > 380 && newW < 800) {
-                    sidebar.style.width = newW + 'px';
-                    state.sideWidth = newW;
-                }
+                if(newW > 380 && newW < 800) { sidebar.style.width = newW + 'px'; state.sideWidth = newW; }
             };
-            const onMouseUp = () => {
-                document.removeEventListener('mousemove', onMouseMove);
-                save();
-            };
+            const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); save(); };
             resizer.addEventListener('mousedown', (e) => {
                 x = e.clientX; w = sidebar.getBoundingClientRect().width;
                 document.addEventListener('mousemove', onMouseMove);
@@ -584,13 +608,12 @@
         function updateSubs() {
             const c = document.getElementById('task-cat').value;
             document.getElementById('task-sub').innerHTML = `<option value="">Generale</option>` + 
-                (CATS[c] || []).map(s => `<option value="${s}">${s}</option>`).join('');
+                (DEFAULT_CATS[c] || []).map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
         function save() { 
             localStorage.setItem(STORE_KEY, JSON.stringify(state)); 
-            renderCalendar(); 
-            render(); 
+            renderCalendar(); render(); 
         }
 
         function editTask(id) {
@@ -634,19 +657,12 @@
                 pri: document.getElementById('task-pri').value,
                 repeat: document.getElementById('task-repeat').value
             };
-
             if(editId) {
                 const idx = state.entries.findIndex(x => x.id == editId);
-                if(idx !== -1) {
-                    state.entries[idx] = { ...state.entries[idx], ...payload };
-                }
+                if(idx !== -1) state.entries[idx] = { ...state.entries[idx], ...payload };
                 resetForm();
             } else {
-                state.entries.push({
-                    id: Date.now(),
-                    ...payload,
-                    done: false
-                });
+                state.entries.push({ id: Date.now(), ...payload, done: false });
                 document.getElementById('task-text').value = '';
             }
             save();
@@ -663,61 +679,51 @@
             const search = document.getElementById('search-box').value.toLowerCase();
             const filterCat = document.getElementById('archive-cat-filter').value;
             const sorted = [...state.entries].sort((a,b) => a.done - b.done || (a.pri === 'high' ? -1 : 1));
-            
             const dLabel = new Date(selectedDate).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
             document.getElementById('focus-date-label').innerText = dLabel;
 
-            // List Focus (mostra task per la data o ricorrenti attivi)
             const todayList = sorted.filter(e => isTaskActiveAt(e, selectedDate));
-            document.getElementById('list-today').innerHTML = todayList.length ? todayList.map(e => createCard(e, true, selectedDate)).join('') : '<p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:2rem;">Nessun impegno per questa data.</p>';
+            document.getElementById('list-today').innerHTML = todayList.length ? todayList.map(e => createCard(e, true)).join('') : '<p style="color:var(--text-muted); font-size:0.8rem; text-align:center; margin-top:2rem;">Nessun impegno.</p>';
             document.getElementById('count-today').innerText = todayList.filter(e => !e.done).length;
 
-            // Archivio Categorizzato
             const archiveArea = document.getElementById('list-archive');
             archiveArea.innerHTML = '';
-            const categories = Object.keys(CATS).sort();
             let hasResults = false;
-
-            categories.forEach(cat => {
+            Object.keys(DEFAULT_CATS).sort().forEach(cat => {
                 if (filterCat !== 'all' && filterCat !== cat) return;
                 const catTasks = sorted.filter(e => e.cat === cat && e.text.toLowerCase().includes(search));
                 if (catTasks.length > 0) {
                     hasResults = true;
                     const group = document.createElement('div');
                     group.className = 'archive-group';
-                    const bCls = cat.toLowerCase().replace('.','').replace(' ','');
-                    const header = document.createElement('div');
-                    header.className = 'archive-group-header';
-                    header.innerHTML = `
-                        <span class="badge badge-${bCls}">${cat}</span>
-                        <span class="archive-group-title">${catTasks.length} task</span>
+                    group.innerHTML = `
+                        <div class="archive-group-header">
+                            <span class="badge" style="--cat-color: ${state.catColors[cat]}">${cat}</span>
+                            <span class="archive-group-title">${catTasks.length} task</span>
+                        </div>
+                        <div>${catTasks.map(e => createCard(e, false)).join('')}</div>
                     `;
-                    group.appendChild(header);
-                    const listContainer = document.createElement('div');
-                    listContainer.innerHTML = catTasks.map(e => createCard(e, false, selectedDate)).join('');
-                    group.appendChild(listContainer);
                     archiveArea.appendChild(group);
                 }
             });
-
-            if (!hasResults) archiveArea.innerHTML = '<p style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:2rem;">Nessun task trovato.</p>';
-
+            if (!hasResults) archiveArea.innerHTML = '<p style="color:var(--text-muted); font-size:0.75rem; text-align:center; padding:2rem;">Nessun task.</p>';
             document.getElementById('count-all').innerText = state.entries.length;
             const doneTotal = state.entries.filter(e => e.done).length;
             document.getElementById('stat-done').innerText = doneTotal;
             document.getElementById('stat-score').innerText = state.entries.length ? Math.round((doneTotal/state.entries.length)*100)+'%' : '0%';
         }
 
-        function createCard(e, isFocus, currentViewDate) {
+        function createCard(e, isFocus) {
             const repeatIcon = e.repeat && e.repeat !== 'none' ? `<span class="repeat-badge">🔄 ${e.repeat}</span>` : '';
+            const catColor = state.catColors[e.cat] || '#666';
             return `
-                <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}">
+                <div class="task-card ${e.done ? 'completed' : ''} priority-${e.pri}" style="--cat-color: ${catColor}">
                     <input type="checkbox" ${e.done ? 'checked' : ''} onchange="toggleDone(${e.id})" style="width:16px; height:16px; margin-top:2px; cursor:pointer;">
                     <div class="task-title" onclick="editTask(${e.id})">
                         <div style="font-size: 0.85rem;">${e.text}</div>
                         <div style="display:flex; gap:6px; align-items:center; margin-top:2px;">
                             ${repeatIcon}
-                            ${e.sub ? `<span style="font-size:0.55rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">${e.sub}</span>` : ''}
+                            <span style="font-size:0.55rem; color:${catColor}; font-weight:800; text-transform:uppercase;">${e.cat} ${e.sub ? '/ '+e.sub : ''}</span>
                             ${!isFocus ? `<span style="font-size:0.55rem; color:var(--text-muted)">• ${e.date}</span>` : ''}
                         </div>
                     </div>
@@ -730,54 +736,29 @@
             const e = state.entries.find(x => x.id === id); 
             if(e) {
                 e.done = !e.done;
-                
-                // Logica speciale: se un task ricorrente viene completato,
-                // creiamo un'istanza futura e segniamo l'attuale come completata "storica"
-                // (Oppure semplicemente spostiamo la data se vogliamo una lista pulita)
                 if(e.done && e.repeat && e.repeat !== 'none') {
                     const nextDate = new Date(e.date);
                     if(e.repeat === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
                     if(e.repeat === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
                     if(e.repeat === 'yearly') nextDate.setFullYear(nextDate.getFullYear() + 1);
-                    
-                    // Creiamo il nuovo task per il futuro
-                    state.entries.push({
-                        ...e,
-                        id: Date.now() + 1,
-                        date: nextDate.toISOString().split('T')[0],
-                        done: false
-                    });
-                    
-                    // Rimuoviamo la ripetizione dal task appena completato così non appare più nelle ricorrenze attive
+                    state.entries.push({ ...e, id: Date.now() + 1, date: nextDate.toISOString().split('T')[0], done: false });
                     e.repeat = 'none';
                 }
             } 
             save(); 
         }
         
-        function del(id) { 
-            state.entries = state.entries.filter(x => x.id !== id); 
-            if(document.getElementById('task-id').value == id) resetForm();
-            save(); 
-        }
+        function del(id) { state.entries = state.entries.filter(x => x.id !== id); if(document.getElementById('task-id').value == id) resetForm(); save(); }
 
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
             const a = document.createElement('a'); a.setAttribute("href", dataStr);
-            a.setAttribute("download", "omnimind_recurring_backup.json"); a.click();
+            a.setAttribute("download", "omnimind_backup.json"); a.click();
         }
 
         function importData(ev) {
             const reader = new FileReader();
-            reader.onload = e => { 
-                try {
-                    state = JSON.parse(e.target.result); 
-                    save(); 
-                    location.reload(); 
-                } catch(err) {
-                    alert("Errore nel caricamento del file.");
-                }
-            };
+            reader.onload = e => { try { state = JSON.parse(e.target.result); save(); location.reload(); } catch(err){ alert('Errore file'); } };
             reader.readAsText(ev.target.files[0]);
         }
 
