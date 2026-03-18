@@ -195,9 +195,9 @@
       padding: 4px;
     }
 
-    .field-row-3 {
+    .field-row-4 {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 130px 1fr 1fr;
       gap: 8px;
     }
 
@@ -555,6 +555,22 @@
       accent-color: var(--primary);
     }
 
+    .focus-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-content: flex-start;
+      padding-right: 6px;
+    }
+
+    .focus-grid .task-card {
+      width: calc(33.333% - 10px);
+      min-width: 270px;
+      max-width: 100%;
+      margin-bottom: 0;
+      min-height: 132px;
+    }
+
     .stats-footer {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -659,6 +675,7 @@
       border: 1px dashed var(--border);
       border-radius: 14px;
       background: var(--surface);
+      width: 100%;
     }
 
     .focus-header {
@@ -723,9 +740,15 @@
       border: 0;
     }
 
+    @media (max-width: 1300px) {
+      .focus-grid .task-card {
+        width: calc(50% - 7px);
+      }
+    }
+
     @media (max-width: 1120px) {
       .col-left { width: 400px; min-width: 340px; }
-      .field-row-3 { grid-template-columns: 1fr; }
+      .field-row-4 { grid-template-columns: 1fr 1fr; }
       .grid-tools { grid-template-columns: repeat(2, 1fr); }
       .stats-footer { grid-template-columns: 1fr; }
       .field-inline-row { grid-template-columns: 1fr; }
@@ -747,6 +770,10 @@
       }
       .scroll-area {
         max-height: none;
+      }
+      .focus-grid .task-card {
+        width: 100%;
+        min-width: 100%;
       }
     }
   </style>
@@ -837,10 +864,14 @@
           </div>
         </div>
 
-        <div class="field-row-3">
+        <div class="field-row-4">
           <div>
             <label class="sr-only" for="task-date">Data task</label>
             <input class="field" type="date" id="task-date" onchange="syncFromTaskDateInput()" />
+          </div>
+          <div>
+            <label class="sr-only" for="task-time">Ora task</label>
+            <input class="field" type="time" id="task-time" />
           </div>
           <div>
             <label class="sr-only" for="task-pri">Priorità</label>
@@ -863,7 +894,7 @@
 
         <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
         <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
-        <div class="helper-note">Le categorie esistenti applicano il loro colore. Le nuove categorie usano il colore scelto nel selettore.</div>
+        <div class="helper-note">Le card del Focus sono disposte in orizzontale con ritorno a capo automatico e ordinate per ora decrescente.</div>
       </section>
 
       <section class="calendar-widget">
@@ -931,7 +962,9 @@
         <button class="btn-tool" type="button" onclick="jumpFocusToToday()">Vai a oggi</button>
       </div>
 
-      <div class="scroll-area" id="list-focus"></div>
+      <div class="scroll-area">
+        <div id="list-focus" class="focus-grid"></div>
+      </div>
 
       <div class="stats-footer">
         <div class="stat-mini">
@@ -951,7 +984,7 @@
   </div>
 
   <script>
-    const STORE_KEY = "omnimind_v9_data";
+    const STORE_KEY = "omnimind_v10_data";
 
     const INITIAL_CATS = {
       "App.ti": ["Visita", "Call"],
@@ -984,7 +1017,7 @@
     const DEFAULT_TASK_COLOR = "#4f46e5";
 
     const DEFAULT_STATE = {
-      version: 9,
+      version: 10,
       entries: [],
       theme: "dark",
       sideWidth: 470,
@@ -1049,6 +1082,10 @@
       return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? value : todayStr();
     }
 
+    function sanitizeTime(value) {
+      return /^([01]\d|2[0-3]):([0-5]\d)$/.test(String(value || "")) ? value : "";
+    }
+
     function normalizeUrl(value) {
       const raw = sanitizeString(value);
       if (!raw) return "";
@@ -1081,6 +1118,7 @@
         link: sanitizeTaskLink(entry.link),
         taskColor: sanitizeHexColor(entry.taskColor || entry.color || "", ""),
         date: sanitizeDate(entry.date),
+        time: sanitizeTime(entry.time),
         pri: sanitizePriority(entry.pri),
         repeat: sanitizeRepeat(entry.repeat),
         completedDates: ensureCompletedDates(entry),
@@ -1119,7 +1157,7 @@
       const customCats = sanitizeCats(data.customCats);
       const entries = safeArray(data.entries).map(sanitizeEntry);
       return {
-        version: 9,
+        version: 10,
         entries,
         theme: data.theme === "light" ? "light" : "dark",
         sideWidth: Number.isFinite(data.sideWidth) ? Math.min(860, Math.max(380, data.sideWidth)) : 470,
@@ -1169,6 +1207,7 @@
       }
 
       document.getElementById("task-date").value = state.selectedFocusDate;
+      document.getElementById("task-time").value = "";
       document.getElementById("archive-date-filter").value = state.archiveFilterDate || "";
       document.getElementById("task-color").value = DEFAULT_TASK_COLOR;
 
@@ -1274,6 +1313,7 @@
         link: sanitizeTaskLink(document.getElementById("task-link").value),
         taskColor: sanitizeHexColor(document.getElementById("task-color").value, getSelectedCategoryColor()),
         date: sanitizeDate(document.getElementById("task-date").value),
+        time: sanitizeTime(document.getElementById("task-time").value),
         pri: sanitizePriority(document.getElementById("task-pri").value),
         repeat: sanitizeRepeat(document.getElementById("task-repeat").value)
       };
@@ -1296,6 +1336,7 @@
       document.getElementById("task-id").value = "";
       document.getElementById("task-text").value = "";
       document.getElementById("task-link").value = "";
+      document.getElementById("task-time").value = "";
       document.getElementById("task-date").value = state.selectedFocusDate || todayStr();
       document.getElementById("task-pri").value = "low";
       document.getElementById("task-repeat").value = "none";
@@ -1337,6 +1378,7 @@
         });
         document.getElementById("task-text").value = "";
         document.getElementById("task-link").value = "";
+        document.getElementById("task-time").value = "";
         document.getElementById("task-text").focus();
         showToast("Task salvato");
       }
@@ -1355,6 +1397,7 @@
       updateSubs(false);
       document.getElementById("task-sub").value = task.sub || "";
       document.getElementById("task-date").value = task.date;
+      document.getElementById("task-time").value = task.time || "";
       document.getElementById("task-pri").value = task.pri;
       document.getElementById("task-repeat").value = task.repeat;
 
@@ -1420,6 +1463,12 @@
       saveAndRender();
     }
 
+    function timeRank(time) {
+      if (!time) return -1;
+      const [h, m] = time.split(":").map(Number);
+      return (h * 60) + m;
+    }
+
     function getFocusTasks(dateStr) {
       return state.entries
         .filter(e => isTaskScheduledForDate(e, dateStr))
@@ -1432,6 +1481,10 @@
         const aDone = isTaskCompletedForDate(a, dateStr) ? 1 : 0;
         const bDone = isTaskCompletedForDate(b, dateStr) ? 1 : 0;
         if (aDone !== bDone) return aDone - bDone;
+
+        const timeDiff = timeRank(b.time) - timeRank(a.time);
+        if (timeDiff !== 0) return timeDiff;
+
         if (priRank[a.pri] !== priRank[b.pri]) return priRank[a.pri] - priRank[b.pri];
         return a.text.localeCompare(b.text, "it");
       };
@@ -1444,7 +1497,7 @@
 
       return state.entries
         .filter(e => {
-          const haystack = [e.text, e.cat, e.sub, e.link].join(" ").toLowerCase();
+          const haystack = [e.text, e.cat, e.sub, e.link, e.time].join(" ").toLowerCase();
           const matchesSearch = !query || haystack.includes(query);
           const matchesCat = catFilter === "all" || e.cat === catFilter;
           const matchesDate = !dateFilter || e.date === dateFilter;
@@ -1510,6 +1563,7 @@
       const dateDisplay = formatHumanDate(task.date, { day: "2-digit", month: "2-digit", year: "2-digit" });
 
       const meta = [];
+      if (task.time) meta.push(`<span class="meta-chip">🕒 ${escapeHtml(task.time)}</span>`);
       if (task.sub) meta.push(`<span class="meta-chip"># ${escapeHtml(task.sub)}</span>`);
       if (isRecurring(task)) meta.push(`<span class="meta-chip">↺ ${repeatLabel(task.repeat)}</span>`);
       meta.push(`<span class="meta-chip">${priorityLabel(task.pri)}</span>`);
