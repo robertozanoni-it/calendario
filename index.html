@@ -537,15 +537,17 @@
       margin-top: 2px;
     }
 
-    .trash-btn {
+    .trash-btn, .move-btn {
       background: transparent;
       border: none;
-      color: var(--danger);
       font-size: 0.95rem;
       cursor: pointer;
       padding: 0.15rem;
       border-radius: 8px;
     }
+
+    .trash-btn { color: var(--danger); }
+    .move-btn { color: var(--primary); }
 
     .task-check {
       width: 18px;
@@ -1418,6 +1420,18 @@
       showToast("Task eliminato");
     }
 
+    function moveToNextDay(id) {
+      const task = state.entries.find(e => e.id === id);
+      if (!task) return;
+
+      const current = new Date(task.date + "T00:00:00");
+      current.setDate(current.getDate() + 1);
+      task.date = localDateToYmd(current);
+
+      saveAndRender();
+      showToast("Task spostato al giorno successivo");
+    }
+
     function isRecurring(task) {
       return task.repeat && task.repeat !== "none";
     }
@@ -1601,6 +1615,7 @@
           </div>
 
           <div class="task-actions">
+            <button class="move-btn" type="button" title="Sposta al giorno successivo" aria-label="Sposta al giorno successivo" onclick="moveToNextDay(${task.id})">➔</button>
             <button class="trash-btn" type="button" title="Elimina task" aria-label="Elimina task" onclick="deleteTask(${task.id})">✕</button>
           </div>
         </div>
