@@ -961,6 +961,8 @@
 
       <div class="focus-toolbar">
         <div class="pill" id="focus-date-pill">Data focus</div>
+        <select class="select" id="focus-cat-filter" style="margin-bottom:0; width:auto; flex:1;" onchange="updateFocusCatFilter(this.value)"></select>
+        <button class="btn-tool" type="button" onclick="updateFocusCatFilter('all')">Reset</button>
         <button class="btn-tool" type="button" onclick="jumpFocusToToday()">Vai a oggi</button>
       </div>
 
@@ -1026,7 +1028,8 @@
       catColors: { ...INITIAL_COLORS },
       customCats: { ...INITIAL_CATS },
       selectedFocusDate: "",
-      archiveFilterDate: ""
+      archiveFilterDate: "",
+      focusCatFilter: "all"
     };
 
     let state = structuredClone(DEFAULT_STATE);
@@ -1166,7 +1169,8 @@
         customCats,
         catColors: sanitizeColors(data.catColors, customCats),
         selectedFocusDate: data.selectedFocusDate ? sanitizeDate(data.selectedFocusDate) : todayStr(),
-        archiveFilterDate: data.archiveFilterDate ? sanitizeDate(data.archiveFilterDate) : ""
+        archiveFilterDate: data.archiveFilterDate ? sanitizeDate(data.archiveFilterDate) : "",
+        focusCatFilter: sanitizeString(data.focusCatFilter, "all")
       };
     }
 
@@ -1269,11 +1273,15 @@
       const catList = getSortedCategories();
       const taskCat = document.getElementById("task-cat");
       const archiveFilter = document.getElementById("archive-cat-filter");
+      const focusFilter = document.getElementById("focus-cat-filter");
 
       taskCat.innerHTML = catList.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-      archiveFilter.innerHTML =
-        `<option value="all">Tutte le categorie</option>` +
-        catList.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      
+      const allOption = `<option value="all">Tutte le categorie</option>`;
+      const optionsWithAll = allOption + catList.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      
+      archiveFilter.innerHTML = optionsWithAll;
+      focusFilter.innerHTML = optionsWithAll;
 
       if (!catList.includes(taskCat.value)) {
         taskCat.value = catList[0] || "";
@@ -1281,6 +1289,10 @@
 
       if (![...archiveFilter.options].some(o => o.value === archiveFilter.value)) {
         archiveFilter.value = "all";
+      }
+      
+      if (![...focusFilter.options].some(o => o.value === focusFilter.value)) {
+        focusFilter.value = "all";
       }
 
       updateSubs(true);
@@ -1484,9 +1496,19 @@
     }
 
     function getFocusTasks(dateStr) {
+      const catFilter = state.focusCatFilter || "all";
       return state.entries
-        .filter(e => isTaskScheduledForDate(e, dateStr))
+        .filter(e => {
+          const matchesDate = isTaskScheduledForDate(e, dateStr);
+          const matchesCat = catFilter === "all" || e.cat === catFilter;
+          return matchesDate && matchesCat;
+        })
         .sort(sortTasksForFocus(dateStr));
+    }
+
+    function updateFocusCatFilter(val) {
+      state.focusCatFilter = sanitizeString(val, "all");
+      saveAndRender();
     }
 
     function sortTasksForFocus(dateStr) {
@@ -1638,6 +1660,7 @@
     function syncUiValues() {
       document.body.setAttribute("data-theme", state.theme);
       document.getElementById("archive-date-filter").value = state.archiveFilterDate || "";
+      document.getElementById("focus-cat-filter").value = state.focusCatFilter || "all";
     }
 
     function toggleTheme() {
@@ -1661,7 +1684,15 @@
     }
 
     function updateCatColor(cat, color) {
-      state.catColors[cat] = sanitizeHexColor(color, state.catColors[cat] || DEFAULT_TASK_COLOR);
+      const hex = sanitizeHexColor(color, state.catColors[cat] || DEFAULT_TASK_COLOR);
+      state.catColors[cat] = hex;
+
+      // Applica il nuovo colore a tutti i task esistenti della stessa categoria
+      state.entries.forEach(entry => {
+        if (entry.cat === cat) {
+          entry.taskColor = hex;
+        }
+      });
 
       const currentSelected = document.getElementById("task-cat").value;
       if (currentSelected === cat && !document.getElementById("task-id").value) {
@@ -1800,7 +1831,8 @@
             ...state,
             ...imported,
             selectedFocusDate: imported.selectedFocusDate || state.selectedFocusDate || todayStr(),
-            archiveFilterDate: imported.archiveFilterDate || ""
+            archiveFilterDate: imported.archiveFilterDate || "",
+            focusCatFilter: imported.focusCatFilter || "all"
           };
 
           persistState();
@@ -1853,10 +1885,15 @@
       }
 
       const activeDates = new Set();
+      const focusCat = state.focusCatFilter || "all";
       for (let day = 1; day <= lastDate; day++) {
         const dObj = new Date(year, month, day);
         const dStr = localDateToYmd(dObj);
-        if (state.entries.some(task => isTaskScheduledForDate(task, dStr))) {
+        if (state.entries.some(task => {
+          const matchesDate = isTaskScheduledForDate(task, dStr);
+          const matchesCat = focusCat === "all" || task.cat === focusCat;
+          return matchesDate && matchesCat;
+        })) {
           activeDates.add(dStr);
         }
       }
