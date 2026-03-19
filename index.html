@@ -446,6 +446,13 @@
       opacity: 0.55;
     }
 
+    .task-card.is-editing {
+      outline: 3px solid var(--primary);
+      outline-offset: 2px;
+      z-index: 10;
+      transform: scale(1.02);
+    }
+
     .task-card.priority-high {
       border-right: 3px solid var(--danger);
     }
@@ -612,6 +619,22 @@
       display: block;
       font-size: 1.2rem;
       font-weight: 900;
+    }
+
+    .progress-container {
+      height: 8px;
+      background: var(--surface-2);
+      border-radius: 4px;
+      margin-top: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.4s ease;
     }
 
     .color-settings {
@@ -976,6 +999,7 @@
         <select class="select" id="focus-cat-filter" style="margin-bottom:0; width:auto; flex:1;" onchange="updateFocusCatFilter(this.value)"></select>
         <button class="btn-tool" type="button" onclick="updateFocusCatFilter('all')">Reset</button>
         <button class="btn-tool" type="button" onclick="jumpFocusToToday()">Vai a oggi</button>
+        <button class="btn-tool" id="btn-move-all" type="button" onclick="moveAllPendingToNextDay()" title="Sposta tutti i pendenti a domani" style="display:none;">➔ Tutti</button>
       </div>
 
       <div class="scroll-area">
@@ -994,6 +1018,9 @@
         <div class="stat-mini">
           <span class="lab">Focus score</span>
           <span class="val" id="stat-score">0%</span>
+          <div class="progress-container">
+            <div id="stat-progress" class="progress-bar"></div>
+          </div>
         </div>
       </div>
     </main>
@@ -1425,6 +1452,16 @@
       const task = state.entries.find(e => e.id === id);
       if (!task) return;
 
+      // Remove editing class from all cards
+      document.querySelectorAll(".task-card").forEach(c => c.classList.remove("is-editing"));
+      
+      // Add editing class to specific cards with this ID
+      document.querySelectorAll(".task-card").forEach(c => {
+         if (c.getAttribute("data-id") === String(id)) {
+           c.classList.add("is-editing");
+         }
+      });
+
       document.getElementById("task-id").value = String(task.id);
       document.getElementById("task-text").value = task.text;
       document.getElementById("task-link").value = task.link || "";
@@ -1448,6 +1485,7 @@
     }
 
     function deleteTask(id) {
+      if (!confirm("Sei sicuro di voler eliminare questo task?")) return;
       state.entries = state.entries.filter(e => e.id !== id);
       saveAndRender();
       showToast("Task eliminato");
@@ -1572,6 +1610,10 @@
       document.getElementById("focus-date-pill").textContent =
         "Focus: " + formatHumanDate(dateStr, { day: "2-digit", month: "2-digit", year: "numeric" });
 
+      const pendingCount = tasks.filter(t => !isTaskCompletedForDate(t, dateStr)).length;
+      const moveAllBtn = document.getElementById("btn-move-all");
+      if (moveAllBtn) moveAllBtn.style.display = pendingCount > 0 ? "block" : "none";
+
       if (!tasks.length) {
         list.innerHTML = `<div class="empty-state">Nessun task per questa data</div>`;
         return;
@@ -1595,12 +1637,13 @@
       const focusOpen = focusTasks.filter(task => !isTaskCompletedForDate(task, focusDate)).length;
       const focusDone = focusTasks.filter(task => isTaskCompletedForDate(task, focusDate)).length;
       const score = focusTasks.length ? Math.round((focusDone / focusTasks.length) * 100) : 0;
-
+      
       document.getElementById("count-today").textContent = String(focusOpen);
       document.getElementById("count-all").textContent = String(archiveTasks.length);
       document.getElementById("stat-done").textContent = String(allCompletedOccurrences);
       document.getElementById("stat-total").textContent = String(total);
       document.getElementById("stat-score").textContent = score + "%";
+      document.getElementById("stat-progress").style.width = score + "%";
       document.getElementById("reset-filter-btn").style.display = state.archiveFilterDate ? "block" : "none";
     }
 
@@ -1610,6 +1653,8 @@
       const textColor = getContrastColor(taskColor);
       const done = isTaskCompletedForDate(task, effectiveDate);
       const dateDisplay = formatHumanDate(task.date, { day: "2-digit", month: "2-digit", year: "2-digit" });
+      const currentEditId = document.getElementById("task-id").value;
+      const isEditing = currentEditId === String(task.id);
 
       const meta = [];
       if (task.time) meta.push(`<span class="meta-chip">🕒 ${escapeHtml(task.time)}</span>`);
@@ -1625,7 +1670,7 @@
         : "";
 
       return `
-        <div class="task-card ${done ? "completed" : ""} priority-${escapeHtml(task.pri)}" style="--cat-color:${escapeHtml(categoryColor)}; --task-color:${escapeHtml(taskColor)}; --task-text-color:${escapeHtml(textColor)}">
+        <div class="task-card ${done ? "completed" : ""} ${isEditing ? "is-editing" : ""} priority-${escapeHtml(task.pri)}" data-id="${task.id}" style="--cat-color:${escapeHtml(categoryColor)}; --task-color:${escapeHtml(taskColor)}; --task-text-color:${escapeHtml(textColor)}">
           <input
             class="task-check"
             type="checkbox"
@@ -1820,8 +1865,8 @@
 
     function exportData() {
       const dataStr = JSON.stringify(state, null, 2);
-      const someBlob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(someBlob);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `omnimind_backup_${todayStr()}.json`;
@@ -1964,6 +2009,25 @@
 
     function jumpFocusToToday() {
       setFocusDate(todayStr());
+    }
+
+    function moveAllPendingToNextDay() {
+      const focusDate = state.selectedFocusDate || todayStr();
+      const focusTasks = getFocusTasks(focusDate);
+      const pendingTasks = focusTasks.filter(t => !isTaskCompletedForDate(t, focusDate));
+      
+      if (pendingTasks.length === 0) return;
+      
+      if (!confirm(`Vuoi spostare ${pendingTasks.length} task pendenti al giorno successivo?`)) return;
+
+      pendingTasks.forEach(task => {
+        const current = new Date(task.date + "T00:00:00");
+        current.setDate(current.getDate() + 1);
+        task.date = localDateToYmd(current);
+      });
+
+      saveAndRender();
+      showToast(`${pendingTasks.length} task spostati`);
     }
 
     function prevMonth() {
