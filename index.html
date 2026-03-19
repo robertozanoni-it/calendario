@@ -896,7 +896,7 @@
 
         <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
         <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
-        <div class="helper-note">Le card del Focus sono ordinate per urgenza e titolo.</div>
+        <div class="helper-note">Le card del Focus sono ordinate per categoria e titolo.</div>
       </section>
 
       <section class="calendar-widget">
@@ -1475,20 +1475,6 @@
       return safeArray(task.completedDates).includes(dateStr);
     }
 
-    function toggleDone(id, dateStr) {
-      const task = state.entries.find(e => e.id === id);
-      if (!task) return;
-
-      const completedDates = new Set(safeArray(task.completedDates));
-      if (completedDates.has(dateStr)) {
-        completedDates.delete(dateStr);
-      } else {
-        completedDates.add(dateStr);
-      }
-      task.completedDates = [...completedDates].sort();
-      saveAndRender();
-    }
-
     function timeRank(time) {
       if (!time) return -1;
       const [h, m] = time.split(":").map(Number);
@@ -1512,17 +1498,17 @@
     }
 
     function sortTasksForFocus(dateStr) {
-      const priRank = { high: 0, med: 1, low: 2 };
       return (a, b) => {
         // 1. Priorità allo stato completato (task aperti prima)
         const aDone = isTaskCompletedForDate(a, dateStr) ? 1 : 0;
         const bDone = isTaskCompletedForDate(b, dateStr) ? 1 : 0;
         if (aDone !== bDone) return aDone - bDone;
 
-        // 2. Priorità all'urgenza (priorità impostata)
-        if (priRank[a.pri] !== priRank[b.pri]) return priRank[a.pri] - priRank[b.pri];
+        // 2. Ordine alfabetico per categoria
+        const catDiff = a.cat.localeCompare(b.cat, "it");
+        if (catDiff !== 0) return catDiff;
 
-        // 3. Ordine alfabetico
+        // 3. Ordine alfabetico per titolo
         const nameDiff = a.text.localeCompare(b.text, "it");
         if (nameDiff !== 0) return nameDiff;
 
