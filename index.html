@@ -896,7 +896,7 @@
 
         <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
         <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
-        <div class="helper-note">Le card del Focus sono disposte in orizzontale con ritorno a capo automatico e ordinate per ora decrescente.</div>
+        <div class="helper-note">Le card del Focus sono ordinate per urgenza e titolo.</div>
       </section>
 
       <section class="calendar-widget">
@@ -1514,15 +1514,20 @@
     function sortTasksForFocus(dateStr) {
       const priRank = { high: 0, med: 1, low: 2 };
       return (a, b) => {
+        // 1. Priorità allo stato completato (task aperti prima)
         const aDone = isTaskCompletedForDate(a, dateStr) ? 1 : 0;
         const bDone = isTaskCompletedForDate(b, dateStr) ? 1 : 0;
         if (aDone !== bDone) return aDone - bDone;
 
-        const timeDiff = timeRank(b.time) - timeRank(a.time);
-        if (timeDiff !== 0) return timeDiff;
-
+        // 2. Priorità all'urgenza (priorità impostata)
         if (priRank[a.pri] !== priRank[b.pri]) return priRank[a.pri] - priRank[b.pri];
-        return a.text.localeCompare(b.text, "it");
+
+        // 3. Ordine alfabetico
+        const nameDiff = a.text.localeCompare(b.text, "it");
+        if (nameDiff !== 0) return nameDiff;
+
+        // 4. Ora (decrescente)
+        return timeRank(b.time) - timeRank(a.time);
       };
     }
 
