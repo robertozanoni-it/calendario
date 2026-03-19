@@ -515,6 +515,42 @@
       margin-top: 0.28rem;
     }
 
+    .subtask-list {
+      margin-top: 0.6rem;
+      padding-top: 0.4rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .subtask-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+    }
+
+    .subtask-item.done {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+
+    .subtask-check {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+    }
+
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: var(--primary);
+      z-index: 10000;
+      pointer-events: none;
+    }
+
     .meta-chip {
       font-size: 0.67rem;
       font-weight: 700;
@@ -590,6 +626,30 @@
       max-width: 100%;
       margin-bottom: 0;
       min-height: 132px;
+    }
+
+    .focus-cat-header {
+      width: 100%;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin: 1.5rem 0 0.5rem;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .focus-cat-header:first-child {
+      margin-top: 0;
+    }
+
+    .quick-add-wrap {
+      margin-bottom: 1rem;
+      width: 100%;
     }
 
     .stats-footer {
@@ -868,6 +928,9 @@
         <label class="sr-only" for="task-link">Link task</label>
         <input class="field" type="url" id="task-link" placeholder="https://esempio.it o link interno" />
 
+        <label class="sr-only" for="task-subtasks">Sotto-task</label>
+        <textarea class="field" id="task-subtasks" placeholder="Sotto-task (uno per riga)..." style="height: 80px; resize: vertical;"></textarea>
+
         <div class="field-inline-row">
           <div class="color-input-wrap">
             <label class="sr-only" for="task-color">Colore task</label>
@@ -952,6 +1015,7 @@
         <button class="btn-tool" type="button" onclick="document.getElementById('imp').click()">📂 Carica</button>
         <button class="btn-tool" type="button" onclick="window.print()">🖨️ Stampa</button>
         <input type="file" id="imp" style="display:none" accept=".json" onchange="importData(event)" />
+        <button class="btn-tool" type="button" onclick="exportCSV()">📊 CSV</button>
       </div>
 
       <div class="section-title">
@@ -1000,6 +1064,10 @@
         <button class="btn-tool" type="button" onclick="updateFocusCatFilter('all')">Reset</button>
         <button class="btn-tool" type="button" onclick="jumpFocusToToday()">Vai a oggi</button>
         <button class="btn-tool" id="btn-move-all" type="button" onclick="moveAllPendingToNextDay()" title="Sposta tutti i pendenti a domani" style="display:none;">➔ Tutti</button>
+      </div>
+
+      <div class="quick-add-wrap">
+        <input class="field" type="text" id="quick-add-input" placeholder="Aggiunta rapida task (Invio per salvare)..." onkeydown="if(event.key==='Enter') quickAddTask()" />
       </div>
 
       <div class="scroll-area">
@@ -1174,6 +1242,10 @@
         time: sanitizeTime(entry.time),
         pri: sanitizePriority(entry.pri),
         repeat: sanitizeRepeat(entry.repeat),
+        subtasks: safeArray(entry.subtasks).map(st => ({
+          text: sanitizeString(st.text, ""),
+          done: !!st.done
+        })),
         completedDates: ensureCompletedDates(entry),
         createdAt: sanitizeDate(entry.createdAt || entry.date || todayStr())
       };
@@ -1373,6 +1445,7 @@
         cat: sanitizeString(document.getElementById("task-cat").value, "Lavoro"),
         sub: sanitizeString(document.getElementById("task-sub").value),
         link: sanitizeTaskLink(document.getElementById("task-link").value),
+        subtasks: document.getElementById("task-subtasks").value.split("\n").map(s => s.trim()).filter(Boolean).map(s => ({ text: s, done: false })),
         taskColor: sanitizeHexColor(document.getElementById("task-color").value, getSelectedCategoryColor()),
         date: sanitizeDate(document.getElementById("task-date").value),
         time: sanitizeTime(document.getElementById("task-time").value),
@@ -1398,6 +1471,7 @@
       document.getElementById("task-id").value = "";
       document.getElementById("task-text").value = "";
       document.getElementById("task-link").value = "";
+      document.getElementById("task-subtasks").value = "";
       document.getElementById("task-time").value = "";
       document.getElementById("task-date").value = state.selectedFocusDate || todayStr();
       document.getElementById("task-pri").value = "low";
@@ -1465,6 +1539,7 @@
       document.getElementById("task-id").value = String(task.id);
       document.getElementById("task-text").value = task.text;
       document.getElementById("task-link").value = task.link || "";
+      document.getElementById("task-subtasks").value = safeArray(task.subtasks).map(st => st.text).join("\n");
       document.getElementById("task-cat").value = task.cat;
       updateSubs(false);
       document.getElementById("task-sub").value = task.sub || "";
@@ -1542,11 +1617,14 @@
 
     function getFocusTasks(dateStr) {
       const catFilter = state.focusCatFilter || "all";
+      const query = sanitizeString(document.getElementById("search-box").value).toLowerCase();
       return state.entries
         .filter(e => {
           const matchesDate = isTaskScheduledForDate(e, dateStr);
           const matchesCat = catFilter === "all" || e.cat === catFilter;
-          return matchesDate && matchesCat;
+          const haystack = [e.text, e.cat, e.sub, e.link].join(" ").toLowerCase();
+          const matchesSearch = !query || haystack.includes(query);
+          return matchesDate && matchesCat && matchesSearch;
         })
         .sort(sortTasksForFocus(dateStr));
     }
@@ -1619,7 +1697,20 @@
         return;
       }
 
-      list.innerHTML = tasks.map(task => createCard(task, true, dateStr)).join("");
+      const grouped = {};
+      tasks.forEach(t => {
+        if (!grouped[t.cat]) grouped[t.cat] = [];
+        grouped[t.cat].push(t);
+      });
+
+      let html = "";
+      Object.keys(grouped).sort().forEach(cat => {
+        const catColor = state.catColors[cat] || "var(--text-muted)";
+        html += `<div class="focus-cat-header" style="border-color: ${catColor}">${escapeHtml(cat)} <span>${grouped[cat].length}</span></div>`;
+        html += grouped[cat].map(task => createCard(task, true, dateStr)).join("");
+      });
+
+      list.innerHTML = html;
     }
 
     function renderArchive(tasks) {
@@ -1638,6 +1729,11 @@
       const focusDone = focusTasks.filter(task => isTaskCompletedForDate(task, focusDate)).length;
       const score = focusTasks.length ? Math.round((focusDone / focusTasks.length) * 100) : 0;
       
+      const oldScore = parseInt(document.getElementById("stat-score").textContent);
+      if (score === 100 && oldScore < 100) {
+        launchConfetti();
+      }
+
       document.getElementById("count-today").textContent = String(focusOpen);
       document.getElementById("count-all").textContent = String(archiveTasks.length);
       document.getElementById("stat-done").textContent = String(allCompletedOccurrences);
@@ -1645,6 +1741,26 @@
       document.getElementById("stat-score").textContent = score + "%";
       document.getElementById("stat-progress").style.width = score + "%";
       document.getElementById("reset-filter-btn").style.display = state.archiveFilterDate ? "block" : "none";
+    }
+
+    function launchConfetti() {
+      for (let i = 0; i < 50; i++) {
+        const c = document.createElement("div");
+        c.className = "confetti";
+        c.style.left = Math.random() * 100 + "vw";
+        c.style.top = "-10px";
+        c.style.backgroundColor = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444"][Math.floor(Math.random() * 4)];
+        document.body.appendChild(c);
+
+        const anim = c.animate([
+          { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
+          { transform: `translate(${Math.random() * 200 - 100}px, 100vh) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+        ], {
+          duration: 2000 + Math.random() * 2000,
+          easing: "cubic-bezier(0, 0, 0.2, 1)"
+        });
+        anim.onfinish = () => c.remove();
+      }
     }
 
     function createCard(task, isFocusArea, effectiveDate) {
@@ -1669,6 +1785,18 @@
         ? `<a class="task-link" href="${escapeHtml(task.link)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">🔗 ${escapeHtml(task.link)}</a>`
         : "";
 
+      const subtasks = safeArray(task.subtasks);
+      const subtaskHtml = subtasks.length > 0 ? `
+        <div class="subtask-list">
+          ${subtasks.map((st, i) => `
+            <div class="subtask-item ${st.done ? "done" : ""}">
+              <input type="checkbox" class="subtask-check" ${st.done ? "checked" : ""} onclick="event.stopPropagation(); toggleSubtask(${task.id}, ${i})" />
+              <span>${escapeHtml(st.text)}</span>
+            </div>
+          `).join("")}
+        </div>
+      ` : "";
+
       return `
         <div class="task-card ${done ? "completed" : ""} ${isEditing ? "is-editing" : ""} priority-${escapeHtml(task.pri)}" data-id="${task.id}" style="--cat-color:${escapeHtml(categoryColor)}; --task-color:${escapeHtml(taskColor)}; --task-text-color:${escapeHtml(textColor)}">
           <input
@@ -1692,6 +1820,7 @@
             </div>
 
             ${linkHtml}
+            ${subtaskHtml}
           </div>
 
           <div class="task-actions">
@@ -1710,9 +1839,38 @@
     }
 
     function priorityLabel(pri) {
-      if (pri === "high") return "Alta priorità";
-      if (pri === "med") return "Priorità media";
-      return "Priorità bassa";
+      if (pri === "high") return "🔴 Alta";
+      if (pri === "med") return "🟡 Media";
+      return "🟢 Bassa";
+    }
+
+    function quickAddTask() {
+      const input = document.getElementById("quick-add-input");
+      const text = sanitizeString(input.value);
+      if (!text) return;
+
+      const date = state.selectedFocusDate || todayStr();
+      const cat = document.getElementById("task-cat").value || getSortedCategories()[0] || "Lavoro";
+
+      state.entries.push({
+        id: Date.now(),
+        text: text,
+        cat: cat,
+        sub: "",
+        link: "",
+        taskColor: state.catColors[cat] || DEFAULT_TASK_COLOR,
+        date: date,
+        time: "",
+        pri: "low",
+        repeat: "none",
+        subtasks: [],
+        completedDates: [],
+        createdAt: todayStr()
+      });
+
+      input.value = "";
+      saveAndRender();
+      showToast("Task aggiunto rapidamente");
     }
 
     function syncUiValues() {
@@ -2009,6 +2167,39 @@
 
     function jumpFocusToToday() {
       setFocusDate(todayStr());
+    }
+
+    function toggleSubtask(taskId, subIdx) {
+      const task = state.entries.find(e => e.id === taskId);
+      if (!task || !task.subtasks[subIdx]) return;
+      task.subtasks[subIdx].done = !task.subtasks[subIdx].done;
+      saveAndRender();
+    }
+
+    function exportCSV() {
+      const headers = ["ID", "Titolo", "Categoria", "Sottocategoria", "Link", "Data", "Ora", "Priorita", "Ripetizione", "Creato il"];
+      const rows = state.entries.map(e => [
+        e.id,
+        `"${e.text.replace(/"/g, '""')}"`,
+        `"${e.cat}"`,
+        `"${e.sub}"`,
+        `"${e.link}"`,
+        e.date,
+        e.time,
+        e.pri,
+        e.repeat,
+        e.createdAt
+      ].join(","));
+      
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `omnimind_export_${todayStr()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Export CSV pronto");
     }
 
     function moveAllPendingToNextDay() {
