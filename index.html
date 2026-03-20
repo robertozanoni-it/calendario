@@ -1176,6 +1176,12 @@
 
     const DEFAULT_TASK_COLOR = "#4f46e5";
 
+    const COLOR_PALETTE = [
+      "#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4",
+      "#f97316", "#14b8a6", "#3b82f6", "#6366f1", "#a855f7", "#0ea5e9", "#f43f5e",
+      "#84cc16", "#d946ef"
+    ];
+
     const DEFAULT_STATE = {
       version: 10,
       entries: [],
@@ -1318,11 +1324,33 @@
       return "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
     }
 
+    function getNextAvailableColor(currentColors = {}) {
+      const usedColors = new Set(Object.values(currentColors));
+      for (const color of COLOR_PALETTE) {
+        if (!usedColors.has(color)) return color;
+      }
+      let newColor = randomColor();
+      while (usedColors.has(newColor)) {
+        newColor = randomColor();
+      }
+      return newColor;
+    }
+
     function sanitizeColors(rawColors, cats) {
       const source = safeObject(rawColors);
       const out = {};
+      const used = new Set();
+      
       Object.keys(cats).forEach(cat => {
-        out[cat] = sanitizeHexColor(source[cat], INITIAL_COLORS[cat] || randomColor());
+        let color = sanitizeHexColor(source[cat], "");
+        if (!color || used.has(color)) {
+          color = INITIAL_COLORS[cat];
+        }
+        if (!color || used.has(color)) {
+          color = getNextAvailableColor(out);
+        }
+        out[cat] = color;
+        used.add(color);
       });
       return out;
     }
@@ -1859,8 +1887,11 @@
       const meta = [];
       if (task.time) meta.push(`<span class="meta-chip">🕒 ${escapeHtml(task.time)}</span>`);
       if (task.sub) meta.push(`<span class="meta-chip"># ${escapeHtml(task.sub)}</span>`);
-      if (isRecurring(task)) meta.push(`<span class="meta-chip">↺ ${task.repeat}</span>`);
-      meta.push(`<span class="meta-chip">${task.pri === "high" ? "🔴 Alta" : task.pri === "med" ? "🟡 Media" : "🟢 Bassa"}</span>`);
+      if (isRecurring(task)) meta.push(`<span class="meta-chip">↺ ${repeatLabel(task.repeat)}</span>`);
+      meta.push(`<span class="meta-chip">${priorityLabel(task.pri)}</span>`);
+      if (isFocusArea && task.date !== effectiveDate) {
+        meta.push(`<span class="meta-chip">origine ${escapeHtml(dateDisplay)}</span>`);
+      }
 
       const linkHtml = task.link
         ? `<a class="task-link" href="${escapeHtml(task.link)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">🔗 ${escapeHtml(task.link)}</a>`
@@ -1917,6 +1948,19 @@
           </div>
         </div>
       `;
+    }
+
+    function repeatLabel(repeat) {
+      if (repeat === "weekly") return "settimanale";
+      if (repeat === "monthly") return "mensile";
+      if (repeat === "yearly") return "annuale";
+      return "nessuna";
+    }
+
+    function priorityLabel(pri) {
+      if (pri === "high") return "🔴 Alta";
+      if (pri === "med") return "🟡 Media";
+      return "🟢 Bassa";
     }
 
     function quickAddTask() {
@@ -2037,7 +2081,9 @@
       const task = state.entries.find(e => e.id === taskId);
       if (task) {
         task.cat = newCat;
+        // Optionally update task color to match new category color
         task.taskColor = state.catColors[newCat] || DEFAULT_TASK_COLOR;
+        
         saveAndRender();
         showToast(`Task spostato in ${newCat}`);
       }
@@ -2052,10 +2098,7 @@
       }
 
       if (!state.customCats[name]) {
-        const chosenColor = sanitizeHexColor(
-          document.getElementById("task-color").value,
-          DEFAULT_TASK_COLOR
-        );
+        const chosenColor = getNextAvailableColor(state.catColors);
 
         state.customCats[name] = [];
         state.catColors[name] = chosenColor;
@@ -2211,6 +2254,20 @@
         grid.appendChild(document.createElement("div"));
       }
 
+      const activeDates = new Set();
+      const focusCat = state.focusCatFilter || "all";
+      for (let day = 1; day <= lastDate; day++) {
+        const dObj = new Date(year, month, day);
+        const dStr = localDateToYmd(dObj);
+        if (state.entries.some(task => {
+          const matchesDate = isTaskScheduledForDate(task, dStr);
+          const matchesCat = focusCat === "all" || task.cat === focusCat;
+          return matchesDate && matchesCat;
+        })) {
+          activeDates.add(dStr);
+        }
+      }
+
       for (let day = 1; day <= lastDate; day++) {
         const dObj = new Date(year, month, day);
         const dStr = localDateToYmd(dObj);
@@ -2222,7 +2279,7 @@
 
         if (dStr === today) cell.classList.add("today");
         if (dStr === selectedDate) cell.classList.add("active");
-        if (state.entries.some(task => isTaskScheduledForDate(task, dStr))) cell.classList.add("has-focus");
+        if (activeDates.has(dStr)) cell.classList.add("has-focus");
 
         cell.setAttribute("aria-label", `Seleziona ${formatHumanDate(dStr, { day: "numeric", month: "long", year: "numeric" })}`);
         cell.onclick = (e) => { e.stopPropagation(); setFocusDate(dStr); };
