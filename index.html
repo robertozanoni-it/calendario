@@ -301,7 +301,6 @@
     }
 
     .calendar-widget {
-      padding: 0.85rem;
       margin-bottom: 1rem;
     }
 
@@ -1029,14 +1028,20 @@
       </section>
 
       <section class="calendar-widget">
-        <div class="calendar-header">
-          <button class="btn-tool" type="button" onclick="prevMonth()" aria-label="Mese precedente">‹</button>
-          <span id="month-name">Mese Anno</span>
-          <button class="btn-tool" type="button" onclick="nextMonth()" aria-label="Mese successivo">›</button>
+        <div class="section-title" id="calendar-toggle" style="cursor: pointer; margin-bottom: 0; padding: 0.85rem;" onclick="toggleCalendar()">
+          <span>Calendario</span>
+          <span id="calendar-status-icon">▼</span>
         </div>
-        <div class="calendar-grid" id="calendar-days"></div>
-        <div class="helper-note">
-          Clicca un giorno per cambiare il Focus. L’Archivio ha un filtro data separato.
+        <div id="calendar-content" style="display: none; padding: 0 0.85rem 0.85rem;">
+          <div class="calendar-header">
+            <button class="btn-tool" type="button" onclick="event.stopPropagation(); prevMonth()" aria-label="Mese precedente">‹</button>
+            <span id="month-name">Mese Anno</span>
+            <button class="btn-tool" type="button" onclick="event.stopPropagation(); nextMonth()" aria-label="Mese successivo">›</button>
+          </div>
+          <div class="calendar-grid" id="calendar-days"></div>
+          <div class="helper-note" style="margin-top: 0.5rem;">
+            Clicca un giorno per cambiare il Focus. L’Archivio ha un filtro data separato.
+          </div>
         </div>
       </section>
 
@@ -1375,6 +1380,8 @@
       setupResizer();
       bindKeyboardShortcuts();
 
+      document.getElementById("task-date").addEventListener("focus", openCalendar);
+
       currentMonth = new Date(state.selectedFocusDate + "T00:00:00");
       renderCalendar();
       render();
@@ -1610,6 +1617,9 @@
       document.getElementById("btn-cancel").style.display = "block";
       document.getElementById("form-container").classList.add("editing");
       document.getElementById("form-container").scrollIntoView({ behavior: "smooth", block: "start" });
+      
+      openCalendar();
+      
       setTimeout(() => document.getElementById("task-text").focus(), 150);
     }
 
@@ -2183,7 +2193,7 @@
         if (activeDates.has(dStr)) cell.classList.add("has-focus");
 
         cell.setAttribute("aria-label", `Seleziona ${formatHumanDate(dStr, { day: "numeric", month: "long", year: "numeric" })}`);
-        cell.onclick = () => setFocusDate(dStr);
+        cell.onclick = (e) => { e.stopPropagation(); setFocusDate(dStr); };
 
         grid.appendChild(cell);
       }
@@ -2250,6 +2260,29 @@
       const btn = el.previousElementSibling;
       if (btn && btn.classList.contains("btn-toggle-notes")) {
         btn.textContent = el.classList.contains("show") ? "Nascondi note" : "Mostra note";
+      }
+    }
+
+    function openCalendar() {
+      const content = document.getElementById("calendar-content");
+      const icon = document.getElementById("calendar-status-icon");
+      if (content) content.style.display = "block";
+      if (icon) icon.textContent = "▲";
+    }
+
+    function closeCalendar() {
+      const content = document.getElementById("calendar-content");
+      const icon = document.getElementById("calendar-status-icon");
+      if (content) content.style.display = "none";
+      if (icon) icon.textContent = "▼";
+    }
+
+    function toggleCalendar() {
+      const content = document.getElementById("calendar-content");
+      if (content && content.style.display === "none") {
+        openCalendar();
+      } else {
+        closeCalendar();
       }
     }
 
