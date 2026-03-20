@@ -605,6 +605,23 @@
       text-decoration: underline;
     }
 
+    .task-image-display {
+      margin-top: 0.6rem;
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+    }
+
+    .task-image-display img {
+      width: 100%;
+      height: auto;
+      max-height: 250px;
+      display: block;
+      object-fit: cover;
+    }
+
     .task-actions {
       display: flex;
       flex-direction: column;
@@ -974,6 +991,15 @@
         <label class="sr-only" for="task-notes-input">Note aggiuntive</label>
         <textarea class="field" id="task-notes-input" placeholder="Note aggiuntive..." style="height: 60px; resize: vertical;"></textarea>
 
+        <div class="image-upload-wrap" style="margin-bottom: 8px;">
+          <label class="sr-only" for="task-image">Immagine task</label>
+          <input class="field" type="file" id="task-image" accept="image/*" onchange="handleImageUpload(event)" style="margin-bottom: 4px;" />
+          <div id="image-preview-container" style="display: none; position: relative; margin-bottom: 4px;">
+            <img id="image-preview" src="" alt="Anteprima" style="max-width: 100%; max-height: 200px; border-radius: 10px; display: block; object-fit: cover;" />
+            <button class="trash-btn" type="button" onclick="clearImageInput()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; width: 24px; height: 24px;">✕</button>
+          </div>
+        </div>
+
         <div class="field-inline-row">
           <div class="color-input-wrap">
             <label class="sr-only" for="task-color">Colore task</label>
@@ -1302,6 +1328,7 @@
           isComplete: !!st.isComplete
         })),
         notes: sanitizeString(entry.notes, ""),
+        image: entry.image || "",
         completedDates: ensureCompletedDates(entry),
         createdAt: sanitizeDate(entry.createdAt || entry.date || todayStr())
       };
@@ -1550,6 +1577,7 @@
         link: sanitizeTaskLink(document.getElementById("task-link").value),
         subtasks: document.getElementById("task-subtasks").value.split("\n").map(s => s.trim()).filter(Boolean).map(s => ({ text: s, isComplete: false })),
         notes: sanitizeString(document.getElementById("task-notes-input").value),
+        image: document.getElementById("image-preview").src || "",
         taskColor: sanitizeHexColor(document.getElementById("task-color").value, getSelectedCategoryColor()),
         date: sanitizeDate(document.getElementById("task-date").value),
         time: sanitizeTime(document.getElementById("task-time").value),
@@ -1577,6 +1605,7 @@
       document.getElementById("task-link").value = "";
       document.getElementById("task-subtasks").value = "";
       document.getElementById("task-notes-input").value = "";
+      clearImageInput();
       document.getElementById("task-time").value = "";
       document.getElementById("task-date").value = state.selectedFocusDate || todayStr();
       document.getElementById("task-pri").value = "low";
@@ -1644,6 +1673,12 @@
       document.getElementById("task-link").value = task.link || "";
       document.getElementById("task-subtasks").value = safeArray(task.subtasks).map(st => st.text).join("\n");
       document.getElementById("task-notes-input").value = task.notes || "";
+      if (task.image) {
+        document.getElementById("image-preview").src = task.image;
+        document.getElementById("image-preview-container").style.display = "block";
+      } else {
+        clearImageInput();
+      }
       document.getElementById("task-cat").value = task.cat;
       updateSubs(false);
       document.getElementById("task-sub").value = task.sub || "";
@@ -1914,6 +1949,12 @@
         <div id="notes-${task.id}" class="task-notes">${escapeHtml(task.notes)}</div>
       ` : "";
 
+      const imageHtml = task.image && task.image.startsWith("data:") ? `
+        <div class="task-image-display" onclick="event.stopPropagation(); editTask(${task.id})">
+          <img src="${task.image}" alt="Immagine task" />
+        </div>
+      ` : "";
+
       return `
         <div class="task-card ${taskIsComplete ? "completed" : ""} ${isEditing ? "is-editing" : ""} priority-${escapeHtml(task.pri)}" data-id="${task.id}" style="--cat-color:${escapeHtml(categoryColor)}; --task-color:${escapeHtml(taskColor)}; --task-text-color:${escapeHtml(textColor)}">
           <input
@@ -1939,6 +1980,7 @@
             ${linkHtml}
             ${subtaskHtml}
             ${notesHtml}
+            ${imageHtml}
           </div>
 
           <div class="task-actions">
@@ -2130,7 +2172,7 @@
         return;
       }
 
-      const usedByTasks = state.entries.some(task => task.cat === cat);
+      const usedByTasks = state.entries.some(task => task.cat === Slab);
       if (usedByTasks) {
         showToast("Categoria usata da uno o più task: sposta o elimina prima i task collegati", true);
         return;
@@ -2373,6 +2415,35 @@
       } else {
         closeCalendar();
       }
+    }
+
+    function handleImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast("L'immagine è troppo grande (max 2MB)", true);
+        clearImageInput();
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const preview = document.getElementById("image-preview");
+        const container = document.getElementById("image-preview-container");
+        preview.src = e.target.result;
+        container.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearImageInput() {
+      const input = document.getElementById("task-image");
+      const preview = document.getElementById("image-preview");
+      const container = document.getElementById("image-preview-container");
+      input.value = "";
+      preview.src = "";
+      container.style.display = "none";
     }
 
     function exportCSV() {
