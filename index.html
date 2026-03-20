@@ -919,6 +919,19 @@
     </div>
   </div>
 
+  <div id="modal-move" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="move-task-title">
+      <h3 id="move-task-title" style="margin: 0 0 12px;">Sposta Task</h3>
+      <p class="muted small" style="margin-bottom: 12px;">Seleziona la nuova categoria per questo task:</p>
+      <input type="hidden" id="move-task-id" />
+      <select class="select" id="move-task-cat-select"></select>
+      <div class="modal-actions">
+        <button class="btn-secondary" type="button" onclick="closeMoveModal()">Annulla</button>
+        <button class="btn-main" type="button" onclick="confirmMoveTask()">Sposta</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-input" class="modal-backdrop" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="new-cat-title">
       <h3 id="new-cat-title" style="margin: 0 0 12px;">Nuova Categoria</h3>
@@ -1394,6 +1407,7 @@
         if (e.key === "Escape" && modalOpen) {
           closeConfirm();
           closeCatModal();
+          closeMoveModal();
           return;
         }
 
@@ -1420,7 +1434,8 @@
 
     function isModalOpen() {
       return document.getElementById("modal-confirm").style.display === "flex" ||
-             document.getElementById("modal-input").style.display === "flex";
+             document.getElementById("modal-input").style.display === "flex" ||
+             document.getElementById("modal-move").style.display === "flex";
     }
 
     function getSortedCategories() {
@@ -1719,11 +1734,13 @@
       const catFilter = document.getElementById("archive-cat-filter").value;
       const dateFilter = state.archiveFilterDate;
 
+      if (catFilter === "all") return [];
+
       return state.entries
         .filter(e => {
           const haystack = [e.text, e.cat, e.sub, e.link, e.time].join(" ").toLowerCase();
           const matchesSearch = !query || haystack.includes(query);
-          const matchesCat = catFilter === "all" || e.cat === catFilter;
+          const matchesCat = e.cat === catFilter;
           const matchesDate = !dateFilter || e.date === dateFilter;
           return matchesSearch && matchesCat && matchesDate;
         })
@@ -1775,8 +1792,15 @@
 
     function renderArchive(tasks) {
       const list = document.getElementById("list-archive");
+      const catFilter = document.getElementById("archive-cat-filter").value;
+      
+      if (catFilter === "all") {
+        list.innerHTML = `<div class="empty-state">Seleziona una categoria per visualizzare l'archivio</div>`;
+        return;
+      }
+
       if (!tasks.length) {
-        list.innerHTML = `<div class="empty-state">Nessun task trovato nell’archivio</div>`;
+        list.innerHTML = `<div class="empty-state">Nessun task trovato per questa categoria</div>`;
         return;
       }
       list.innerHTML = tasks.map(task => createCard(task, false, task.date)).join("");
@@ -1835,11 +1859,8 @@
       const meta = [];
       if (task.time) meta.push(`<span class="meta-chip">🕒 ${escapeHtml(task.time)}</span>`);
       if (task.sub) meta.push(`<span class="meta-chip"># ${escapeHtml(task.sub)}</span>`);
-      if (isRecurring(task)) meta.push(`<span class="meta-chip">↺ ${repeatLabel(task.repeat)}</span>`);
-      meta.push(`<span class="meta-chip">${priorityLabel(task.pri)}</span>`);
-      if (isFocusArea && task.date !== effectiveDate) {
-        meta.push(`<span class="meta-chip">origine ${escapeHtml(dateDisplay)}</span>`);
-      }
+      if (isRecurring(task)) meta.push(`<span class="meta-chip">↺ ${task.repeat}</span>`);
+      meta.push(`<span class="meta-chip">${task.pri === "high" ? "🔴 Alta" : task.pri === "med" ? "🟡 Media" : "🟢 Bassa"}</span>`);
 
       const linkHtml = task.link
         ? `<a class="task-link" href="${escapeHtml(task.link)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">🔗 ${escapeHtml(task.link)}</a>`
@@ -1891,23 +1912,11 @@
 
           <div class="task-actions">
             <button class="move-btn" type="button" title="Sposta al giorno successivo" aria-label="Sposta al giorno successivo" onclick="moveToNextDay(${task.id})">➔</button>
+            <button class="move-btn" type="button" title="Cambia categoria" aria-label="Cambia categoria" onclick="openMoveModal(${task.id})">📂</button>
             <button class="trash-btn" type="button" title="Elimina task" aria-label="Elimina task" onclick="deleteTask(${task.id})">✕</button>
           </div>
         </div>
       `;
-    }
-
-    function repeatLabel(repeat) {
-      if (repeat === "weekly") return "settimanale";
-      if (repeat === "monthly") return "mensile";
-      if (repeat === "yearly") return "annuale";
-      return "nessuna";
-    }
-
-    function priorityLabel(pri) {
-      if (pri === "high") return "🔴 Alta";
-      if (pri === "med") return "🟡 Media";
-      return "🟢 Bassa";
     }
 
     function quickAddTask() {
@@ -1996,6 +2005,43 @@
       modal.style.display = "none";
       modal.setAttribute("aria-hidden", "true");
       document.getElementById("new-cat-name").value = "";
+    }
+
+    function openMoveModal(taskId) {
+      const task = state.entries.find(e => e.id === taskId);
+      if (!task) return;
+
+      const modal = document.getElementById("modal-move");
+      const select = document.getElementById("move-task-cat-select");
+      const idInput = document.getElementById("move-task-id");
+
+      idInput.value = taskId;
+      const cats = getSortedCategories();
+      select.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}" ${c === task.cat ? "selected" : ""}>${escapeHtml(c)}</option>`).join("");
+
+      modal.style.display = "flex";
+      modal.setAttribute("aria-hidden", "false");
+      select.focus();
+    }
+
+    function closeMoveModal() {
+      const modal = document.getElementById("modal-move");
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function confirmMoveTask() {
+      const taskId = parseInt(document.getElementById("move-task-id").value);
+      const newCat = document.getElementById("move-task-cat-select").value;
+      
+      const task = state.entries.find(e => e.id === taskId);
+      if (task) {
+        task.cat = newCat;
+        task.taskColor = state.catColors[newCat] || DEFAULT_TASK_COLOR;
+        saveAndRender();
+        showToast(`Task spostato in ${newCat}`);
+      }
+      closeMoveModal();
     }
 
     function addNewCategory() {
@@ -2165,20 +2211,6 @@
         grid.appendChild(document.createElement("div"));
       }
 
-      const activeDates = new Set();
-      const focusCat = state.focusCatFilter || "all";
-      for (let day = 1; day <= lastDate; day++) {
-        const dObj = new Date(year, month, day);
-        const dStr = localDateToYmd(dObj);
-        if (state.entries.some(task => {
-          const matchesDate = isTaskScheduledForDate(task, dStr);
-          const matchesCat = focusCat === "all" || task.cat === focusCat;
-          return matchesDate && matchesCat;
-        })) {
-          activeDates.add(dStr);
-        }
-      }
-
       for (let day = 1; day <= lastDate; day++) {
         const dObj = new Date(year, month, day);
         const dStr = localDateToYmd(dObj);
@@ -2190,7 +2222,7 @@
 
         if (dStr === today) cell.classList.add("today");
         if (dStr === selectedDate) cell.classList.add("active");
-        if (activeDates.has(dStr)) cell.classList.add("has-focus");
+        if (state.entries.some(task => isTaskScheduledForDate(task, dStr))) cell.classList.add("has-focus");
 
         cell.setAttribute("aria-label", `Seleziona ${formatHumanDate(dStr, { day: "numeric", month: "long", year: "numeric" })}`);
         cell.onclick = (e) => { e.stopPropagation(); setFocusDate(dStr); };
