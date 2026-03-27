@@ -1615,10 +1615,19 @@
       const data = safeObject(raw);
       const customCats = sanitizeCats(data.customCats);
       const entries = safeArray(data.entries).map(sanitizeEntry);
-      // Support migration from old permanentCats (array of strings) → permanentTasks (array of IDs)
+      // permanentTasks: array di copie complete del task (indipendente da entries)
+      // Supporta migrazione da vecchio formato (array di numeri/ID)
       let permanentTasks = [];
       if (Array.isArray(data.permanentTasks)) {
-        permanentTasks = data.permanentTasks.map(id => Number(id)).filter(id => Number.isFinite(id) && id > 0);
+        permanentTasks = data.permanentTasks.map(item => {
+          if (typeof item === "number" || (typeof item === "string" && !isNaN(item))) {
+            // Vecchio formato: ID numerico → cerca in entries e copia
+            const found = entries.find(e => e.id === Number(item));
+            return found ? clone(found) : null;
+          }
+          // Nuovo formato: oggetto task completo
+          return sanitizeEntry(item);
+        }).filter(Boolean);
       }
       return {
         version: 10,
@@ -1815,26 +1824,26 @@
     // ─────────────────────────────────────────
     function togglePermanentTask(taskId) {
       const id = Number(taskId);
-      const idx = safeArray(state.permanentTasks).indexOf(id);
+      const idx = safeArray(state.permanentTasks).findIndex(t => t.id === id);
       if (idx >= 0) {
+        // Rimuovi dalla lista permanenti
         state.permanentTasks.splice(idx, 1);
       } else {
-        state.permanentTasks.push(id);
+        // Salva una copia COMPLETA del task — indipendente da state.entries
+        const task = state.entries.find(e => e.id === id);
+        if (task) state.permanentTasks.push(clone(task));
       }
       persistState();
       renderPermanentSection();
     }
 
     function getPermanentTasks() {
-      const ids = safeArray(state.permanentTasks);
-      if (!ids.length) return [];
-      return state.entries
-        .filter(e => ids.includes(e.id))
-        .sort((a, b) => {
-          const catDiff = a.cat.localeCompare(b.cat, "it");
-          if (catDiff !== 0) return catDiff;
-          return a.text.localeCompare(b.text, "it");
-        });
+      // Usa i dati salvati in permanentTasks, NON cerca in entries
+      return safeArray(state.permanentTasks).slice().sort((a, b) => {
+        const catDiff = a.cat.localeCompare(b.cat, "it");
+        if (catDiff !== 0) return catDiff;
+        return a.text.localeCompare(b.text, "it");
+      });
     }
 
     function renderPermTaskPicker() {
@@ -1856,7 +1865,7 @@
         return;
       }
 
-      const permIds = new Set(safeArray(state.permanentTasks));
+      const permIds = new Set(safeArray(state.permanentTasks).map(t => t.id));
       const color = state.catColors[selectedCat] || DEFAULT_TASK_COLOR;
 
       picker.innerHTML = `<div class="perm-task-grid">` + catTasks.map(task => {
@@ -1892,6 +1901,7 @@
 
       if (!safeArray(state.permanentTasks).length) {
         taskEl.innerHTML = `<div class="empty-state" style="margin-top:8px; font-size:0.78rem;">Nessun task selezionato come permanente</div>`;
+        return;
         return;
       }
 
@@ -2496,9 +2506,7 @@
         showToast("Categoria usata da uno o più task: sposta o elimina prima i task collegati", true);
         return;
       }
-      // Remove tasks of this category from permanentTasks
-      const taskIdsOfCat = state.entries.filter(e => e.cat === cat).map(e => e.id);
-      state.permanentTasks = safeArray(state.permanentTasks).filter(id => !taskIdsOfCat.includes(id));
+      // NB: i task permanenti di questa categoria rimangono invariati (le due funzioni sono separate)
       delete state.customCats[cat];
       delete state.catColors[cat];
       refreshCatSelects();
