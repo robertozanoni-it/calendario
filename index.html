@@ -1077,6 +1077,66 @@
       background: var(--bg-main);
     }
 
+    /* ── Permanenti nel Focus: sezione in fondo, card compatte ── */
+    .perm-focus-header {
+      border-color: var(--success) !important;
+      color: var(--success) !important;
+      margin-top: 2rem;
+      opacity: 0.85;
+    }
+
+    .perm-focus-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .perm-focus-card-wrap {
+      width: calc(25% - 8px);
+      min-width: 200px;
+    }
+
+    .perm-focus-card-wrap .task-card {
+      min-height: unset !important;
+      padding: 0.55rem 0.7rem 0.55rem 0.85rem !important;
+      font-size: 0.82rem;
+      /* sfondo neutro scuro (dark) / grigio chiaro (light) invece del nero */
+      --task-color: #1e293b !important;
+      --task-text-color: #94a3b8 !important;
+      opacity: 0.82;
+      border-style: dashed;
+    }
+
+    [data-theme="light"] .perm-focus-card-wrap .task-card {
+      --task-color: #f1f5f9 !important;
+      --task-text-color: #475569 !important;
+    }
+
+    .perm-focus-card-wrap .task-title {
+      font-size: 0.82rem !important;
+    }
+
+    .perm-focus-card-wrap .task-meta,
+    .perm-focus-card-wrap .task-link,
+    .perm-focus-card-wrap .subtask-list,
+    .perm-focus-card-wrap .btn-toggle-notes,
+    .perm-focus-card-wrap .task-image-display {
+      display: none !important;
+    }
+
+    @media (max-width: 1300px) {
+      .perm-focus-card-wrap { width: calc(33.333% - 7px); }
+    }
+
+    @media (max-width: 1120px) {
+      .perm-focus-card-wrap { width: calc(50% - 5px); }
+    }
+
+    @media (max-width: 860px) {
+      .perm-focus-card-wrap { width: 100%; min-width: 100%; }
+    }
+
     @media (max-width: 1300px) {
       .focus-grid .task-card { width: calc(50% - 7px); }
     }
@@ -2262,20 +2322,14 @@
 
       let html = "";
 
-      // ── Sezione Permanenti (sempre visibile in cima) ──
       const permTasks = getPermanentTasks();
-      if (permTasks.length) {
-        html += `<div class="focus-cat-header" style="border-color: var(--success); color: var(--success);">
-          📌 Permanenti <span>${permTasks.length}</span>
-        </div>`;
-        html += permTasks.map(task => createCard(task, false, task.date, true)).join("");
-      }
 
       if (!tasks.length && !permTasks.length) {
         list.innerHTML = `<div class="empty-state">Nessun task per questa data</div>`;
         return;
       }
 
+      // ── Task normali del giorno ──
       if (tasks.length) {
         const grouped = {};
         tasks.forEach(t => {
@@ -2287,6 +2341,16 @@
           html += `<div class="focus-cat-header" style="border-color: ${catColor}">${escapeHtml(cat)} <span>${grouped[cat].length}</span></div>`;
           html += grouped[cat].map(task => createCard(task, true, dateStr)).join("");
         });
+      }
+
+      // ── Permanenti in fondo, card compatte con sfondo neutro ──
+      if (permTasks.length) {
+        html += `<div class="focus-cat-header perm-focus-header">
+          📌 Permanenti <span>${permTasks.length}</span>
+        </div>`;
+        html += `<div class="perm-focus-grid">`;
+        html += permTasks.map(task => `<div class="perm-focus-card-wrap">${createCard(task, false, task.date, true)}</div>`).join("");
+        html += `</div>`;
       }
 
       list.innerHTML = html;
