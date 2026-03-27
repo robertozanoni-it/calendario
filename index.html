@@ -46,9 +46,7 @@
       overflow: hidden;
     }
 
-    button, input, select, textarea {
-      font: inherit;
-    }
+    button, input, select, textarea { font: inherit; }
 
     button:focus-visible,
     input:focus-visible,
@@ -92,10 +90,7 @@
       background: transparent;
       flex-shrink: 0;
     }
-    .resizer:hover {
-      background: var(--primary);
-      opacity: 0.25;
-    }
+    .resizer:hover { background: var(--primary); opacity: 0.25; }
 
     .topbar {
       display: flex;
@@ -130,9 +125,207 @@
       gap: 10px;
     }
 
+    /* ──────────────────────────────────────────
+       COLORED COLLAPSIBLE PANELS
+    ─────────────────────────────────────────── */
+    .colored-panel {
+      border-radius: var(--radius-lg);
+      margin-bottom: 0.85rem;
+      overflow: hidden;
+      border: 1px solid transparent;
+      flex-shrink: 0;
+    }
+
+    .colored-panel-hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 0.72rem 1rem;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      user-select: none;
+      transition: filter 0.15s ease;
+    }
+
+    .colored-panel-hdr:hover { filter: brightness(1.08); }
+
+    .colored-panel-hdr .panel-icon {
+      transition: transform 0.25s ease;
+    }
+
+    .colored-panel.open .panel-icon {
+      transform: rotate(180deg);
+    }
+
+    .colored-panel-body {
+      border-top: 1px solid transparent;
+      display: none;
+    }
+
+    .colored-panel.open .colored-panel-body {
+      display: block;
+    }
+
+    /* Categories panel — indigo */
+    .cat-panel {
+      border-color: var(--primary);
+    }
+
+    .cat-panel .colored-panel-hdr {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .cat-panel .colored-panel-body {
+      background: var(--surface);
+      border-top-color: var(--primary);
+      padding: 0.75rem 1rem 1rem;
+    }
+
+    /* Permanenti panel — emerald */
+    .perm-panel {
+      border-color: var(--success);
+    }
+
+    .perm-panel .colored-panel-hdr {
+      background: rgba(16, 185, 129, 0.13);
+      color: var(--success);
+    }
+
+    .perm-panel .colored-panel-body {
+      background: var(--surface);
+      border-top-color: var(--success);
+      padding: 0.75rem 1rem 1rem;
+    }
+
+    /* Archive panel — amber */
+    .archive-panel {
+      border-color: var(--warning);
+      flex-shrink: 0;
+    }
+
+    .archive-panel .colored-panel-hdr {
+      background: rgba(245, 158, 11, 0.13);
+      color: var(--warning);
+    }
+
+    .archive-panel .colored-panel-body {
+      background: var(--surface);
+      border-top-color: var(--warning);
+      padding: 0.85rem;
+    }
+
+    /* Calendar — primary tinted header */
+    .calendar-widget {
+      background: var(--surface);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-lg);
+      margin-bottom: 0.85rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .calendar-hdr-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.72rem 0.85rem;
+      cursor: pointer;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      user-select: none;
+      transition: filter 0.15s ease;
+    }
+
+    .calendar-hdr-btn:hover { filter: brightness(1.08); }
+
+    .calendar-hdr-icon { transition: transform 0.25s ease; }
+
+    /* ──────────────────────────────────────────
+       CATEGORY COLOR ROWS
+    ─────────────────────────────────────────── */
+    .color-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+    }
+
+    .color-row input[type="color"] {
+      width: 38px;
+      height: 28px;
+      padding: 0;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    /* ──────────────────────────────────────────
+       PERMANENTI TASK CHIPS
+    ─────────────────────────────────────────── */
+    .perm-task-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 0.75rem;
+    }
+
+    .perm-cat-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0.3rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .perm-cat-chip.active {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--success);
+    }
+
+    .perm-cat-chip .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .perm-cat-chip.active .chip-dot {
+      background: var(--success);
+    }
+
+    .perm-tasks-scroll {
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    /* ──────────────────────────────────────────
+       CREATION BOX & FORM
+    ─────────────────────────────────────────── */
     .creation-box,
-    .calendar-widget,
-    .color-settings,
     .stat-mini,
     .task-card,
     .panel {
@@ -142,28 +335,23 @@
     }
 
     .creation-box,
-    .calendar-widget,
-    .color-settings,
     .panel {
       border-radius: var(--radius-lg);
     }
 
     .creation-box {
       padding: 1rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.85rem;
       transition: 0.2s ease;
+      flex-shrink: 0;
     }
 
     .creation-box.editing {
       border-color: var(--primary);
-      box-shadow:
-        0 0 0 2px var(--primary-light),
-        var(--shadow);
+      box-shadow: 0 0 0 2px var(--primary-light), var(--shadow);
     }
 
-    .field,
-    .select,
-    .textarea {
+    .field, .select, .textarea {
       width: 100%;
       border: 1px solid var(--border);
       background: var(--bg-main);
@@ -181,9 +369,7 @@
       align-items: center;
     }
 
-    .color-input-wrap {
-      margin-bottom: 8px;
-    }
+    .color-input-wrap { margin-bottom: 8px; }
 
     .task-color-input {
       width: 100%;
@@ -208,11 +394,7 @@
       align-items: start;
     }
 
-    .btn-main,
-    .btn-tool,
-    .btn-danger,
-    .btn-secondary,
-    .btn-subtle {
+    .btn-main, .btn-tool, .btn-danger, .btn-secondary, .btn-subtle {
       border: none;
       cursor: pointer;
       border-radius: 10px;
@@ -260,10 +442,7 @@
       min-height: 40px;
     }
 
-    .btn-tool:hover,
-    .btn-secondary:hover {
-      background: var(--surface-2);
-    }
+    .btn-tool:hover, .btn-secondary:hover { background: var(--surface-2); }
 
     .btn-add-cat {
       background: var(--primary-light);
@@ -288,20 +467,77 @@
       padding: 0.7rem;
     }
 
-    .btn-danger:hover {
-      background: var(--danger);
+    .btn-danger:hover { background: var(--danger); color: white; }
+
+    /* ── FUNZIONI DROPDOWN ── */
+    .funzioni-wrap {
+      position: relative;
+      margin-bottom: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .btn-funzioni {
+      width: 100%;
+      background: var(--primary);
       color: white;
-    }
-
-    .grid-tools {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      font-weight: 800;
+      padding: 0.72rem 1rem;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       gap: 8px;
-      margin-bottom: 1.1rem;
+      transition: filter 0.18s ease;
     }
 
-    .calendar-widget {
-      margin-bottom: 1rem;
+    .btn-funzioni:hover { filter: brightness(1.08); }
+
+    .funzioni-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .funzioni-menu.open { display: block; }
+
+    .funzioni-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-main);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.82rem;
+      transition: background 0.15s ease;
+    }
+
+    .funzioni-item:last-child { border-bottom: none; }
+    .funzioni-item:hover { background: var(--surface-2); }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      text-align: center;
+      user-select: none;
     }
 
     .calendar-header {
@@ -312,14 +548,6 @@
       margin-bottom: 10px;
       font-size: 0.82rem;
       font-weight: 800;
-    }
-
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 4px;
-      text-align: center;
-      user-select: none;
     }
 
     .calendar-day-head {
@@ -343,20 +571,9 @@
       color: var(--text-main);
     }
 
-    .calendar-day:hover {
-      background: var(--primary-light);
-      color: var(--primary);
-    }
-
-    .calendar-day.today {
-      border-color: var(--primary);
-      font-weight: 800;
-    }
-
-    .calendar-day.active {
-      background: var(--primary);
-      color: white;
-    }
+    .calendar-day:hover { background: var(--primary-light); color: var(--primary); }
+    .calendar-day.today { border-color: var(--primary); font-weight: 800; }
+    .calendar-day.active { background: var(--primary); color: white; }
 
     .calendar-day.has-focus::after {
       content: "";
@@ -370,15 +587,9 @@
       background: var(--primary);
     }
 
-    .calendar-day.active.has-focus::after {
-      background: white;
-    }
+    .calendar-day.active.has-focus::after { background: white; }
 
-    .scroll-area {
-      flex: 1;
-      overflow: auto;
-      padding-right: 4px;
-    }
+    .scroll-area { flex: 1; overflow: auto; padding-right: 4px; }
 
     .archive-filters {
       display: grid;
@@ -416,6 +627,13 @@
       border-radius: 999px;
       border: 1px solid var(--border);
       background: var(--surface);
+      color: var(--text-main);
+    }
+
+    .archive-panel .colored-panel-hdr .pill {
+      border-color: rgba(245,158,11,0.4);
+      background: rgba(245,158,11,0.12);
+      color: var(--warning);
     }
 
     .task-card {
@@ -429,21 +647,18 @@
       overflow: hidden;
       background: var(--task-color, var(--surface)) !important;
       color: var(--task-text-color, var(--text-main));
+      border: 1px solid var(--border);
     }
 
     .task-card::before {
       content: "";
       position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
+      left: 0; top: 0; bottom: 0;
       width: 4px;
       background: var(--cat-color, var(--primary));
     }
 
-    .task-card.completed {
-      opacity: 0.55;
-    }
+    .task-card.completed { opacity: 0.55; }
 
     .task-card.is-editing {
       outline: 3px solid var(--primary);
@@ -452,18 +667,10 @@
       transform: scale(1.02);
     }
 
-    .task-card.priority-high {
-      border-right: 3px solid var(--danger);
-    }
+    .task-card.priority-high { border-right: 3px solid var(--danger); }
+    .task-card.priority-med { border-right: 3px solid var(--warning); }
 
-    .task-card.priority-med {
-      border-right: 3px solid var(--warning);
-    }
-
-    .task-main {
-      flex: 1;
-      min-width: 0;
-    }
+    .task-main { flex: 1; min-width: 0; }
 
     .task-top {
       display: flex;
@@ -530,16 +737,9 @@
       font-size: 0.78rem;
     }
 
-    .subtask-item.is-finished {
-      text-decoration: line-through;
-      opacity: 0.6;
-    }
+    .subtask-item.is-finished { text-decoration: line-through; opacity: 0.6; }
 
-    .subtask-check {
-      width: 14px;
-      height: 14px;
-      cursor: pointer;
-    }
+    .subtask-check { width: 14px; height: 14px; cursor: pointer; }
 
     .task-notes {
       margin-top: 0.6rem;
@@ -552,9 +752,7 @@
       display: none;
     }
 
-    .task-notes.show {
-      display: block;
-    }
+    .task-notes.show { display: block; }
 
     .btn-toggle-notes {
       background: transparent;
@@ -571,8 +769,7 @@
 
     .confetti {
       position: fixed;
-      width: 10px;
-      height: 10px;
+      width: 10px; height: 10px;
       background-color: var(--primary);
       z-index: 10000;
       pointer-events: none;
@@ -599,10 +796,6 @@
       text-decoration: underline;
       word-break: break-all;
       opacity: 0.9;
-    }
-
-    .task-link:hover {
-      text-decoration: underline;
     }
 
     .task-image-display {
@@ -638,19 +831,15 @@
       padding: 0.15rem;
       border-radius: 8px;
       color: inherit;
-      width: 28px;
-      height: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
     }
 
     .trash-btn:hover { background: var(--danger); color: white; }
     .move-btn:hover { background: var(--primary); color: white; }
 
     .task-check {
-      width: 18px;
-      height: 18px;
+      width: 18px; height: 18px;
       margin-top: 3px;
       cursor: pointer;
       accent-color: var(--primary);
@@ -687,20 +876,16 @@
       align-items: center;
     }
 
-    .focus-cat-header:first-child {
-      margin-top: 0;
-    }
+    .focus-cat-header:first-child { margin-top: 0; }
 
-    .quick-add-wrap {
-      margin-bottom: 1rem;
-      width: 100%;
-    }
+    .quick-add-wrap { margin-bottom: 1rem; width: 100%; flex-shrink: 0; }
 
     .stats-footer {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       margin-top: 1rem;
+      flex-shrink: 0;
     }
 
     .stat-mini {
@@ -741,34 +926,9 @@
       transition: width 0.4s ease;
     }
 
-    .color-settings {
-      display: none;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .color-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
-      margin-bottom: 8px;
-    }
-
-    .color-row input[type="color"] {
-      width: 38px;
-      height: 28px;
-      padding: 0;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-    }
-
     #toast {
       position: fixed;
-      left: 50%;
-      bottom: 22px;
+      left: 50%; bottom: 22px;
       transform: translateX(-50%);
       background: var(--success);
       color: white;
@@ -782,8 +942,7 @@
     }
 
     .modal-backdrop {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: rgba(2, 6, 23, 0.72);
       display: none;
       align-items: center;
@@ -793,8 +952,7 @@
     }
 
     .modal-content {
-      width: 100%;
-      max-width: 420px;
+      width: 100%; max-width: 420px;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 18px;
@@ -825,6 +983,7 @@
       align-items: flex-start;
       gap: 16px;
       margin-bottom: 1.1rem;
+      flex-shrink: 0;
     }
 
     .focus-title {
@@ -834,9 +993,7 @@
       letter-spacing: -0.04em;
     }
 
-    .focus-counter {
-      text-align: right;
-    }
+    .focus-counter { text-align: right; }
 
     .focus-counter .big {
       display: block;
@@ -862,6 +1019,7 @@
       align-items: center;
       margin-bottom: 0.8rem;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .helper-note {
@@ -871,57 +1029,75 @@
     }
 
     .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0,0,0,0);
-      border: 0;
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); border: 0;
+    }
+
+    /* Archive task list scrollable */
+    .archive-task-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 2px;
+      margin-top: 0;
+    }
+
+    /* Sidebar scroll area */
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 2px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 0;
+    }
+
+    /* Search box standalone */
+    .search-standalone {
+      margin-bottom: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    /* Perm task picker */
+    .perm-task-picker {
+      max-height: 160px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      background: var(--bg-main);
     }
 
     @media (max-width: 1300px) {
-      .focus-grid .task-card {
-        width: calc(50% - 7px);
-      }
+      .focus-grid .task-card { width: calc(50% - 7px); }
     }
 
     @media (max-width: 1120px) {
       .col-left { width: 400px; min-width: 340px; }
       .field-row-4 { grid-template-columns: 1fr 1fr; }
-      .grid-tools { grid-template-columns: repeat(2, 1fr); }
       .stats-footer { grid-template-columns: 1fr; }
       .field-inline-row { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 860px) {
       body { overflow: auto; }
-      .app-container {
-        flex-direction: column;
-        height: auto;
-        min-height: 100vh;
-      }
+      .app-container { flex-direction: column; height: auto; min-height: 100vh; }
       .resizer { display: none; }
       .col-left, .col-right {
-        width: 100% !important;
-        min-width: 100%;
-        max-width: none;
-        height: auto;
+        width: 100% !important; min-width: 100%; max-width: none; height: auto;
       }
-      .scroll-area {
-        max-height: none;
-      }
-      .focus-grid .task-card {
-        width: 100%;
-        min-width: 100%;
-      }
+      .scroll-area { max-height: none; }
+      .focus-grid .task-card { width: 100%; min-width: 100%; }
     }
   </style>
 </head>
 <body data-theme="dark">
   <div id="toast" role="status" aria-live="polite">Operazione completata</div>
 
+  <!-- MODAL: Confirm archive clear -->
   <div id="modal-confirm" class="modal-backdrop" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <h3 id="confirm-title" style="margin: 0 0 10px;">Pulizia Archivio</h3>
@@ -936,6 +1112,7 @@
     </div>
   </div>
 
+  <!-- MODAL: Move task -->
   <div id="modal-move" class="modal-backdrop" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="move-task-title">
       <h3 id="move-task-title" style="margin: 0 0 12px;">Sposta Task</h3>
@@ -949,6 +1126,7 @@
     </div>
   </div>
 
+  <!-- MODAL: New category -->
   <div id="modal-input" class="modal-backdrop" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="new-cat-title">
       <h3 id="new-cat-title" style="margin: 0 0 12px;">Nuova Categoria</h3>
@@ -961,166 +1139,227 @@
   </div>
 
   <div class="app-container">
+    <!-- ═══════════════════════════════════════════════
+         SIDEBAR
+    ═══════════════════════════════════════════════ -->
     <aside class="col-left" id="sidebar">
+
+      <!-- Topbar -->
       <div class="topbar">
         <div>
           <h1 class="app-title">OmniMind Lite</h1>
           <div id="date-display" class="muted small"></div>
         </div>
-        <button class="btn-tool" type="button" onclick="toggleColorSettings()" aria-label="Apri impostazioni colori categorie">🎨</button>
       </div>
 
-      <div id="color-panel" class="color-settings">
-        <div class="section-title">Colori categorie</div>
-        <div id="color-list"></div>
+      <!-- ── CATEGORIE PANEL (top, always accessible) ── -->
+      <div class="colored-panel cat-panel" id="cat-panel">
+        <div class="colored-panel-hdr" onclick="toggleCatSection()" aria-expanded="false" aria-controls="cat-panel-body">
+          <span>🏷️ Categorie</span>
+          <span class="panel-icon" id="cat-panel-icon">▼</span>
+        </div>
+        <div class="colored-panel-body" id="cat-panel-body">
+          <div id="color-list"></div>
+        </div>
       </div>
 
-      <section class="creation-box" id="form-container">
-        <div class="section-title" id="form-title">Nuovo task</div>
+      <!-- ── PERMANENTI PANEL ── -->
+      <div class="colored-panel perm-panel" id="perm-panel">
+        <div class="colored-panel-hdr" onclick="togglePermSection()" aria-expanded="false" aria-controls="perm-panel-body">
+          <span>📌 Permanenti</span>
+          <span class="panel-icon" id="perm-panel-icon">▼</span>
+        </div>
+        <div class="colored-panel-body" id="perm-panel-body">
+          <div class="small muted" style="margin-bottom: 8px; line-height: 1.5;">
+            Seleziona i task sempre visibili, indipendentemente dalla data focus:
+          </div>
+          <!-- Category filter for task picker -->
+          <select class="select" id="perm-cat-select" onchange="renderPermTaskPicker()" style="margin-bottom: 8px;"></select>
+          <!-- Task chips from selected category -->
+          <div class="perm-task-picker" id="perm-task-picker">
+            <div class="empty-state" style="padding:0.6rem; font-size:0.75rem;">Seleziona una categoria</div>
+          </div>
+          <!-- Permanent tasks list -->
+          <div id="perm-task-list" class="perm-tasks-scroll"></div>
+        </div>
+      </div>
 
-        <input type="hidden" id="task-id" />
-        <label class="sr-only" for="task-text">Titolo task</label>
-        <input class="field" type="text" id="task-text" placeholder="Cosa devi fare?" />
+      <!-- Scrollable middle section -->
+      <div class="sidebar-scroll">
 
-        <label class="sr-only" for="task-link">Link task</label>
-        <input class="field" type="url" id="task-link" placeholder="https://esempio.it o link interno" />
+        <!-- ── CREATION FORM ── -->
+        <section class="creation-box" id="form-container">
+          <div class="section-title" id="form-title">Nuovo task</div>
 
-        <label class="sr-only" for="task-subtasks">Sotto-task</label>
-        <textarea class="field" id="task-subtasks" placeholder="Sotto-task (uno per riga)..." style="height: 60px; resize: vertical;"></textarea>
+          <input type="hidden" id="task-id" />
+          <label class="sr-only" for="task-text">Titolo task</label>
+          <input class="field" type="text" id="task-text" placeholder="Cosa devi fare?" />
 
-        <label class="sr-only" for="task-notes-input">Note aggiuntive</label>
-        <textarea class="field" id="task-notes-input" placeholder="Note aggiuntive..." style="height: 60px; resize: vertical;"></textarea>
+          <label class="sr-only" for="task-link">Link task</label>
+          <input class="field" type="url" id="task-link" placeholder="https://esempio.it o link interno" />
 
-        <div class="image-upload-wrap" style="margin-bottom: 8px;">
-          <label class="sr-only" for="task-image">Immagine task</label>
-          <input class="field" type="file" id="task-image" accept="image/*" onchange="handleImageUpload(event)" style="margin-bottom: 4px;" />
-          <div id="image-preview-container" style="display: none; position: relative; margin-bottom: 4px;">
-            <img id="image-preview" src="" alt="Anteprima" style="max-width: 100%; max-height: 200px; border-radius: 10px; display: block; object-fit: cover;" />
-            <button class="trash-btn" type="button" onclick="clearImageInput()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; width: 24px; height: 24px;">✕</button>
+          <label class="sr-only" for="task-subtasks">Sotto-task</label>
+          <textarea class="field" id="task-subtasks" placeholder="Sotto-task (uno per riga)..." style="height: 60px; resize: vertical;"></textarea>
+
+          <label class="sr-only" for="task-notes-input">Note aggiuntive</label>
+          <textarea class="field" id="task-notes-input" placeholder="Note aggiuntive..." style="height: 60px; resize: vertical;"></textarea>
+
+          <div class="image-upload-wrap" style="margin-bottom: 8px;">
+            <label class="sr-only" for="task-image">Immagine task</label>
+            <input class="field" type="file" id="task-image" accept="image/*" onchange="handleImageUpload(event)" style="margin-bottom: 4px;" />
+            <div id="image-preview-container" style="display: none; position: relative; margin-bottom: 4px;">
+              <img id="image-preview" src="" alt="Anteprima" style="max-width: 100%; max-height: 200px; border-radius: 10px; display: block; object-fit: cover;" />
+              <button class="trash-btn" type="button" onclick="clearImageInput()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; width: 24px; height: 24px;">✕</button>
+            </div>
+          </div>
+
+          <div class="field-inline-row">
+            <div class="color-input-wrap">
+              <label class="sr-only" for="task-color">Colore task</label>
+              <input class="task-color-input" type="color" id="task-color" value="#4f46e5" />
+            </div>
+            <button class="btn-tool" type="button" onclick="resetTaskColor()">Colore categoria</button>
+          </div>
+
+          <div class="input-group">
+            <div>
+              <label class="sr-only" for="task-cat">Categoria</label>
+              <select class="select" id="task-cat" onchange="updateSubs(true)"></select>
+            </div>
+            <button class="btn-add-cat" type="button" onclick="openCatModal()" aria-label="Aggiungi nuova categoria">+</button>
+            <button
+              class="btn-add-cat"
+              type="button"
+              onclick="deleteSelectedCategory()"
+              aria-label="Elimina categoria selezionata"
+              title="Elimina categoria"
+              style="background: transparent; color: var(--danger); border: 1px solid var(--danger);"
+            >−</button>
+            <div>
+              <label class="sr-only" for="task-sub">Sottocategoria</label>
+              <select class="select" id="task-sub">
+                <option value="">Generale</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row-4">
+            <div>
+              <label class="sr-only" for="task-date">Data task</label>
+              <input class="field" type="date" id="task-date" onchange="syncFromTaskDateInput()" />
+            </div>
+            <div>
+              <label class="sr-only" for="task-time">Ora task</label>
+              <input class="field" type="time" id="task-time" />
+            </div>
+            <div>
+              <label class="sr-only" for="task-pri">Priorità</label>
+              <select class="select" id="task-pri">
+                <option value="low">Bassa</option>
+                <option value="med">Media</option>
+                <option value="high">Alta</option>
+              </select>
+            </div>
+            <div>
+              <label class="sr-only" for="task-repeat">Ripetizione</label>
+              <select class="select" id="task-repeat">
+                <option value="none">No ripetizione</option>
+                <option value="weekly">Settimanale</option>
+                <option value="monthly">Mensile</option>
+                <option value="yearly">Annuale</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
+          <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
+          <div class="helper-note">Le card del Focus sono ordinate per categoria e titolo.</div>
+        </section>
+
+        <!-- ── CALENDARIO ── -->
+        <div class="calendar-widget" id="calendar-widget">
+          <div class="calendar-hdr-btn" onclick="toggleCalendar()" aria-expanded="false" aria-controls="calendar-content">
+            <span>📅 Calendario</span>
+            <span class="calendar-hdr-icon" id="calendar-hdr-icon">▼</span>
+          </div>
+          <div id="calendar-content" style="display: none; padding: 0 0.85rem 0.85rem;">
+            <div class="calendar-header" style="margin-top: 0.85rem;">
+              <button class="btn-tool" type="button" onclick="event.stopPropagation(); prevMonth()" aria-label="Mese precedente">‹</button>
+              <span id="month-name">Mese Anno</span>
+              <button class="btn-tool" type="button" onclick="event.stopPropagation(); nextMonth()" aria-label="Mese successivo">›</button>
+            </div>
+            <div class="calendar-grid" id="calendar-days"></div>
+            <div class="helper-note" style="margin-top: 0.5rem;">
+              Clicca un giorno per cambiare il Focus. L'Archivio ha un filtro data separato.
+            </div>
           </div>
         </div>
 
-        <div class="field-inline-row">
-          <div class="color-input-wrap">
-            <label class="sr-only" for="task-color">Colore task</label>
-            <input class="task-color-input" type="color" id="task-color" value="#4f46e5" />
-          </div>
-          <button class="btn-tool" type="button" onclick="resetTaskColor()">Colore categoria</button>
-        </div>
-
-        <div class="input-group">
-          <div>
-            <label class="sr-only" for="task-cat">Categoria</label>
-            <select class="select" id="task-cat" onchange="updateSubs(true)"></select>
-          </div>
-
-          <button class="btn-add-cat" type="button" onclick="openCatModal()" aria-label="Aggiungi nuova categoria">+</button>
-
-          <button
-            class="btn-add-cat"
-            type="button"
-            onclick="deleteSelectedCategory()"
-            aria-label="Elimina categoria selezionata"
-            title="Elimina categoria"
-            style="background: transparent; color: var(--danger); border: 1px solid var(--danger);"
-          >−</button>
-
-          <div>
-            <label class="sr-only" for="task-sub">Sottocategoria</label>
-            <select class="select" id="task-sub">
-              <option value="">Generale</option>
-            </select>
+        <!-- ── FUNZIONI DROPDOWN ── -->
+        <div class="funzioni-wrap" id="funzioni-wrap">
+          <button class="btn-funzioni" type="button" onclick="toggleFunzioniMenu()" aria-haspopup="true" aria-expanded="false" id="btn-funzioni">
+            ⚙️ Funzioni ▾
+          </button>
+          <div class="funzioni-menu" id="funzioni-menu" role="menu">
+            <button class="funzioni-item" role="menuitem" type="button" onclick="toggleTheme(); closeFunzioniMenu()">🌓 Tema</button>
+            <button class="funzioni-item" role="menuitem" type="button" onclick="exportData(); closeFunzioniMenu()">💾 Backup</button>
+            <button class="funzioni-item" role="menuitem" type="button" onclick="document.getElementById('imp').click(); closeFunzioniMenu()">📂 Carica</button>
+            <button class="funzioni-item" role="menuitem" type="button" onclick="exportCSV(); closeFunzioniMenu()">📊 CDV</button>
           </div>
         </div>
-
-        <div class="field-row-4">
-          <div>
-            <label class="sr-only" for="task-date">Data task</label>
-            <input class="field" type="date" id="task-date" onchange="syncFromTaskDateInput()" />
-          </div>
-          <div>
-            <label class="sr-only" for="task-time">Ora task</label>
-            <input class="field" type="time" id="task-time" />
-          </div>
-          <div>
-            <label class="sr-only" for="task-pri">Priorità</label>
-            <select class="select" id="task-pri">
-              <option value="low">Bassa</option>
-              <option value="med">Media</option>
-              <option value="high">Alta</option>
-            </select>
-          </div>
-          <div>
-            <label class="sr-only" for="task-repeat">Ripetizione</label>
-            <select class="select" id="task-repeat">
-              <option value="none">No ripetizione</option>
-              <option value="weekly">Settimanale</option>
-              <option value="monthly">Mensile</option>
-              <option value="yearly">Annuale</option>
-            </select>
-          </div>
-        </div>
-
-        <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
-        <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
-        <div class="helper-note">Le card del Focus sono ordinate per categoria e titolo.</div>
-      </section>
-
-      <section class="calendar-widget">
-        <div class="section-title" id="calendar-toggle" style="cursor: pointer; margin-bottom: 0; padding: 0.85rem;" onclick="toggleCalendar()">
-          <span>Calendario</span>
-          <span id="calendar-status-icon">▼</span>
-        </div>
-        <div id="calendar-content" style="display: none; padding: 0 0.85rem 0.85rem;">
-          <div class="calendar-header">
-            <button class="btn-tool" type="button" onclick="event.stopPropagation(); prevMonth()" aria-label="Mese precedente">‹</button>
-            <span id="month-name">Mese Anno</span>
-            <button class="btn-tool" type="button" onclick="event.stopPropagation(); nextMonth()" aria-label="Mese successivo">›</button>
-          </div>
-          <div class="calendar-grid" id="calendar-days"></div>
-          <div class="helper-note" style="margin-top: 0.5rem;">
-            Clicca un giorno per cambiare il Focus. L’Archivio ha un filtro data separato.
-          </div>
-        </div>
-      </section>
-
-      <div class="grid-tools">
-        <button class="btn-tool" type="button" onclick="toggleTheme()">🌓 Tema</button>
-        <button class="btn-tool" type="button" onclick="exportData()">💾 Backup</button>
-        <button class="btn-tool" type="button" onclick="document.getElementById('imp').click()">📂 Carica</button>
-        <button class="btn-tool" type="button" onclick="window.print()">🖨️ Stampa</button>
         <input type="file" id="imp" style="display:none" accept=".json" onchange="importData(event)" />
-        <button class="btn-tool" type="button" onclick="exportCSV()">📊 CSV</button>
-      </div>
 
-      <div class="section-title">
-        <span id="archive-label">Archivio</span>
-        <span id="count-all" class="pill">0</span>
-      </div>
+        <!-- Search box: visible always, filters both focus and archive -->
+        <div class="search-standalone">
+          <input
+            class="field"
+            style="margin-bottom: 0;"
+            type="text"
+            id="search-box"
+            placeholder="🔍 Cerca in focus e archivio..."
+            oninput="render()"
+          />
+        </div>
 
-      <button id="reset-filter-btn" class="reset-filter-btn" type="button" onclick="resetArchiveFilter()">
-        Mostra tutto l’archivio
-      </button>
+        <!-- ── ARCHIVIO PANEL (closed by default) ── -->
+        <div class="colored-panel archive-panel" id="archive-panel">
+          <div class="colored-panel-hdr" onclick="toggleArchiveSection()" aria-expanded="false" aria-controls="archive-panel-body">
+            <span id="archive-label">🗂️ Archivio</span>
+            <span id="count-all" class="pill">0</span>
+            <span class="panel-icon" id="archive-panel-icon">▼</span>
+          </div>
+          <div class="colored-panel-body" id="archive-panel-body">
 
-      <div class="archive-filters">
-        <input class="field" style="margin-bottom:0" type="text" id="search-box" placeholder="Cerca..." oninput="render()" />
-        <select class="select" style="margin-bottom:0" id="archive-cat-filter" onchange="render()">
-          <option value="all">Tutte le categorie</option>
-        </select>
-      </div>
+            <button id="reset-filter-btn" class="reset-filter-btn" type="button" onclick="resetArchiveFilter()">
+              Mostra tutto l'archivio
+            </button>
 
-      <div class="archive-filter-row">
-        <input class="field" style="margin-bottom:0" type="date" id="archive-date-filter" onchange="syncArchiveDateFilter()" />
-        <button class="btn-tool" type="button" onclick="applyFocusDateToArchive()">Usa focus</button>
-      </div>
+            <div class="archive-filters">
+              <select class="select" style="margin-bottom:0" id="archive-cat-filter" onchange="render()">
+                <option value="all">Tutte le categorie</option>
+              </select>
+              <input class="field" style="margin-bottom:0" type="date" id="archive-date-filter" onchange="syncArchiveDateFilter()" />
+            </div>
 
-      <div class="scroll-area" id="list-archive"></div>
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 10px; margin-top: 8px;">
+              <div></div>
+              <button class="btn-tool" type="button" onclick="applyFocusDateToArchive()" style="white-space: nowrap;">Usa data focus</button>
+            </div>
 
-      <button class="btn-danger" type="button" onclick="openConfirm()">🗑️ Svuota archivio (solo passati)</button>
+            <div class="archive-task-scroll" id="list-archive"></div>
+
+            <button class="btn-danger" type="button" onclick="openConfirm()">🗑️ Svuota archivio (solo passati)</button>
+          </div>
+        </div>
+
+      </div><!-- /sidebar-scroll -->
     </aside>
 
     <div class="resizer" id="resizer" aria-hidden="true"></div>
 
+    <!-- ═══════════════════════════════════════════════
+         MAIN / FOCUS
+    ═══════════════════════════════════════════════ -->
     <main class="col-right">
       <div class="focus-header">
         <div>
@@ -1217,12 +1456,21 @@
       customCats: { ...INITIAL_CATS },
       selectedFocusDate: "",
       archiveFilterDate: "",
-      focusCatFilter: "all"
+      focusCatFilter: "all",
+      permanentTasks: [],   // array of task IDs (numbers)
+      // UI open/close state
+      catPanelOpen: false,
+      permPanelOpen: false,
+      archivePanelOpen: false,
+      calendarOpen: false
     };
 
     let state = structuredClone(DEFAULT_STATE);
     let currentMonth = new Date();
 
+    // ─────────────────────────────────────────
+    // UTILITIES
+    // ─────────────────────────────────────────
     function localDateToYmd(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -1230,83 +1478,64 @@
       return `${y}-${m}-${d}`;
     }
 
-    function todayStr() {
-      return localDateToYmd(new Date());
-    }
+    function todayStr() { return localDateToYmd(new Date()); }
 
     function formatHumanDate(dateStr, options = {}) {
       try {
         const d = new Date(dateStr + "T00:00:00");
         return d.toLocaleDateString("it-IT", options);
-      } catch {
-        return dateStr;
-      }
+      } catch { return dateStr; }
     }
 
-    function clone(obj) {
-      return JSON.parse(JSON.stringify(obj));
+    function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+    function safeArray(v) { return Array.isArray(v) ? v : []; }
+    function safeObject(v) { return v && typeof v === "object" && !Array.isArray(v) ? v : {}; }
+    function sanitizeString(v, fb = "") { return typeof v === "string" ? v.trim() : fb; }
+
+    function sanitizeHexColor(v, fb = DEFAULT_TASK_COLOR) {
+      return /^#[0-9a-fA-F]{6}$/.test(String(v || "")) ? v : fb;
     }
 
-    function safeArray(value) {
-      return Array.isArray(value) ? value : [];
+    function sanitizeRepeat(v) {
+      return ["none","weekly","monthly","yearly"].includes(v) ? v : "none";
     }
 
-    function safeObject(value) {
-      return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    function sanitizePriority(v) {
+      return ["low","med","high"].includes(v) ? v : "low";
     }
 
-    function sanitizeString(value, fallback = "") {
-      return typeof value === "string" ? value.trim() : fallback;
+    function sanitizeDate(v) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? v : todayStr();
     }
 
-    function sanitizeHexColor(value, fallback = DEFAULT_TASK_COLOR) {
-      return /^#[0-9a-fA-F]{6}$/.test(String(value || "")) ? value : fallback;
-    }
-
-    function sanitizeRepeat(value) {
-      return ["none", "weekly", "monthly", "yearly"].includes(value) ? value : "none";
-    }
-
-    function sanitizePriority(value) {
-      return ["low", "med", "high"].includes(value) ? value : "low";
-    }
-
-    function sanitizeDate(value) {
-      return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? value : todayStr();
-    }
-
-    function sanitizeTime(value) {
-      return /^([01]\d|2[0-3]):([0-5]\d)$/.test(String(value || "")) ? value : "";
+    function sanitizeTime(v) {
+      return /^([01]\d|2[0-3]):([0-5]\d)$/.test(String(v || "")) ? v : "";
     }
 
     function getContrastColor(hex) {
       if (!hex || hex.length < 7) return "#ffffff";
-      const r = parseInt(hex.substring(1, 3), 16);
-      const g = parseInt(hex.substring(3, 5), 16);
-      const b = parseInt(hex.substring(5, 7), 16);
-      const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+      const r = parseInt(hex.substring(1,3),16);
+      const g = parseInt(hex.substring(3,5),16);
+      const b = parseInt(hex.substring(5,7),16);
+      const yiq = ((r*299)+(g*587)+(b*114))/1000;
       return (yiq >= 128) ? "#000000" : "#ffffff";
     }
 
-    function normalizeUrl(value) {
-      const raw = sanitizeString(value);
+    function normalizeUrl(v) {
+      const raw = sanitizeString(v);
       if (!raw) return "";
       if (/^(https?:\/\/|mailto:|tel:)/i.test(raw)) return raw;
       if (/^[\w.-]+\.[a-z]{2,}/i.test(raw)) return "https://" + raw;
       return raw;
     }
 
-    function sanitizeTaskLink(value) {
-      return normalizeUrl(value);
-    }
+    function sanitizeTaskLink(v) { return normalizeUrl(v); }
 
     function ensureCompletedDates(entry) {
       if (Array.isArray(entry.completedDates)) {
         return [...new Set(entry.completedDates.filter(v => /^\d{4}-\d{2}-\d{2}$/.test(v)))];
       }
-      if (entry.isComplete === true && entry.date) {
-        return [sanitizeDate(entry.date)];
-      }
+      if (entry.isComplete === true && entry.date) return [sanitizeDate(entry.date)];
       return [];
     }
 
@@ -1357,9 +1586,7 @@
         if (!usedColors.has(color)) return color;
       }
       let newColor = randomColor();
-      while (usedColors.has(newColor)) {
-        newColor = randomColor();
-      }
+      while (usedColors.has(newColor)) { newColor = randomColor(); }
       return newColor;
     }
 
@@ -1367,15 +1594,10 @@
       const source = safeObject(rawColors);
       const out = {};
       const used = new Set();
-      
       Object.keys(cats).forEach(cat => {
         let color = sanitizeHexColor(source[cat], "");
-        if (!color || used.has(color)) {
-          color = INITIAL_COLORS[cat];
-        }
-        if (!color || used.has(color)) {
-          color = getNextAvailableColor(out);
-        }
+        if (!color || used.has(color)) color = INITIAL_COLORS[cat];
+        if (!color || used.has(color)) color = getNextAvailableColor(out);
         out[cat] = color;
         used.add(color);
       });
@@ -1386,6 +1608,11 @@
       const data = safeObject(raw);
       const customCats = sanitizeCats(data.customCats);
       const entries = safeArray(data.entries).map(sanitizeEntry);
+      // Support migration from old permanentCats (array of strings) → permanentTasks (array of IDs)
+      let permanentTasks = [];
+      if (Array.isArray(data.permanentTasks)) {
+        permanentTasks = data.permanentTasks.map(id => Number(id)).filter(id => Number.isFinite(id) && id > 0);
+      }
       return {
         version: 10,
         entries,
@@ -1395,10 +1622,18 @@
         catColors: sanitizeColors(data.catColors, customCats),
         selectedFocusDate: data.selectedFocusDate ? sanitizeDate(data.selectedFocusDate) : todayStr(),
         archiveFilterDate: data.archiveFilterDate ? sanitizeDate(data.archiveFilterDate) : "",
-        focusCatFilter: sanitizeString(data.focusCatFilter, "all")
+        focusCatFilter: sanitizeString(data.focusCatFilter, "all"),
+        permanentTasks,
+        catPanelOpen: !!data.catPanelOpen,
+        permPanelOpen: !!data.permPanelOpen,
+        archivePanelOpen: !!data.archivePanelOpen,
+        calendarOpen: !!data.calendarOpen
       };
     }
 
+    // ─────────────────────────────────────────
+    // STORAGE
+    // ─────────────────────────────────────────
     function loadState() {
       const saved = localStorage.getItem(STORE_KEY);
       if (!saved) {
@@ -1415,9 +1650,7 @@
       }
     }
 
-    function persistState() {
-      localStorage.setItem(STORE_KEY, JSON.stringify(state));
-    }
+    function persistState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 
     function saveAndRender() {
       persistState();
@@ -1425,17 +1658,17 @@
       render();
     }
 
+    // ─────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────
     function init() {
       loadState();
-
       document.body.setAttribute("data-theme", state.theme);
       document.getElementById("sidebar").style.width = state.sideWidth + "px";
       document.getElementById("date-display").textContent =
         new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
-      if (!state.selectedFocusDate) {
-        state.selectedFocusDate = todayStr();
-      }
+      if (!state.selectedFocusDate) state.selectedFocusDate = todayStr();
 
       document.getElementById("task-date").value = state.selectedFocusDate;
       document.getElementById("task-time").value = "";
@@ -1448,7 +1681,27 @@
       setupResizer();
       bindKeyboardShortcuts();
 
-      document.getElementById("task-date").addEventListener("focus", openCalendar);
+      // Restore panel open/close states
+      if (state.catPanelOpen) openPanel("cat-panel");
+      if (state.permPanelOpen) openPanel("perm-panel");
+      if (state.archivePanelOpen) openPanel("archive-panel");
+      if (state.calendarOpen) {
+        document.getElementById("calendar-content").style.display = "block";
+        const icon = document.getElementById("calendar-hdr-icon");
+        if (icon) icon.style.transform = "rotate(180deg)";
+      }
+
+      document.getElementById("task-date").addEventListener("focus", () => {
+        if (!state.calendarOpen) toggleCalendar();
+      });
+
+      // Close funzioni menu when clicking outside
+      document.addEventListener("click", function(e) {
+        const wrap = document.getElementById("funzioni-wrap");
+        if (wrap && !wrap.contains(e.target)) {
+          closeFunzioniMenu();
+        }
+      });
 
       currentMonth = new Date(state.selectedFocusDate + "T00:00:00");
       renderCalendar();
@@ -1458,31 +1711,23 @@
     function bindKeyboardShortcuts() {
       document.addEventListener("keydown", (e) => {
         const modalOpen = isModalOpen();
-        
         if (e.key === "Escape" && modalOpen) {
-          closeConfirm();
-          closeCatModal();
-          closeMoveModal();
+          closeConfirm(); closeCatModal(); closeMoveModal();
           return;
         }
-
-        const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName);
-        
+        const isInput = ["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName);
         if (e.key === "Escape" && !modalOpen) {
           resetForm();
+          closeFunzioniMenu();
           return;
         }
-
         if (e.altKey && e.key.toLowerCase() === "n" && !isInput) {
           e.preventDefault();
           document.getElementById("task-text").focus();
-          return;
         }
-
         if (e.altKey && e.key.toLowerCase() === "f" && !isInput) {
           e.preventDefault();
           document.getElementById("search-box").focus();
-          return;
         }
       });
     }
@@ -1493,21 +1738,192 @@
              document.getElementById("modal-move").style.display === "flex";
     }
 
+    // ─────────────────────────────────────────
+    // PANEL TOGGLE HELPERS
+    // ─────────────────────────────────────────
+    function openPanel(panelId) {
+      const panel = document.getElementById(panelId);
+      if (!panel) return;
+      panel.classList.add("open");
+    }
+
+    function closePanel(panelId) {
+      const panel = document.getElementById(panelId);
+      if (!panel) return;
+      panel.classList.remove("open");
+    }
+
+    function isPanelOpen(panelId) {
+      const panel = document.getElementById(panelId);
+      return panel ? panel.classList.contains("open") : false;
+    }
+
+    function toggleCatSection() {
+      const isOpen = isPanelOpen("cat-panel");
+      isOpen ? closePanel("cat-panel") : openPanel("cat-panel");
+      state.catPanelOpen = !isOpen;
+      persistState();
+    }
+
+    function togglePermSection() {
+      const isOpen = isPanelOpen("perm-panel");
+      isOpen ? closePanel("perm-panel") : openPanel("perm-panel");
+      state.permPanelOpen = !isOpen;
+      persistState();
+      if (!isOpen) renderPermanentSection();
+    }
+
+    function toggleArchiveSection() {
+      const isOpen = isPanelOpen("archive-panel");
+      isOpen ? closePanel("archive-panel") : openPanel("archive-panel");
+      state.archivePanelOpen = !isOpen;
+      persistState();
+    }
+
+    // ─────────────────────────────────────────
+    // FUNZIONI DROPDOWN
+    // ─────────────────────────────────────────
+    function toggleFunzioniMenu() {
+      const menu = document.getElementById("funzioni-menu");
+      const btn = document.getElementById("btn-funzioni");
+      const isOpen = menu.classList.contains("open");
+      if (isOpen) {
+        menu.classList.remove("open");
+        btn.setAttribute("aria-expanded", "false");
+      } else {
+        menu.classList.add("open");
+        btn.setAttribute("aria-expanded", "true");
+      }
+    }
+
+    function closeFunzioniMenu() {
+      const menu = document.getElementById("funzioni-menu");
+      const btn = document.getElementById("btn-funzioni");
+      if (menu) menu.classList.remove("open");
+      if (btn) btn.setAttribute("aria-expanded", "false");
+    }
+
+    // ─────────────────────────────────────────
+    // PERMANENTI
+    // ─────────────────────────────────────────
+    function togglePermanentTask(taskId) {
+      const id = Number(taskId);
+      const idx = safeArray(state.permanentTasks).indexOf(id);
+      if (idx >= 0) {
+        state.permanentTasks.splice(idx, 1);
+      } else {
+        state.permanentTasks.push(id);
+      }
+      persistState();
+      renderPermanentSection();
+    }
+
+    function getPermanentTasks() {
+      const ids = safeArray(state.permanentTasks);
+      if (!ids.length) return [];
+      return state.entries
+        .filter(e => ids.includes(e.id))
+        .sort((a, b) => {
+          const catDiff = a.cat.localeCompare(b.cat, "it");
+          if (catDiff !== 0) return catDiff;
+          return a.text.localeCompare(b.text, "it");
+        });
+    }
+
+    function renderPermTaskPicker() {
+      const catSelect = document.getElementById("perm-cat-select");
+      const picker = document.getElementById("perm-task-picker");
+      const selectedCat = catSelect ? catSelect.value : "";
+
+      if (!selectedCat) {
+        picker.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:0.5rem;">Seleziona una categoria</div>`;
+        return;
+      }
+
+      const catTasks = state.entries
+        .filter(e => e.cat === selectedCat)
+        .sort((a, b) => a.text.localeCompare(b.text, "it"));
+
+      if (!catTasks.length) {
+        picker.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:0.5rem;">Nessun task in questa categoria</div>`;
+        return;
+      }
+
+      const permIds = new Set(safeArray(state.permanentTasks));
+      const color = state.catColors[selectedCat] || DEFAULT_TASK_COLOR;
+
+      picker.innerHTML = `<div class="perm-task-grid">` + catTasks.map(task => {
+        const isActive = permIds.has(task.id);
+        return `
+          <span
+            class="perm-cat-chip ${isActive ? "active" : ""}"
+            onclick="togglePermanentTask(${task.id})"
+            title="${escapeHtml(task.text)}"
+            style="${isActive ? `border-color:${color}; background:${color}22; color:${color};` : ""}"
+          >
+            <span class="chip-dot" style="${isActive ? `background:${color}` : ""}"></span>
+            ${escapeHtml(task.text)}
+          </span>
+        `;
+      }).join("") + `</div>`;
+    }
+
+    function renderPermanentSection() {
+      // Populate category select for task picker
+      const catSelect = document.getElementById("perm-cat-select");
+      const cats = getSortedCategories();
+      const currentVal = catSelect.value;
+      catSelect.innerHTML = `<option value="">-- Seleziona categoria --</option>` +
+        cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      if (cats.includes(currentVal)) catSelect.value = currentVal;
+
+      renderPermTaskPicker();
+
+      // Render permanent tasks list
+      const taskEl = document.getElementById("perm-task-list");
+      const tasks = getPermanentTasks();
+
+      if (!safeArray(state.permanentTasks).length) {
+        taskEl.innerHTML = `<div class="empty-state" style="margin-top:8px; font-size:0.78rem;">Nessun task selezionato come permanente</div>`;
+        return;
+      }
+
+      if (!tasks.length) {
+        taskEl.innerHTML = `<div class="empty-state" style="margin-top:8px; font-size:0.78rem;">Task permanenti non trovati</div>`;
+        return;
+      }
+
+      const grouped = {};
+      tasks.forEach(t => {
+        if (!grouped[t.cat]) grouped[t.cat] = [];
+        grouped[t.cat].push(t);
+      });
+
+      let html = "";
+      Object.keys(grouped).sort().forEach(cat => {
+        const catColor = state.catColors[cat] || "var(--text-muted)";
+        html += `<div class="focus-cat-header" style="border-color:${catColor}; margin-top:0.75rem;">${escapeHtml(cat)} <span>${grouped[cat].length}</span></div>`;
+        html += grouped[cat].map(task => createCard(task, false, task.date)).join("");
+      });
+
+      taskEl.innerHTML = html;
+    }
+
+    // ─────────────────────────────────────────
+    // CATEGORIES
+    // ─────────────────────────────────────────
     function getSortedCategories() {
       return Object.keys(state.customCats).sort((a, b) => a.localeCompare(b, "it"));
     }
 
     function escapeHtml(str) {
       return String(str)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
+        .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;").replaceAll("'","&#39;");
     }
 
     function escapeJs(str) {
-      return String(str).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+      return String(str).replaceAll("\\","\\\\").replaceAll("'","\\'");
     }
 
     function getSelectedCategoryColor() {
@@ -1526,24 +1942,15 @@
       const focusFilter = document.getElementById("focus-cat-filter");
 
       taskCat.innerHTML = catList.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-      
+
       const allOption = `<option value="all">Tutte le categorie</option>`;
-      const optionsWithAll = allOption + catList.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
-      
-      archiveFilter.innerHTML = optionsWithAll;
-      focusFilter.innerHTML = optionsWithAll;
+      const opts = allOption + catList.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+      archiveFilter.innerHTML = opts;
+      focusFilter.innerHTML = opts;
 
-      if (!catList.includes(taskCat.value)) {
-        taskCat.value = catList[0] || "";
-      }
-
-      if (![...archiveFilter.options].some(o => o.value === archiveFilter.value)) {
-        archiveFilter.value = "all";
-      }
-      
-      if (![...focusFilter.options].some(o => o.value === focusFilter.value)) {
-        focusFilter.value = "all";
-      }
+      if (!catList.includes(taskCat.value)) taskCat.value = catList[0] || "";
+      if (![...archiveFilter.options].some(o => o.value === archiveFilter.value)) archiveFilter.value = "all";
+      if (![...focusFilter.options].some(o => o.value === focusFilter.value)) focusFilter.value = "all";
 
       updateSubs(true);
     }
@@ -1553,29 +1960,49 @@
       const subs = safeArray(state.customCats[selectedCat]);
       const select = document.getElementById("task-sub");
       const current = select.value;
-
-      select.innerHTML =
-        `<option value="">Generale</option>` +
+      select.innerHTML = `<option value="">Generale</option>` +
         subs.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
-
-      if (subs.includes(current)) {
-        select.value = current;
-      } else {
-        select.value = "";
-      }
-
-      if (syncTaskColor) {
-        syncTaskColorFromCategory();
-      }
+      if (subs.includes(current)) select.value = current;
+      else select.value = "";
+      if (syncTaskColor) syncTaskColorFromCategory();
     }
 
+    function renderColorSettings() {
+      const list = document.getElementById("color-list");
+      list.innerHTML = getSortedCategories().map(cat => `
+        <div class="color-row">
+          <span style="font-size:0.8rem;">${escapeHtml(cat)}</span>
+          <input type="color" value="${escapeHtml(state.catColors[cat] || DEFAULT_TASK_COLOR)}" onchange="updateCatColor('${escapeJs(cat)}', this.value)" title="Colore ${escapeHtml(cat)}" />
+        </div>
+      `).join("");
+    }
+
+    function updateCatColor(cat, color) {
+      const hex = sanitizeHexColor(color, state.catColors[cat] || DEFAULT_TASK_COLOR);
+      state.catColors[cat] = hex;
+      state.entries.forEach(entry => {
+        if (entry.cat === cat) entry.taskColor = hex;
+      });
+      const currentSelected = document.getElementById("task-cat").value;
+      if (currentSelected === cat && !document.getElementById("task-id").value) {
+        syncTaskColorFromCategory();
+      }
+      saveAndRender();
+      renderColorSettings();
+      if (state.permPanelOpen) renderPermanentSection();
+    }
+
+    // ─────────────────────────────────────────
+    // FORM
+    // ─────────────────────────────────────────
     function getFormData() {
       return {
         text: sanitizeString(document.getElementById("task-text").value),
         cat: sanitizeString(document.getElementById("task-cat").value, "Lavoro"),
         sub: sanitizeString(document.getElementById("task-sub").value),
         link: sanitizeTaskLink(document.getElementById("task-link").value),
-        subtasks: document.getElementById("task-subtasks").value.split("\n").map(s => s.trim()).filter(Boolean).map(s => ({ text: s, isComplete: false })),
+        subtasks: document.getElementById("task-subtasks").value.split("\n")
+          .map(s => s.trim()).filter(Boolean).map(s => ({ text: s, isComplete: false })),
         notes: sanitizeString(document.getElementById("task-notes-input").value),
         image: document.getElementById("image-preview").src || "",
         taskColor: sanitizeHexColor(document.getElementById("task-color").value, getSelectedCategoryColor()),
@@ -1595,9 +2022,7 @@
       return true;
     }
 
-    function resetTaskColor() {
-      syncTaskColorFromCategory();
-    }
+    function resetTaskColor() { syncTaskColorFromCategory(); }
 
     function resetForm() {
       document.getElementById("task-id").value = "";
@@ -1614,12 +2039,8 @@
       document.getElementById("btn-save").textContent = "Salva";
       document.getElementById("btn-cancel").style.display = "none";
       document.getElementById("form-container").classList.remove("editing");
-
       const cats = getSortedCategories();
-      if (cats.length) {
-        document.getElementById("task-cat").value = cats[0];
-      }
-
+      if (cats.length) document.getElementById("task-cat").value = cats[0];
       updateSubs(true);
     }
 
@@ -1631,11 +2052,7 @@
       if (editId) {
         const idx = state.entries.findIndex(x => String(x.id) === editId);
         if (idx !== -1) {
-          const existing = state.entries[idx];
-          state.entries[idx] = {
-            ...existing,
-            ...data
-          };
+          state.entries[idx] = { ...state.entries[idx], ...data };
         }
         resetForm();
         showToast("Task aggiornato");
@@ -1652,7 +2069,6 @@
         document.getElementById("task-text").focus();
         showToast("Task salvato");
       }
-
       saveAndRender();
     }
 
@@ -1661,11 +2077,8 @@
       if (!task) return;
 
       document.querySelectorAll(".task-card").forEach(c => c.classList.remove("is-editing"));
-      
       document.querySelectorAll(".task-card").forEach(c => {
-         if (c.getAttribute("data-id") === String(id)) {
-           c.classList.add("is-editing");
-         }
+        if (c.getAttribute("data-id") === String(id)) c.classList.add("is-editing");
       });
 
       document.getElementById("task-id").value = String(task.id);
@@ -1673,12 +2086,14 @@
       document.getElementById("task-link").value = task.link || "";
       document.getElementById("task-subtasks").value = safeArray(task.subtasks).map(st => st.text).join("\n");
       document.getElementById("task-notes-input").value = task.notes || "";
+
       if (task.image) {
         document.getElementById("image-preview").src = task.image;
         document.getElementById("image-preview-container").style.display = "block";
       } else {
         clearImageInput();
       }
+
       document.getElementById("task-cat").value = task.cat;
       updateSubs(false);
       document.getElementById("task-sub").value = task.sub || "";
@@ -1695,14 +2110,14 @@
       document.getElementById("btn-cancel").style.display = "block";
       document.getElementById("form-container").classList.add("editing");
       document.getElementById("form-container").scrollIntoView({ behavior: "smooth", block: "start" });
-      
-      openCalendar();
-      
+
       setTimeout(() => document.getElementById("task-text").focus(), 150);
     }
 
     function deleteTask(id) {
       if (!confirm("Sei sicuro di voler eliminare questo task?")) return;
+      // Remove from permanentTasks if present
+      state.permanentTasks = safeArray(state.permanentTasks).filter(pid => pid !== id);
       state.entries = state.entries.filter(e => e.id !== id);
       saveAndRender();
       showToast("Task eliminato");
@@ -1711,39 +2126,27 @@
     function moveToNextDay(id) {
       const task = state.entries.find(e => e.id === id);
       if (!task) return;
-
       const current = new Date(task.date + "T00:00:00");
       current.setDate(current.getDate() + 1);
       task.date = localDateToYmd(current);
-
       saveAndRender();
       showToast("Task spostato al giorno successivo");
     }
 
-    function isRecurring(task) {
-      return task.repeat && task.repeat !== "none";
-    }
+    // ─────────────────────────────────────────
+    // TASK LOGIC
+    // ─────────────────────────────────────────
+    function isRecurring(task) { return task.repeat && task.repeat !== "none"; }
 
     function isTaskScheduledForDate(task, dateStr) {
       if (task.date === dateStr) return true;
       if (!isRecurring(task)) return false;
-
       const base = new Date(task.date + "T00:00:00");
       const target = new Date(dateStr + "T00:00:00");
       if (base > target) return false;
-
-      if (task.repeat === "weekly") {
-        return base.getDay() === target.getDay();
-      }
-
-      if (task.repeat === "monthly") {
-        return base.getDate() === target.getDate();
-      }
-
-      if (task.repeat === "yearly") {
-        return base.getDate() === target.getDate() && base.getMonth() === target.getMonth();
-      }
-
+      if (task.repeat === "weekly") return base.getDay() === target.getDay();
+      if (task.repeat === "monthly") return base.getDate() === target.getDate();
+      if (task.repeat === "yearly") return base.getDate() === target.getDate() && base.getMonth() === target.getMonth();
       return false;
     }
 
@@ -1781,13 +2184,10 @@
         const aStatus = isTaskCompletedForDate(a, dateStr) ? 1 : 0;
         const bStatus = isTaskCompletedForDate(b, dateStr) ? 1 : 0;
         if (aStatus !== bStatus) return aStatus - bStatus;
-
         const catDiff = a.cat.localeCompare(b.cat, "it");
         if (catDiff !== 0) return catDiff;
-
         const nameDiff = a.text.localeCompare(b.text, "it");
         if (nameDiff !== 0) return nameDiff;
-
         return timeRank(b.time) - timeRank(a.time);
       };
     }
@@ -1796,9 +2196,7 @@
       const query = sanitizeString(document.getElementById("search-box").value).toLowerCase();
       const catFilter = document.getElementById("archive-cat-filter").value;
       const dateFilter = state.archiveFilterDate;
-
       if (catFilter === "all") return [];
-
       return state.entries
         .filter(e => {
           const haystack = [e.text, e.cat, e.sub, e.link, e.time].join(" ").toLowerCase();
@@ -1810,6 +2208,9 @@
         .sort((a, b) => b.id - a.id);
     }
 
+    // ─────────────────────────────────────────
+    // RENDER
+    // ─────────────────────────────────────────
     function render() {
       const focusDate = state.selectedFocusDate || todayStr();
       const archiveTasks = getArchiveTasks();
@@ -1819,6 +2220,8 @@
       renderArchive(archiveTasks);
       renderStats(focusTasks, archiveTasks, focusDate);
       syncUiValues();
+
+      if (state.permPanelOpen) renderPermanentSection();
     }
 
     function renderFocus(tasks, dateStr) {
@@ -1856,12 +2259,10 @@
     function renderArchive(tasks) {
       const list = document.getElementById("list-archive");
       const catFilter = document.getElementById("archive-cat-filter").value;
-      
       if (catFilter === "all") {
         list.innerHTML = `<div class="empty-state">Seleziona una categoria per visualizzare l'archivio</div>`;
         return;
       }
-
       if (!tasks.length) {
         list.innerHTML = `<div class="empty-state">Nessun task trovato per questa categoria</div>`;
         return;
@@ -1875,11 +2276,9 @@
       const focusOpen = focusTasks.filter(task => !isTaskCompletedForDate(task, focusDate)).length;
       const focusFinishedCount = focusTasks.filter(task => isTaskCompletedForDate(task, focusDate)).length;
       const score = focusTasks.length ? Math.round((focusFinishedCount / focusTasks.length) * 100) : 0;
-      
+
       const oldScore = parseInt(document.getElementById("stat-score").textContent);
-      if (score === 100 && oldScore < 100) {
-        launchConfetti();
-      }
+      if (score === 100 && oldScore < 100) launchConfetti();
 
       document.getElementById("count-today").textContent = String(focusOpen);
       document.getElementById("count-all").textContent = String(archiveTasks.length);
@@ -1896,20 +2295,19 @@
         c.className = "confetti";
         c.style.left = Math.random() * 100 + "vw";
         c.style.top = "-10px";
-        c.style.backgroundColor = ["#4f46e5", "#10b981", "#f59e0b", "#ef4444"][Math.floor(Math.random() * 4)];
+        c.style.backgroundColor = ["#4f46e5","#10b981","#f59e0b","#ef4444"][Math.floor(Math.random()*4)];
         document.body.appendChild(c);
-
         const anim = c.animate([
-          { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
-          { transform: `translate(${Math.random() * 200 - 100}px, 100vh) rotate(${Math.random() * 360}deg)`, opacity: 0 }
-        ], {
-          duration: 2000 + Math.random() * 2000,
-          easing: "cubic-bezier(0, 0, 0.2, 1)"
-        });
+          { transform: "translate(0,0) rotate(0deg)", opacity: 1 },
+          { transform: `translate(${Math.random()*200-100}px,100vh) rotate(${Math.random()*360}deg)`, opacity: 0 }
+        ], { duration: 2000 + Math.random()*2000, easing: "cubic-bezier(0,0,0.2,1)" });
         anim.onfinish = () => c.remove();
       }
     }
 
+    // ─────────────────────────────────────────
+    // CARD BUILDER
+    // ─────────────────────────────────────────
     function createCard(task, isFocusArea, effectiveDate) {
       const categoryColor = state.catColors[task.cat] || "#666666";
       const taskColor = sanitizeHexColor(task.taskColor || "", categoryColor);
@@ -1956,7 +2354,9 @@
       ` : "";
 
       return `
-        <div class="task-card ${taskIsComplete ? "completed" : ""} ${isEditing ? "is-editing" : ""} priority-${escapeHtml(task.pri)}" data-id="${task.id}" style="--cat-color:${escapeHtml(categoryColor)}; --task-color:${escapeHtml(taskColor)}; --task-text-color:${escapeHtml(textColor)}">
+        <div class="task-card ${taskIsComplete ? "completed" : ""} ${isEditing ? "is-editing" : ""} priority-${escapeHtml(task.pri)}"
+             data-id="${task.id}"
+             style="--cat-color:${escapeHtml(categoryColor)}; --task-color:${escapeHtml(taskColor)}; --task-text-color:${escapeHtml(textColor)}">
           <input
             class="task-check"
             type="checkbox"
@@ -1964,25 +2364,18 @@
             aria-label="${taskIsComplete ? "Segna come non completato" : "Segna come completato"}"
             onclick="toggleTaskStatus(${task.id}, '${escapeJs(effectiveDate)}')"
           />
-
           <div class="task-main">
             <div class="task-top">
               <span class="badge">${escapeHtml(task.cat)}</span>
               <span class="task-date">${escapeHtml(dateDisplay)}</span>
             </div>
-
             <div class="task-title" onclick="editTask(${task.id})">${escapeHtml(task.text)}</div>
-
-            <div class="task-meta">
-              ${meta.join("")}
-            </div>
-
+            <div class="task-meta">${meta.join("")}</div>
             ${linkHtml}
             ${subtaskHtml}
             ${notesHtml}
             ${imageHtml}
           </div>
-
           <div class="task-actions">
             <button class="move-btn" type="button" title="Sposta al giorno successivo" aria-label="Sposta al giorno successivo" onclick="moveToNextDay(${task.id})">➔</button>
             <button class="move-btn" type="button" title="Cambia categoria" aria-label="Cambia categoria" onclick="openMoveModal(${task.id})">📂</button>
@@ -1992,43 +2385,41 @@
       `;
     }
 
-    function repeatLabel(repeat) {
-      if (repeat === "weekly") return "settimanale";
-      if (repeat === "monthly") return "mensile";
-      if (repeat === "yearly") return "annuale";
+    function repeatLabel(r) {
+      if (r === "weekly") return "settimanale";
+      if (r === "monthly") return "mensile";
+      if (r === "yearly") return "annuale";
       return "nessuna";
     }
 
-    function priorityLabel(pri) {
-      if (pri === "high") return "🔴 Alta";
-      if (pri === "med") return "🟡 Media";
+    function priorityLabel(p) {
+      if (p === "high") return "🔴 Alta";
+      if (p === "med") return "🟡 Media";
       return "🟢 Bassa";
     }
 
+    // ─────────────────────────────────────────
+    // QUICK ADD
+    // ─────────────────────────────────────────
     function quickAddTask() {
       const input = document.getElementById("quick-add-input");
       const text = sanitizeString(input.value);
       if (!text) return;
-
       const date = state.selectedFocusDate || todayStr();
       const cat = document.getElementById("task-cat").value || getSortedCategories()[0] || "Lavoro";
-
       state.entries.push({
         id: Date.now(),
-        text: text,
-        cat: cat,
+        text, cat,
         sub: "",
         link: "",
         taskColor: state.catColors[cat] || DEFAULT_TASK_COLOR,
-        date: date,
-        time: "",
+        date, time: "",
         pri: "low",
         repeat: "none",
         subtasks: [],
         completedDates: [],
         createdAt: todayStr()
       });
-
       input.value = "";
       saveAndRender();
       showToast("Task aggiunto rapidamente");
@@ -2040,45 +2431,17 @@
       document.getElementById("focus-cat-filter").value = state.focusCatFilter || "all";
     }
 
+    // ─────────────────────────────────────────
+    // THEME
+    // ─────────────────────────────────────────
     function toggleTheme() {
       state.theme = state.theme === "light" ? "dark" : "light";
       saveAndRender();
     }
 
-    function toggleColorSettings() {
-      const panel = document.getElementById("color-panel");
-      panel.style.display = panel.style.display === "block" ? "none" : "block";
-    }
-
-    function renderColorSettings() {
-      const list = document.getElementById("color-list");
-      list.innerHTML = getSortedCategories().map(cat => `
-        <div class="color-row">
-          <span>${escapeHtml(cat)}</span>
-          <input type="color" value="${escapeHtml(state.catColors[cat] || DEFAULT_TASK_COLOR)}" onchange="updateCatColor('${escapeJs(cat)}', this.value)" />
-        </div>
-      `).join("");
-    }
-
-    function updateCatColor(cat, color) {
-      const hex = sanitizeHexColor(color, state.catColors[cat] || DEFAULT_TASK_COLOR);
-      state.catColors[cat] = hex;
-
-      state.entries.forEach(entry => {
-        if (entry.cat === cat) {
-          entry.taskColor = hex;
-        }
-      });
-
-      const currentSelected = document.getElementById("task-cat").value;
-      if (currentSelected === cat && !document.getElementById("task-id").value) {
-        syncTaskColorFromCategory();
-      }
-
-      saveAndRender();
-      renderColorSettings();
-    }
-
+    // ─────────────────────────────────────────
+    // CATEGORY CRUD
+    // ─────────────────────────────────────────
     function openCatModal() {
       const modal = document.getElementById("modal-input");
       modal.style.display = "flex";
@@ -2093,18 +2456,60 @@
       document.getElementById("new-cat-name").value = "";
     }
 
+    function addNewCategory() {
+      const name = sanitizeString(document.getElementById("new-cat-name").value);
+      if (!name) { showToast("Inserisci un nome categoria", true); return; }
+
+      if (!state.customCats[name]) {
+        const chosenColor = getNextAvailableColor(state.catColors);
+        state.customCats[name] = [];
+        state.catColors[name] = chosenColor;
+        refreshCatSelects();
+        renderColorSettings();
+        document.getElementById("task-cat").value = name;
+        updateSubs(true);
+        saveAndRender();
+        showToast("Categoria aggiunta");
+      } else {
+        document.getElementById("task-cat").value = name;
+        updateSubs(true);
+        showToast("Categoria già presente: applicato il suo colore");
+      }
+      closeCatModal();
+    }
+
+    function deleteSelectedCategory() {
+      const cat = document.getElementById("task-cat").value;
+      if (!cat) return;
+      const totalCats = Object.keys(state.customCats).length;
+      if (totalCats <= 1) { showToast("Non puoi eliminare l'ultima categoria", true); return; }
+      const usedByTasks = state.entries.some(task => task.cat === cat);
+      if (usedByTasks) {
+        showToast("Categoria usata da uno o più task: sposta o elimina prima i task collegati", true);
+        return;
+      }
+      // Remove tasks of this category from permanentTasks
+      const taskIdsOfCat = state.entries.filter(e => e.cat === cat).map(e => e.id);
+      state.permanentTasks = safeArray(state.permanentTasks).filter(id => !taskIdsOfCat.includes(id));
+      delete state.customCats[cat];
+      delete state.catColors[cat];
+      refreshCatSelects();
+      renderColorSettings();
+      saveAndRender();
+      showToast("Categoria eliminata");
+    }
+
+    // ─────────────────────────────────────────
+    // MOVE MODAL
+    // ─────────────────────────────────────────
     function openMoveModal(taskId) {
       const task = state.entries.find(e => e.id === taskId);
       if (!task) return;
-
       const modal = document.getElementById("modal-move");
       const select = document.getElementById("move-task-cat-select");
-      const idInput = document.getElementById("move-task-id");
-
-      idInput.value = taskId;
+      document.getElementById("move-task-id").value = taskId;
       const cats = getSortedCategories();
       select.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}" ${c === task.cat ? "selected" : ""}>${escapeHtml(c)}</option>`).join("");
-
       modal.style.display = "flex";
       modal.setAttribute("aria-hidden", "false");
       select.focus();
@@ -2119,74 +2524,19 @@
     function confirmMoveTask() {
       const taskId = parseInt(document.getElementById("move-task-id").value);
       const newCat = document.getElementById("move-task-cat-select").value;
-      
       const task = state.entries.find(e => e.id === taskId);
       if (task) {
         task.cat = newCat;
-        // Optionally update task color to match new category color
         task.taskColor = state.catColors[newCat] || DEFAULT_TASK_COLOR;
-        
         saveAndRender();
         showToast(`Task spostato in ${newCat}`);
       }
       closeMoveModal();
     }
 
-    function addNewCategory() {
-      const name = sanitizeString(document.getElementById("new-cat-name").value);
-      if (!name) {
-        showToast("Inserisci un nome categoria", true);
-        return;
-      }
-
-      if (!state.customCats[name]) {
-        const chosenColor = getNextAvailableColor(state.catColors);
-
-        state.customCats[name] = [];
-        state.catColors[name] = chosenColor;
-
-        refreshCatSelects();
-        renderColorSettings();
-
-        document.getElementById("task-cat").value = name;
-        updateSubs(true);
-
-        saveAndRender();
-        showToast("Categoria aggiunta");
-      } else {
-        document.getElementById("task-cat").value = name;
-        updateSubs(true);
-        showToast("Categoria già presente: applicato il suo colore");
-      }
-
-      closeCatModal();
-    }
-
-    function deleteSelectedCategory() {
-      const cat = document.getElementById("task-cat").value;
-      if (!cat) return;
-
-      const totalCats = Object.keys(state.customCats).length;
-      if (totalCats <= 1) {
-        showToast("Non puoi eliminare l’ultima categoria", true);
-        return;
-      }
-
-      const usedByTasks = state.entries.some(task => task.cat === Slab);
-      if (usedByTasks) {
-        showToast("Categoria usata da uno o più task: sposta o elimina prima i task collegati", true);
-        return;
-      }
-
-      delete state.customCats[cat];
-      delete state.catColors[cat];
-
-      refreshCatSelects();
-      renderColorSettings();
-      saveAndRender();
-      showToast("Categoria eliminata");
-    }
-
+    // ─────────────────────────────────────────
+    // ARCHIVE CLEAR
+    // ─────────────────────────────────────────
     function openConfirm() {
       const modal = document.getElementById("modal-confirm");
       modal.style.display = "flex";
@@ -2201,25 +2551,28 @@
 
     function clearArchive() {
       const today = todayStr();
+      const removedIds = new Set();
       state.entries = state.entries.filter(task => {
         const inFuture = task.date > today;
         const isTodayPendingNonRecurring =
-          task.date === today &&
-          !isRecurring(task) &&
-          !isTaskCompletedForDate(task, today);
-
+          task.date === today && !isRecurring(task) && !isTaskCompletedForDate(task, today);
         const keepRecurringTemplate = isRecurring(task);
-        return inFuture || isTodayPendingNonRecurring || keepRecurringTemplate;
+        const keep = inFuture || isTodayPendingNonRecurring || keepRecurringTemplate;
+        if (!keep) removedIds.add(task.id);
+        return keep;
       });
-
+      // Clean up permanentTasks
+      state.permanentTasks = safeArray(state.permanentTasks).filter(id => !removedIds.has(id));
       closeConfirm();
       saveAndRender();
       showToast("Archivio pulito");
     }
 
+    // ─────────────────────────────────────────
+    // IMPORT / EXPORT
+    // ─────────────────────────────────────────
     function exportData() {
-      const dataStr = JSON.stringify(state, null, 2);
-      const blob = new Blob([dataStr], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -2232,13 +2585,11 @@
     function importData(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = function(e) {
         try {
           const parsed = JSON.parse(String(e.target.result || "{}"));
           const imported = sanitizeState(parsed);
-
           state = {
             ...state,
             ...imported,
@@ -2246,7 +2597,6 @@
             archiveFilterDate: imported.archiveFilterDate || "",
             focusCatFilter: imported.focusCatFilter || "all"
           };
-
           persistState();
           refreshCatSelects();
           syncTaskColorFromCategory();
@@ -2265,23 +2615,41 @@
       reader.readAsText(file);
     }
 
+    function exportCSV() {
+      const headers = ["ID","Titolo","Categoria","Sottocategoria","Link","Data","Ora","Priorita","Ripetizione","Creato il"];
+      const rows = state.entries.map(e => [
+        e.id,
+        `"${e.text.replace(/"/g,'""')}"`,
+        `"${e.cat}"`,
+        `"${e.sub}"`,
+        `"${e.link}"`,
+        e.date, e.time, e.pri, e.repeat, e.createdAt
+      ].join(","));
+      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+      const link = document.createElement("a");
+      link.setAttribute("href", encodeURI(csvContent));
+      link.setAttribute("download", `omnimind_export_${todayStr()}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Export CDV pronto");
+    }
+
+    // ─────────────────────────────────────────
+    // CALENDAR
+    // ─────────────────────────────────────────
     function renderCalendar() {
       const grid = document.getElementById("calendar-days");
       const monthName = document.getElementById("month-name");
       const selectedDate = state.selectedFocusDate || todayStr();
       const today = todayStr();
-
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth();
 
-      monthName.textContent = currentMonth.toLocaleDateString("it-IT", {
-        month: "long",
-        year: "numeric"
-      });
-
+      monthName.textContent = currentMonth.toLocaleDateString("it-IT", { month: "long", year: "numeric" });
       grid.innerHTML = "";
 
-      ["L", "M", "M", "G", "V", "S", "D"].forEach(day => {
+      ["L","M","M","G","V","S","D"].forEach(day => {
         const head = document.createElement("div");
         head.className = "calendar-day-head";
         head.textContent = day;
@@ -2292,40 +2660,30 @@
       const offset = firstDay === 0 ? 6 : firstDay - 1;
       const lastDate = new Date(year, month + 1, 0).getDate();
 
-      for (let i = 0; i < offset; i++) {
-        grid.appendChild(document.createElement("div"));
-      }
+      for (let i = 0; i < offset; i++) grid.appendChild(document.createElement("div"));
 
       const activeDates = new Set();
       const focusCat = state.focusCatFilter || "all";
       for (let day = 1; day <= lastDate; day++) {
-        const dObj = new Date(year, month, day);
-        const dStr = localDateToYmd(dObj);
+        const dStr = localDateToYmd(new Date(year, month, day));
         if (state.entries.some(task => {
           const matchesDate = isTaskScheduledForDate(task, dStr);
           const matchesCat = focusCat === "all" || task.cat === focusCat;
           return matchesDate && matchesCat;
-        })) {
-          activeDates.add(dStr);
-        }
+        })) activeDates.add(dStr);
       }
 
       for (let day = 1; day <= lastDate; day++) {
-        const dObj = new Date(year, month, day);
-        const dStr = localDateToYmd(dObj);
-
+        const dStr = localDateToYmd(new Date(year, month, day));
         const cell = document.createElement("button");
         cell.type = "button";
         cell.className = "calendar-day";
         cell.textContent = String(day);
-
         if (dStr === today) cell.classList.add("today");
         if (dStr === selectedDate) cell.classList.add("active");
         if (activeDates.has(dStr)) cell.classList.add("has-focus");
-
         cell.setAttribute("aria-label", `Seleziona ${formatHumanDate(dStr, { day: "numeric", month: "long", year: "numeric" })}`);
         cell.onclick = (e) => { e.stopPropagation(); setFocusDate(dStr); };
-
         grid.appendChild(cell);
       }
     }
@@ -2361,10 +2719,31 @@
       saveAndRender();
     }
 
-    function jumpFocusToToday() {
-      setFocusDate(todayStr());
+    function jumpFocusToToday() { setFocusDate(todayStr()); }
+
+    function toggleCalendar() {
+      const content = document.getElementById("calendar-content");
+      const icon = document.getElementById("calendar-hdr-icon");
+      const isOpen = content.style.display !== "none";
+      content.style.display = isOpen ? "none" : "block";
+      if (icon) icon.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+      state.calendarOpen = !isOpen;
+      persistState();
     }
 
+    function prevMonth() {
+      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+      renderCalendar();
+    }
+
+    function nextMonth() {
+      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+      renderCalendar();
+    }
+
+    // ─────────────────────────────────────────
+    // SUBTASK / NOTES / IMAGE
+    // ─────────────────────────────────────────
     function toggleSubtask(taskId, subIdx) {
       const task = state.entries.find(e => e.id === taskId);
       if (!task || !task.subtasks[subIdx]) return;
@@ -2394,119 +2773,53 @@
       }
     }
 
-    function openCalendar() {
-      const content = document.getElementById("calendar-content");
-      const icon = document.getElementById("calendar-status-icon");
-      if (content) content.style.display = "block";
-      if (icon) icon.textContent = "▲";
-    }
-
-    function closeCalendar() {
-      const content = document.getElementById("calendar-content");
-      const icon = document.getElementById("calendar-status-icon");
-      if (content) content.style.display = "none";
-      if (icon) icon.textContent = "▼";
-    }
-
-    function toggleCalendar() {
-      const content = document.getElementById("calendar-content");
-      if (content && content.style.display === "none") {
-        openCalendar();
-      } else {
-        closeCalendar();
-      }
-    }
-
     function handleImageUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
-
       if (file.size > 2 * 1024 * 1024) {
         showToast("L'immagine è troppo grande (max 2MB)", true);
         clearImageInput();
         return;
       }
-
       const reader = new FileReader();
       reader.onload = function(e) {
-        const preview = document.getElementById("image-preview");
-        const container = document.getElementById("image-preview-container");
-        preview.src = e.target.result;
-        container.style.display = "block";
+        document.getElementById("image-preview").src = e.target.result;
+        document.getElementById("image-preview-container").style.display = "block";
       };
       reader.readAsDataURL(file);
     }
 
     function clearImageInput() {
-      const input = document.getElementById("task-image");
-      const preview = document.getElementById("image-preview");
-      const container = document.getElementById("image-preview-container");
-      input.value = "";
-      preview.src = "";
-      container.style.display = "none";
+      document.getElementById("task-image").value = "";
+      document.getElementById("image-preview").src = "";
+      document.getElementById("image-preview-container").style.display = "none";
     }
 
-    function exportCSV() {
-      const headers = ["ID", "Titolo", "Categoria", "Sottocategoria", "Link", "Data", "Ora", "Priorita", "Ripetizione", "Creato il"];
-      const rows = state.entries.map(e => [
-        e.id,
-        `"${e.text.replace(/"/g, '""')}"`,
-        `"${e.cat}"`,
-        `"${e.sub}"`,
-        `"${e.link}"`,
-        e.date,
-        e.time,
-        e.pri,
-        e.repeat,
-        e.createdAt
-      ].join(","));
-      
-      const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `omnimind_export_${todayStr()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showToast("Export CSV pronto");
-    }
-
+    // ─────────────────────────────────────────
+    // MOVE ALL PENDING
+    // ─────────────────────────────────────────
     function moveAllPendingToNextDay() {
       const focusDate = state.selectedFocusDate || todayStr();
       const focusTasks = getFocusTasks(focusDate);
       const pendingTasks = focusTasks.filter(t => !isTaskCompletedForDate(t, focusDate));
-      
       if (pendingTasks.length === 0) return;
-      
       if (!confirm(`Vuoi spostare ${pendingTasks.length} task pendenti al giorno successivo?`)) return;
-
       pendingTasks.forEach(task => {
         const current = new Date(task.date + "T00:00:00");
         current.setDate(current.getDate() + 1);
         task.date = localDateToYmd(current);
       });
-
       saveAndRender();
       showToast(`${pendingTasks.length} task spostati`);
     }
 
-    function prevMonth() {
-      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-      renderCalendar();
-    }
-
-    function nextMonth() {
-      currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-      renderCalendar();
-    }
-
+    // ─────────────────────────────────────────
+    // RESIZER
+    // ─────────────────────────────────────────
     function setupResizer() {
       const resizer = document.getElementById("resizer");
       const sidebar = document.getElementById("sidebar");
-
-      let startX = 0;
-      let startWidth = 0;
+      let startX = 0, startWidth = 0;
 
       function onMouseMove(e) {
         const nextWidth = startWidth + (e.clientX - startX);
@@ -2530,15 +2843,16 @@
       });
     }
 
+    // ─────────────────────────────────────────
+    // TOAST
+    // ─────────────────────────────────────────
     function showToast(message, isError = false) {
       const toast = document.getElementById("toast");
       toast.textContent = message;
       toast.style.background = isError ? "var(--danger)" : "var(--success)";
       toast.style.display = "block";
       clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => {
-        toast.style.display = "none";
-      }, 2600);
+      showToast._timer = setTimeout(() => { toast.style.display = "none"; }, 2600);
     }
 
     window.onload = init;
