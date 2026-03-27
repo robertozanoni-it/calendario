@@ -1856,9 +1856,13 @@
         return;
       }
 
-      const catTasks = state.entries
-        .filter(e => e.cat === selectedCat)
-        .sort((a, b) => a.text.localeCompare(b.text, "it"));
+      // Unione: task in entries + task permanenti orfani (cancellati da entries ma ancora in permanentTasks)
+      const entryIds = new Set(state.entries.map(e => e.id));
+      const orphanPerms = safeArray(state.permanentTasks).filter(pt => pt.cat === selectedCat && !entryIds.has(pt.id));
+      const catTasks = [
+        ...state.entries.filter(e => e.cat === selectedCat),
+        ...orphanPerms
+      ].sort((a, b) => a.text.localeCompare(b.text, "it"));
 
       if (!catTasks.length) {
         picker.innerHTML = `<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:0.5rem;">Nessun task in questa categoria</div>`;
@@ -1870,15 +1874,20 @@
 
       picker.innerHTML = `<div class="perm-task-grid">` + catTasks.map(task => {
         const isActive = permIds.has(task.id);
+        const isOrphan = !entryIds.has(task.id); // task cancellato ma ancora permanente
+        const chipStyle = isActive
+          ? `border-color:${color}; background:${color}22; color:${color};`
+          : isOrphan ? `border-color:var(--danger); background:rgba(239,68,68,0.08); color:var(--danger);` : "";
+        const orphanNote = isOrphan ? ` <small style="opacity:0.7;">(eliminato)</small>` : "";
         return `
           <span
             class="perm-cat-chip ${isActive ? "active" : ""}"
             onclick="togglePermanentTask(${task.id})"
-            title="${escapeHtml(task.text)}"
-            style="${isActive ? `border-color:${color}; background:${color}22; color:${color};` : ""}"
+            title="${escapeHtml(task.text)}${isOrphan ? " — task eliminato, clicca per rimuovere dai permanenti" : ""}"
+            style="${chipStyle}"
           >
-            <span class="chip-dot" style="${isActive ? `background:${color}` : ""}"></span>
-            ${escapeHtml(task.text)}
+            <span class="chip-dot" style="${isActive ? `background:${color}` : isOrphan ? "background:var(--danger)" : ""}"></span>
+            ${escapeHtml(task.text)}${orphanNote}
           </span>
         `;
       }).join("") + `</div>`;
@@ -1920,7 +1929,7 @@
       Object.keys(grouped).sort().forEach(cat => {
         const catColor = state.catColors[cat] || "var(--text-muted)";
         html += `<div class="focus-cat-header" style="border-color:${catColor}; margin-top:0.75rem;">${escapeHtml(cat)} <span>${grouped[cat].length}</span></div>`;
-        html += grouped[cat].map(task => createCard(task, false, task.date)).join("");
+        html += grouped[cat].map(task => createCard(task, false, task.date, true)).join("");
       });
 
       taskEl.innerHTML = html;
@@ -2251,23 +2260,34 @@
       const moveAllBtn = document.getElementById("btn-move-all");
       if (moveAllBtn) moveAllBtn.style.display = pendingCount > 0 ? "block" : "none";
 
-      if (!tasks.length) {
+      let html = "";
+
+      // ── Sezione Permanenti (sempre visibile in cima) ──
+      const permTasks = getPermanentTasks();
+      if (permTasks.length) {
+        html += `<div class="focus-cat-header" style="border-color: var(--success); color: var(--success);">
+          📌 Permanenti <span>${permTasks.length}</span>
+        </div>`;
+        html += permTasks.map(task => createCard(task, false, task.date, true)).join("");
+      }
+
+      if (!tasks.length && !permTasks.length) {
         list.innerHTML = `<div class="empty-state">Nessun task per questa data</div>`;
         return;
       }
 
-      const grouped = {};
-      tasks.forEach(t => {
-        if (!grouped[t.cat]) grouped[t.cat] = [];
-        grouped[t.cat].push(t);
-      });
-
-      let html = "";
-      Object.keys(grouped).sort().forEach(cat => {
-        const catColor = state.catColors[cat] || "var(--text-muted)";
-        html += `<div class="focus-cat-header" style="border-color: ${catColor}">${escapeHtml(cat)} <span>${grouped[cat].length}</span></div>`;
-        html += grouped[cat].map(task => createCard(task, true, dateStr)).join("");
-      });
+      if (tasks.length) {
+        const grouped = {};
+        tasks.forEach(t => {
+          if (!grouped[t.cat]) grouped[t.cat] = [];
+          grouped[t.cat].push(t);
+        });
+        Object.keys(grouped).sort().forEach(cat => {
+          const catColor = state.catColors[cat] || "var(--text-muted)";
+          html += `<div class="focus-cat-header" style="border-color: ${catColor}">${escapeHtml(cat)} <span>${grouped[cat].length}</span></div>`;
+          html += grouped[cat].map(task => createCard(task, true, dateStr)).join("");
+        });
+      }
 
       list.innerHTML = html;
     }
@@ -2326,7 +2346,18 @@
     // ─────────────────────────────────────────
     // CARD BUILDER
     // ─────────────────────────────────────────
-    function createCard(task, isFocusArea, effectiveDate) {
+    function removeFromPermanents(taskId) {
+      const id = Number(taskId);
+      const idx = safeArray(state.permanentTasks).findIndex(t => t.id === id);
+      if (idx >= 0) {
+        state.permanentTasks.splice(idx, 1);
+        saveAndRender();
+        showToast("Task rimosso dai permanenti");
+      }
+    }
+
+    // isPermanentContext: true → il bottone ✕ rimuove dai permanenti invece di cancellare il task
+    function createCard(task, isFocusArea, effectiveDate, isPermanentContext = false) {
       const categoryColor = state.catColors[task.cat] || "#666666";
       const taskColor = sanitizeHexColor(task.taskColor || "", categoryColor);
       const textColor = getContrastColor(taskColor);
@@ -2395,9 +2426,15 @@
             ${imageHtml}
           </div>
           <div class="task-actions">
-            <button class="move-btn" type="button" title="Sposta al giorno successivo" aria-label="Sposta al giorno successivo" onclick="moveToNextDay(${task.id})">➔</button>
-            <button class="move-btn" type="button" title="Cambia categoria" aria-label="Cambia categoria" onclick="openMoveModal(${task.id})">📂</button>
-            <button class="trash-btn" type="button" title="Elimina task" aria-label="Elimina task" onclick="deleteTask(${task.id})">✕</button>
+            ${isPermanentContext ? `
+              <button class="trash-btn" type="button" title="Rimuovi dai permanenti" aria-label="Rimuovi dai permanenti"
+                onclick="removeFromPermanents(${task.id})"
+                style="font-size:0.8rem;">📌✕</button>
+            ` : `
+              <button class="move-btn" type="button" title="Sposta al giorno successivo" aria-label="Sposta al giorno successivo" onclick="moveToNextDay(${task.id})">➔</button>
+              <button class="move-btn" type="button" title="Cambia categoria" aria-label="Cambia categoria" onclick="openMoveModal(${task.id})">📂</button>
+              <button class="trash-btn" type="button" title="Elimina task" aria-label="Elimina task" onclick="deleteTask(${task.id})">✕</button>
+            `}
           </div>
         </div>
       `;
