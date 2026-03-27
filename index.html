@@ -170,6 +170,11 @@
       display: block;
     }
 
+    /* Archive panel body always visible when panel is shown */
+    #archive-panel .colored-panel-body {
+      display: block !important;
+    }
+
     /* Categories panel — indigo */
     .cat-panel {
       border-color: var(--primary);
@@ -203,21 +208,22 @@
       padding: 0.75rem 1rem 1rem;
     }
 
-    /* Archive panel — amber */
+    /* Archive panel — amber (no header, toggled via Funzioni) */
     .archive-panel {
       border-color: var(--warning);
       flex-shrink: 0;
     }
 
-    .archive-panel .colored-panel-hdr {
-      background: rgba(245, 158, 11, 0.13);
-      color: var(--warning);
-    }
-
+    /* Override: archive body always shown when panel is .open */
     .archive-panel .colored-panel-body {
       background: var(--surface);
-      border-top-color: var(--warning);
+      border-top: none;
       padding: 0.85rem;
+    }
+
+    /* Hide archive panel entirely when not open */
+    #archive-panel:not(.open) {
+      display: none;
     }
 
     /* Calendar — primary tinted header */
@@ -1305,6 +1311,7 @@
             <button class="funzioni-item" role="menuitem" type="button" onclick="exportData(); closeFunzioniMenu()">💾 Backup</button>
             <button class="funzioni-item" role="menuitem" type="button" onclick="document.getElementById('imp').click(); closeFunzioniMenu()">📂 Carica</button>
             <button class="funzioni-item" role="menuitem" type="button" onclick="exportCSV(); closeFunzioniMenu()">📊 CDV</button>
+            <button class="funzioni-item" role="menuitem" type="button" onclick="toggleArchiveSection(); closeFunzioniMenu()" id="funzioni-archive-btn">🗂️ Archivio <span id="count-all-funzioni" style="margin-left:auto; font-size:0.68rem; background:rgba(245,158,11,0.18); color:var(--warning); border-radius:999px; padding:0.15rem 0.5rem; font-weight:800;">0</span></button>
           </div>
         </div>
         <input type="file" id="imp" style="display:none" accept=".json" onchange="importData(event)" />
@@ -1321,14 +1328,14 @@
           />
         </div>
 
-        <!-- ── ARCHIVIO PANEL (closed by default) ── -->
+        <!-- ── ARCHIVIO PANEL (accessibile via Funzioni) ── -->
         <div class="colored-panel archive-panel" id="archive-panel">
-          <div class="colored-panel-hdr" onclick="toggleArchiveSection()" aria-expanded="false" aria-controls="archive-panel-body">
-            <span id="archive-label">🗂️ Archivio</span>
-            <span id="count-all" class="pill">0</span>
-            <span class="panel-icon" id="archive-panel-icon">▼</span>
-          </div>
           <div class="colored-panel-body" id="archive-panel-body">
+            <!-- Internal header with close button -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--warning);">
+              <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--warning);">🗂️ Archivio &nbsp;<span id="count-all" class="pill" style="border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.12); color:var(--warning);">0</span></span>
+              <button type="button" onclick="toggleArchiveSection()" style="background:transparent; border:none; color:var(--warning); cursor:pointer; font-size:1rem; padding:0 2px;" title="Chiudi archivio" aria-label="Chiudi archivio">✕</button>
+            </div>
 
             <button id="reset-filter-btn" class="reset-filter-btn" type="button" onclick="resetArchiveFilter()">
               Mostra tutto l'archivio
@@ -2116,8 +2123,7 @@
 
     function deleteTask(id) {
       if (!confirm("Sei sicuro di voler eliminare questo task?")) return;
-      // Remove from permanentTasks if present
-      state.permanentTasks = safeArray(state.permanentTasks).filter(pid => pid !== id);
+      // NB: permanentTasks è indipendente — la cancellazione di un task non tocca i permanenti
       state.entries = state.entries.filter(e => e.id !== id);
       saveAndRender();
       showToast("Task eliminato");
@@ -2282,6 +2288,8 @@
 
       document.getElementById("count-today").textContent = String(focusOpen);
       document.getElementById("count-all").textContent = String(archiveTasks.length);
+      const funzioniCount = document.getElementById("count-all-funzioni");
+      if (funzioniCount) funzioniCount.textContent = String(archiveTasks.length);
       document.getElementById("stat-completed").textContent = String(allCompletedOccurrences);
       document.getElementById("stat-total").textContent = String(total);
       document.getElementById("stat-score").textContent = score + "%";
@@ -2551,18 +2559,14 @@
 
     function clearArchive() {
       const today = todayStr();
-      const removedIds = new Set();
       state.entries = state.entries.filter(task => {
         const inFuture = task.date > today;
         const isTodayPendingNonRecurring =
           task.date === today && !isRecurring(task) && !isTaskCompletedForDate(task, today);
         const keepRecurringTemplate = isRecurring(task);
-        const keep = inFuture || isTodayPendingNonRecurring || keepRecurringTemplate;
-        if (!keep) removedIds.add(task.id);
-        return keep;
+        return inFuture || isTodayPendingNonRecurring || keepRecurringTemplate;
       });
-      // Clean up permanentTasks
-      state.permanentTasks = safeArray(state.permanentTasks).filter(id => !removedIds.has(id));
+      // NB: permanentTasks è indipendente — la pulizia archivio non tocca i permanenti
       closeConfirm();
       saveAndRender();
       showToast("Archivio pulito");
