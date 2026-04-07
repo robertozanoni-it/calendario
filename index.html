@@ -18,6 +18,7 @@
       --danger: #ef4444;
       --success: #10b981;
       --warning: #f59e0b;
+      --info: #06b6d4;
       --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
       --radius-lg: 18px;
       --radius-md: 12px;
@@ -175,6 +176,24 @@
       display: block !important;
     }
 
+    /* Nuovo Task panel — cyan */
+    .newtask-panel {
+      border-color: var(--info);
+      margin-bottom: 0.85rem;
+    }
+
+    .newtask-panel .colored-panel-hdr {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--info);
+      border-color: var(--info);
+    }
+
+    .newtask-panel .colored-panel-body {
+      background: var(--surface);
+      border-top-color: var(--info);
+      padding: 0.75rem 1rem 1rem;
+    }
+
     /* Categories panel — indigo */
     .cat-panel {
       border-color: var(--primary);
@@ -208,20 +227,18 @@
       padding: 0.75rem 1rem 1rem;
     }
 
-    /* Archive panel — amber (no header, toggled via Funzioni) */
+    /* Archive panel — amber */
     .archive-panel {
       border-color: var(--warning);
       flex-shrink: 0;
     }
 
-    /* Override: archive body always shown when panel is .open */
     .archive-panel .colored-panel-body {
       background: var(--surface);
       border-top: none;
       padding: 0.85rem;
     }
 
-    /* Hide archive panel entirely when not open */
     #archive-panel:not(.open) {
       display: none;
     }
@@ -1040,7 +1057,6 @@
       clip: rect(0,0,0,0); border: 0;
     }
 
-    /* Archive task list scrollable */
     .archive-task-scroll {
       max-height: 320px;
       overflow-y: auto;
@@ -1048,7 +1064,6 @@
       margin-top: 0;
     }
 
-    /* Sidebar scroll area */
     .sidebar-scroll {
       flex: 1;
       overflow-y: auto;
@@ -1060,13 +1075,11 @@
       min-height: 0;
     }
 
-    /* Search box standalone */
     .search-standalone {
       margin-bottom: 0.5rem;
       flex-shrink: 0;
     }
 
-    /* Perm task picker */
     .perm-task-picker {
       max-height: 160px;
       overflow-y: auto;
@@ -1077,7 +1090,6 @@
       background: var(--bg-main);
     }
 
-    /* ── Permanenti nel Focus: sezione in fondo, card compatte ── */
     .perm-focus-header {
       border-color: var(--success) !important;
       color: var(--success) !important;
@@ -1101,7 +1113,6 @@
       min-height: unset !important;
       padding: 0.55rem 0.7rem 0.55rem 0.85rem !important;
       font-size: 0.82rem;
-      /* Usa il colore della categoria — nessun override */
       opacity: 0.92;
       border-style: dashed;
     }
@@ -1211,7 +1222,104 @@
         </div>
       </div>
 
-      <!-- ── CATEGORIE PANEL (top, always accessible) ── -->
+      <!-- ── NUOVO TASK PANEL (top, collapsible, cyan) ── -->
+      <div class="colored-panel newtask-panel" id="newtask-panel">
+        <div class="colored-panel-hdr" onclick="toggleNewTaskSection()" aria-expanded="false" aria-controls="newtask-panel-body">
+          <span>✨ Nuovo Task</span>
+          <span class="panel-icon" id="newtask-panel-icon">▼</span>
+        </div>
+        <div class="colored-panel-body" id="newtask-panel-body">
+          <section class="creation-box" id="form-container" style="margin:0; padding:0; border:none; box-shadow:none; background:transparent;">
+            <div class="section-title" id="form-title">Nuovo task</div>
+
+            <input type="hidden" id="task-id" />
+            <label class="sr-only" for="task-text">Titolo task</label>
+            <input class="field" type="text" id="task-text" placeholder="Cosa devi fare?" />
+
+            <label class="sr-only" for="task-link">Link task</label>
+            <input class="field" type="url" id="task-link" placeholder="https://esempio.it o link interno" />
+
+            <label class="sr-only" for="task-subtasks">Sotto-task</label>
+            <textarea class="field" id="task-subtasks" placeholder="Sotto-task (uno per riga)..." style="height: 60px; resize: vertical;"></textarea>
+
+            <label class="sr-only" for="task-notes-input">Note aggiuntive</label>
+            <textarea class="field" id="task-notes-input" placeholder="Note aggiuntive..." style="height: 60px; resize: vertical;"></textarea>
+
+            <div class="image-upload-wrap" style="margin-bottom: 8px;">
+              <label class="sr-only" for="task-image">Immagine task</label>
+              <input class="field" type="file" id="task-image" accept="image/*" onchange="handleImageUpload(event)" style="margin-bottom: 4px;" />
+              <div id="image-preview-container" style="display: none; position: relative; margin-bottom: 4px;">
+                <img id="image-preview" src="" alt="Anteprima" style="max-width: 100%; max-height: 200px; border-radius: 10px; display: block; object-fit: cover;" />
+                <button class="trash-btn" type="button" onclick="clearImageInput()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; width: 24px; height: 24px;">✕</button>
+              </div>
+            </div>
+
+            <div class="field-inline-row">
+              <div class="color-input-wrap">
+                <label class="sr-only" for="task-color">Colore task</label>
+                <input class="task-color-input" type="color" id="task-color" value="#4f46e5" />
+              </div>
+              <button class="btn-tool" type="button" onclick="resetTaskColor()">Colore categoria</button>
+            </div>
+
+            <div class="input-group">
+              <div>
+                <label class="sr-only" for="task-cat">Categoria</label>
+                <select class="select" id="task-cat" onchange="updateSubs(true)"></select>
+              </div>
+              <button class="btn-add-cat" type="button" onclick="openCatModal()" aria-label="Aggiungi nuova categoria">+</button>
+              <button
+                class="btn-add-cat"
+                type="button"
+                onclick="deleteSelectedCategory()"
+                aria-label="Elimina categoria selezionata"
+                title="Elimina categoria"
+                style="background: transparent; color: var(--danger); border: 1px solid var(--danger);"
+              >−</button>
+              <div>
+                <label class="sr-only" for="task-sub">Sottocategoria</label>
+                <select class="select" id="task-sub">
+                  <option value="">Generale</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-row-4">
+              <div>
+                <label class="sr-only" for="task-date">Data task</label>
+                <input class="field" type="date" id="task-date" onchange="syncFromTaskDateInput()" />
+              </div>
+              <div>
+                <label class="sr-only" for="task-time">Ora task</label>
+                <input class="field" type="time" id="task-time" />
+              </div>
+              <div>
+                <label class="sr-only" for="task-pri">Priorità</label>
+                <select class="select" id="task-pri">
+                  <option value="low">Bassa</option>
+                  <option value="med">Media</option>
+                  <option value="high">Alta</option>
+                </select>
+              </div>
+              <div>
+                <label class="sr-only" for="task-repeat">Ripetizione</label>
+                <select class="select" id="task-repeat">
+                  <option value="none">No ripetizione</option>
+                  <option value="weekly">Settimanale</option>
+                  <option value="monthly">Mensile</option>
+                  <option value="yearly">Annuale</option>
+                </select>
+              </div>
+            </div>
+
+            <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
+            <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
+            <div class="helper-note">Le card del Focus sono ordinate per categoria e titolo.</div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ── CATEGORIE PANEL ── -->
       <div class="colored-panel cat-panel" id="cat-panel">
         <div class="colored-panel-hdr" onclick="toggleCatSection()" aria-expanded="false" aria-controls="cat-panel-body">
           <span>🏷️ Categorie</span>
@@ -1232,108 +1340,16 @@
           <div class="small muted" style="margin-bottom: 8px; line-height: 1.5;">
             Seleziona i task sempre visibili, indipendentemente dalla data focus:
           </div>
-          <!-- Category filter for task picker -->
           <select class="select" id="perm-cat-select" onchange="renderPermTaskPicker()" style="margin-bottom: 8px;"></select>
-          <!-- Task chips from selected category -->
           <div class="perm-task-picker" id="perm-task-picker">
             <div class="empty-state" style="padding:0.6rem; font-size:0.75rem;">Seleziona una categoria</div>
           </div>
-          <!-- Permanent tasks list -->
           <div id="perm-task-list" class="perm-tasks-scroll"></div>
         </div>
       </div>
 
       <!-- Scrollable middle section -->
       <div class="sidebar-scroll">
-
-        <!-- ── CREATION FORM ── -->
-        <section class="creation-box" id="form-container">
-          <div class="section-title" id="form-title">Nuovo task</div>
-
-          <input type="hidden" id="task-id" />
-          <label class="sr-only" for="task-text">Titolo task</label>
-          <input class="field" type="text" id="task-text" placeholder="Cosa devi fare?" />
-
-          <label class="sr-only" for="task-link">Link task</label>
-          <input class="field" type="url" id="task-link" placeholder="https://esempio.it o link interno" />
-
-          <label class="sr-only" for="task-subtasks">Sotto-task</label>
-          <textarea class="field" id="task-subtasks" placeholder="Sotto-task (uno per riga)..." style="height: 60px; resize: vertical;"></textarea>
-
-          <label class="sr-only" for="task-notes-input">Note aggiuntive</label>
-          <textarea class="field" id="task-notes-input" placeholder="Note aggiuntive..." style="height: 60px; resize: vertical;"></textarea>
-
-          <div class="image-upload-wrap" style="margin-bottom: 8px;">
-            <label class="sr-only" for="task-image">Immagine task</label>
-            <input class="field" type="file" id="task-image" accept="image/*" onchange="handleImageUpload(event)" style="margin-bottom: 4px;" />
-            <div id="image-preview-container" style="display: none; position: relative; margin-bottom: 4px;">
-              <img id="image-preview" src="" alt="Anteprima" style="max-width: 100%; max-height: 200px; border-radius: 10px; display: block; object-fit: cover;" />
-              <button class="trash-btn" type="button" onclick="clearImageInput()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; width: 24px; height: 24px;">✕</button>
-            </div>
-          </div>
-
-          <div class="field-inline-row">
-            <div class="color-input-wrap">
-              <label class="sr-only" for="task-color">Colore task</label>
-              <input class="task-color-input" type="color" id="task-color" value="#4f46e5" />
-            </div>
-            <button class="btn-tool" type="button" onclick="resetTaskColor()">Colore categoria</button>
-          </div>
-
-          <div class="input-group">
-            <div>
-              <label class="sr-only" for="task-cat">Categoria</label>
-              <select class="select" id="task-cat" onchange="updateSubs(true)"></select>
-            </div>
-            <button class="btn-add-cat" type="button" onclick="openCatModal()" aria-label="Aggiungi nuova categoria">+</button>
-            <button
-              class="btn-add-cat"
-              type="button"
-              onclick="deleteSelectedCategory()"
-              aria-label="Elimina categoria selezionata"
-              title="Elimina categoria"
-              style="background: transparent; color: var(--danger); border: 1px solid var(--danger);"
-            >−</button>
-            <div>
-              <label class="sr-only" for="task-sub">Sottocategoria</label>
-              <select class="select" id="task-sub">
-                <option value="">Generale</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="field-row-4">
-            <div>
-              <label class="sr-only" for="task-date">Data task</label>
-              <input class="field" type="date" id="task-date" onchange="syncFromTaskDateInput()" />
-            </div>
-            <div>
-              <label class="sr-only" for="task-time">Ora task</label>
-              <input class="field" type="time" id="task-time" />
-            </div>
-            <div>
-              <label class="sr-only" for="task-pri">Priorità</label>
-              <select class="select" id="task-pri">
-                <option value="low">Bassa</option>
-                <option value="med">Media</option>
-                <option value="high">Alta</option>
-              </select>
-            </div>
-            <div>
-              <label class="sr-only" for="task-repeat">Ripetizione</label>
-              <select class="select" id="task-repeat">
-                <option value="none">No ripetizione</option>
-                <option value="weekly">Settimanale</option>
-                <option value="monthly">Mensile</option>
-                <option value="yearly">Annuale</option>
-              </select>
-            </div>
-          </div>
-
-          <button class="btn-main" id="btn-save" type="button" onclick="saveTask()">Salva</button>
-          <button class="btn-subtle" id="btn-cancel" type="button" onclick="resetForm()">Annulla modifica</button>
-          <div class="helper-note">Le card del Focus sono ordinate per categoria e titolo.</div>
-        </section>
 
         <!-- ── CALENDARIO ── -->
         <div class="calendar-widget" id="calendar-widget">
@@ -1361,7 +1377,7 @@
           </button>
           <div class="funzioni-menu" id="funzioni-menu" role="menu">
             <button class="funzioni-item" role="menuitem" type="button" onclick="toggleTheme(); closeFunzioniMenu()">🌓 Tema</button>
-            <button class="funzioni-item" role="menuitem" type="button" onclick="exportData(); closeFunzioniMenu()">💾 Backup</button>
+            <button class="funzioni-item" role="menuitem" type="button" onclick="exportData(); closeFunzioniMenu()">📅 Calendario</button>
             <button class="funzioni-item" role="menuitem" type="button" onclick="document.getElementById('imp').click(); closeFunzioniMenu()">📂 Carica</button>
             <button class="funzioni-item" role="menuitem" type="button" onclick="exportCSV(); closeFunzioniMenu()">📊 CDV</button>
             <button class="funzioni-item" role="menuitem" type="button" onclick="toggleArchiveSection(); closeFunzioniMenu()" id="funzioni-archive-btn">🗂️ Archivio <span id="count-all-funzioni" style="margin-left:auto; font-size:0.68rem; background:rgba(245,158,11,0.18); color:var(--warning); border-radius:999px; padding:0.15rem 0.5rem; font-weight:800;">0</span></button>
@@ -1384,7 +1400,6 @@
         <!-- ── ARCHIVIO PANEL (accessibile via Funzioni) ── -->
         <div class="colored-panel archive-panel" id="archive-panel">
           <div class="colored-panel-body" id="archive-panel-body">
-            <!-- Internal header with close button -->
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--warning);">
               <span style="font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--warning);">🗂️ Archivio &nbsp;<span id="count-all" class="pill" style="border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.12); color:var(--warning);">0</span></span>
               <button type="button" onclick="toggleArchiveSection()" style="background:transparent; border:none; color:var(--warning); cursor:pointer; font-size:1rem; padding:0 2px;" title="Chiudi archivio" aria-label="Chiudi archivio">✕</button>
@@ -1517,12 +1532,13 @@
       selectedFocusDate: "",
       archiveFilterDate: "",
       focusCatFilter: "all",
-      permanentTasks: [],   // array of task IDs (numbers)
-      // UI open/close state
+      permanentTasks: [],
+      // UI open/close state - ALL CLOSED BY DEFAULT
       catPanelOpen: false,
       permPanelOpen: false,
       archivePanelOpen: false,
-      calendarOpen: false
+      calendarOpen: false,
+      newTaskPanelOpen: false
     };
 
     let state = structuredClone(DEFAULT_STATE);
@@ -1668,17 +1684,13 @@
       const data = safeObject(raw);
       const customCats = sanitizeCats(data.customCats);
       const entries = safeArray(data.entries).map(sanitizeEntry);
-      // permanentTasks: array di copie complete del task (indipendente da entries)
-      // Supporta migrazione da vecchio formato (array di numeri/ID)
       let permanentTasks = [];
       if (Array.isArray(data.permanentTasks)) {
         permanentTasks = data.permanentTasks.map(item => {
           if (typeof item === "number" || (typeof item === "string" && !isNaN(item))) {
-            // Vecchio formato: ID numerico → cerca in entries e copia
             const found = entries.find(e => e.id === Number(item));
             return found ? clone(found) : null;
           }
-          // Nuovo formato: oggetto task completo
           return sanitizeEntry(item);
         }).filter(Boolean);
       }
@@ -1693,10 +1705,11 @@
         archiveFilterDate: data.archiveFilterDate ? sanitizeDate(data.archiveFilterDate) : "",
         focusCatFilter: sanitizeString(data.focusCatFilter, "all"),
         permanentTasks,
-        catPanelOpen: !!data.catPanelOpen,
-        permPanelOpen: !!data.permPanelOpen,
-        archivePanelOpen: !!data.archivePanelOpen,
-        calendarOpen: !!data.calendarOpen
+        catPanelOpen: false,
+        permPanelOpen: false,
+        archivePanelOpen: false,
+        calendarOpen: false,
+        newTaskPanelOpen: false
       };
     }
 
@@ -1750,7 +1763,8 @@
       setupResizer();
       bindKeyboardShortcuts();
 
-      // Restore panel open/close states
+      // Restore panel open/close states (all start closed by default)
+      if (state.newTaskPanelOpen) openPanel("newtask-panel");
       if (state.catPanelOpen) openPanel("cat-panel");
       if (state.permPanelOpen) openPanel("perm-panel");
       if (state.archivePanelOpen) openPanel("archive-panel");
@@ -1764,7 +1778,6 @@
         if (!state.calendarOpen) toggleCalendar();
       });
 
-      // Close funzioni menu when clicking outside
       document.addEventListener("click", function(e) {
         const wrap = document.getElementById("funzioni-wrap");
         if (wrap && !wrap.contains(e.target)) {
@@ -1827,6 +1840,13 @@
       return panel ? panel.classList.contains("open") : false;
     }
 
+    function toggleNewTaskSection() {
+      const isOpen = isPanelOpen("newtask-panel");
+      isOpen ? closePanel("newtask-panel") : openPanel("newtask-panel");
+      state.newTaskPanelOpen = !isOpen;
+      persistState();
+    }
+
     function toggleCatSection() {
       const isOpen = isPanelOpen("cat-panel");
       isOpen ? closePanel("cat-panel") : openPanel("cat-panel");
@@ -1879,10 +1899,8 @@
       const id = Number(taskId);
       const idx = safeArray(state.permanentTasks).findIndex(t => t.id === id);
       if (idx >= 0) {
-        // Rimuovi dalla lista permanenti
         state.permanentTasks.splice(idx, 1);
       } else {
-        // Salva una copia COMPLETA del task — indipendente da state.entries
         const task = state.entries.find(e => e.id === id);
         if (task) state.permanentTasks.push(clone(task));
       }
@@ -1891,7 +1909,6 @@
     }
 
     function getPermanentTasks() {
-      // Usa i dati salvati in permanentTasks, NON cerca in entries
       return safeArray(state.permanentTasks).slice().sort((a, b) => {
         const catDiff = a.cat.localeCompare(b.cat, "it");
         if (catDiff !== 0) return catDiff;
@@ -1909,7 +1926,6 @@
         return;
       }
 
-      // Unione: task in entries + task permanenti orfani (cancellati da entries ma ancora in permanentTasks)
       const entryIds = new Set(state.entries.map(e => e.id));
       const orphanPerms = safeArray(state.permanentTasks).filter(pt => pt.cat === selectedCat && !entryIds.has(pt.id));
       const catTasks = [
@@ -1927,7 +1943,7 @@
 
       picker.innerHTML = `<div class="perm-task-grid">` + catTasks.map(task => {
         const isActive = permIds.has(task.id);
-        const isOrphan = !entryIds.has(task.id); // task cancellato ma ancora permanente
+        const isOrphan = !entryIds.has(task.id);
         const chipStyle = isActive
           ? `border-color:${color}; background:${color}22; color:${color};`
           : isOrphan ? `border-color:var(--danger); background:rgba(239,68,68,0.08); color:var(--danger);` : "";
@@ -1947,7 +1963,6 @@
     }
 
     function renderPermanentSection() {
-      // Populate category select for task picker
       const catSelect = document.getElementById("perm-cat-select");
       const cats = getSortedCategories();
       const currentVal = catSelect.value;
@@ -1957,13 +1972,11 @@
 
       renderPermTaskPicker();
 
-      // Render permanent tasks list
       const taskEl = document.getElementById("perm-task-list");
       const tasks = getPermanentTasks();
 
       if (!safeArray(state.permanentTasks).length) {
         taskEl.innerHTML = `<div class="empty-state" style="margin-top:8px; font-size:0.78rem;">Nessun task selezionato come permanente</div>`;
-        return;
         return;
       }
 
@@ -2195,7 +2208,6 @@
 
     function deleteTask(id) {
       if (!confirm("Sei sicuro di voler eliminare questo task?")) return;
-      // NB: permanentTasks è indipendente — la cancellazione di un task non tocca i permanenti
       state.entries = state.entries.filter(e => e.id !== id);
       saveAndRender();
       showToast("Task eliminato");
@@ -2322,7 +2334,6 @@
         return;
       }
 
-      // ── Task normali del giorno ──
       if (tasks.length) {
         const grouped = {};
         tasks.forEach(t => {
@@ -2336,7 +2347,6 @@
         });
       }
 
-      // ── Permanenti in fondo, card compatte con sfondo neutro ──
       if (permTasks.length) {
         html += `<div class="focus-cat-header perm-focus-header">
           📌 Permanenti <span>${permTasks.length}</span>
@@ -2413,7 +2423,6 @@
       }
     }
 
-    // isPermanentContext: true → il bottone ✕ rimuove dai permanenti invece di cancellare il task
     function createCard(task, isFocusArea, effectiveDate, isPermanentContext = false) {
       const categoryColor = state.catColors[task.cat] || "#666666";
       const taskColor = sanitizeHexColor(task.taskColor || "", categoryColor);
@@ -2600,7 +2609,6 @@
         showToast("Categoria usata da uno o più task: sposta o elimina prima i task collegati", true);
         return;
       }
-      // NB: i task permanenti di questa categoria rimangono invariati (le due funzioni sono separate)
       delete state.customCats[cat];
       delete state.catColors[cat];
       refreshCatSelects();
@@ -2668,7 +2676,6 @@
         const keepRecurringTemplate = isRecurring(task);
         return inFuture || isTodayPendingNonRecurring || keepRecurringTemplate;
       });
-      // NB: permanentTasks è indipendente — la pulizia archivio non tocca i permanenti
       closeConfirm();
       saveAndRender();
       showToast("Archivio pulito");
