@@ -126,9 +126,6 @@
       gap: 10px;
     }
 
-    /* ──────────────────────────────────────────
-       COLORED COLLAPSIBLE PANELS
-    ─────────────────────────────────────────── */
     .colored-panel {
       border-radius: var(--radius-lg);
       margin-bottom: 0.85rem;
@@ -171,7 +168,6 @@
       display: block;
     }
 
-    /* Nuovo Task panel — cyan */
     .newtask-panel {
       border-color: var(--info);
       margin-bottom: 0.85rem;
@@ -189,7 +185,6 @@
       padding: 0.75rem 1rem 1rem;
     }
 
-    /* Categories panel — indigo */
     .cat-panel {
       border-color: var(--primary);
     }
@@ -206,7 +201,6 @@
       padding: 0.75rem 1rem 1rem;
     }
 
-    /* Permanenti panel — emerald */
     .perm-panel {
       border-color: var(--success);
     }
@@ -222,7 +216,6 @@
       padding: 0.75rem 1rem 1rem;
     }
 
-    /* Archive panel — amber */
     .archive-panel {
       border-color: var(--warning);
       flex-shrink: 0;
@@ -240,7 +233,6 @@
       display: none;
     }
 
-    /* Calendar — primary tinted header */
     .calendar-widget {
       background: var(--surface);
       border: 1px solid var(--primary);
@@ -270,9 +262,6 @@
 
     .calendar-hdr-icon { transition: transform 0.25s ease; }
 
-    /* ──────────────────────────────────────────
-       CATEGORY COLOR ROWS
-    ─────────────────────────────────────────── */
     .color-row {
       display: flex;
       justify-content: space-between;
@@ -291,9 +280,6 @@
       cursor: pointer;
     }
 
-    /* ──────────────────────────────────────────
-       PERMANENTI TASK CHIPS
-    ─────────────────────────────────────────── */
     .perm-task-grid {
       display: flex;
       flex-wrap: wrap;
@@ -342,9 +328,6 @@
       padding-right: 2px;
     }
 
-    /* ──────────────────────────────────────────
-       CREATION BOX & FORM
-    ─────────────────────────────────────────── */
     .creation-box,
     .stat-mini,
     .task-card,
@@ -489,7 +472,6 @@
 
     .btn-danger:hover { background: var(--danger); color: white; }
 
-    /* ── FUNZIONI DROPDOWN ── */
     .funzioni-wrap {
       position: relative;
       margin-bottom: 0.85rem;
@@ -670,6 +652,7 @@
       background: var(--task-color, var(--surface)) !important;
       color: var(--task-text-color, var(--text-main));
       border: 1px solid var(--border);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
     .task-card::before {
@@ -687,6 +670,29 @@
       outline-offset: 2px;
       z-index: 10;
       transform: scale(1.02);
+    }
+
+    /* ── EDIT BUTTON visible on hover ── */
+    .task-card .btn-edit-task {
+      display: none;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: inherit;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.25rem 0.55rem;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 0.35rem;
+      transition: background 0.15s;
+    }
+
+    .task-card:hover .btn-edit-task {
+      display: inline-block;
+    }
+
+    .task-card .btn-edit-task:hover {
+      background: rgba(255,255,255,0.35);
     }
 
     .task-card.priority-high { border-right: 3px solid var(--danger); }
@@ -734,6 +740,10 @@
       margin-bottom: 0.18rem;
       word-break: break-word;
       color: inherit;
+    }
+
+    .task-title:hover {
+      text-decoration: underline;
     }
 
     .task-meta {
@@ -859,6 +869,21 @@
 
     .trash-btn:hover { background: var(--danger); color: white; }
     .move-btn:hover { background: var(--primary); color: white; }
+
+    /* Edit action button in task actions column */
+    .edit-btn {
+      background: rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0.15rem;
+      border-radius: 8px;
+      color: inherit;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .edit-btn:hover { background: var(--info); color: white; }
 
     .task-check {
       width: 18px; height: 18px;
@@ -1166,7 +1191,6 @@
 <body data-theme="dark">
   <div id="toast" role="status" aria-live="polite">Operazione completata</div>
 
-  <!-- MODAL: Confirm archive clear -->
   <div id="modal-confirm" class="modal-backdrop" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
       <h3 id="confirm-title" style="margin: 0 0 10px;">Pulizia Archivio</h3>
@@ -1181,7 +1205,6 @@
     </div>
   </div>
 
-  <!-- MODAL: Move task -->
   <div id="modal-move" class="modal-backdrop" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="move-task-title">
       <h3 id="move-task-title" style="margin: 0 0 12px;">Sposta Task</h3>
@@ -1195,7 +1218,6 @@
     </div>
   </div>
 
-  <!-- MODAL: New category -->
   <div id="modal-input" class="modal-backdrop" aria-hidden="true">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="new-cat-title">
       <h3 id="new-cat-title" style="margin: 0 0 12px;">Nuova Categoria</h3>
@@ -1208,12 +1230,8 @@
   </div>
 
   <div class="app-container">
-    <!-- ═══════════════════════════════════════════════
-         SIDEBAR
-    ═══════════════════════════════════════════════ -->
     <aside class="col-left" id="sidebar">
 
-      <!-- Topbar -->
       <div class="topbar">
         <div>
           <h1 class="app-title">OmniMind Lite</h1>
@@ -1221,7 +1239,6 @@
         </div>
       </div>
 
-      <!-- ── NUOVO TASK PANEL (top, collapsible, cyan) ── -->
       <div class="colored-panel newtask-panel" id="newtask-panel">
         <div class="colored-panel-hdr" onclick="toggleNewTaskSection()" aria-expanded="false" aria-controls="newtask-panel-body">
           <span>✨ Nuovo Task</span>
@@ -1318,10 +1335,8 @@
         </div>
       </div>
 
-      <!-- Scrollable middle section -->
       <div class="sidebar-scroll">
 
-        <!-- ── CALENDARIO ── -->
         <div class="calendar-widget" id="calendar-widget">
           <div class="calendar-hdr-btn" onclick="toggleCalendar()" aria-expanded="false" aria-controls="calendar-content">
             <span>📅 Calendario</span>
@@ -1340,7 +1355,6 @@
           </div>
         </div>
 
-        <!-- ── FUNZIONI DROPDOWN ── -->
         <div class="funzioni-wrap" id="funzioni-wrap">
           <button class="btn-funzioni" type="button" onclick="toggleFunzioniMenu()" aria-haspopup="true" aria-expanded="false" id="btn-funzioni">
             ⚙️ Funzioni ▾
@@ -1357,7 +1371,6 @@
         </div>
         <input type="file" id="imp" style="display:none" accept=".json" onchange="importData(event)" />
 
-        <!-- Search box: visible always, filters both focus and archive -->
         <div class="search-standalone">
           <input
             class="field"
@@ -1369,7 +1382,6 @@
           />
         </div>
 
-        <!-- ── CATEGORIE PANEL (accessibile via Funzioni) ── -->
         <div class="colored-panel cat-panel" id="cat-panel">
           <div class="colored-panel-body" id="cat-panel-body">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--primary);">
@@ -1380,7 +1392,6 @@
           </div>
         </div>
 
-        <!-- ── PERMANENTI PANEL (accessibile via Funzioni) ── -->
         <div class="colored-panel perm-panel" id="perm-panel">
           <div class="colored-panel-body" id="perm-panel-body">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--success);">
@@ -1398,7 +1409,6 @@
           </div>
         </div>
 
-        <!-- ── ARCHIVIO PANEL (accessibile via Funzioni) ── -->
         <div class="colored-panel archive-panel" id="archive-panel">
           <div class="colored-panel-body" id="archive-panel-body">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--warning);">
@@ -1428,14 +1438,11 @@
           </div>
         </div>
 
-      </div><!-- /sidebar-scroll -->
+      </div>
     </aside>
 
     <div class="resizer" id="resizer" aria-hidden="true"></div>
 
-    <!-- ═══════════════════════════════════════════════
-         MAIN / FOCUS
-    ═══════════════════════════════════════════════ -->
     <main class="col-right">
       <div class="focus-header">
         <div>
@@ -1534,7 +1541,6 @@
       archiveFilterDate: "",
       focusCatFilter: "all",
       permanentTasks: [],
-      // UI open/close state - ALL CLOSED BY DEFAULT
       catPanelOpen: false,
       permPanelOpen: false,
       archivePanelOpen: false,
@@ -1545,9 +1551,6 @@
     let state = structuredClone(DEFAULT_STATE);
     let currentMonth = new Date();
 
-    // ─────────────────────────────────────────
-    // UTILITIES
-    // ─────────────────────────────────────────
     function localDateToYmd(date) {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -1714,9 +1717,7 @@
       };
     }
 
-    // ─────────────────────────────────────────
-    // STORAGE
-    // ─────────────────────────────────────────
+    // ─── STORAGE ───
     function loadState() {
       const saved = localStorage.getItem(STORE_KEY);
       if (!saved) {
@@ -1741,9 +1742,7 @@
       render();
     }
 
-    // ─────────────────────────────────────────
-    // INIT
-    // ─────────────────────────────────────────
+    // ─── INIT ───
     function init() {
       loadState();
       document.body.setAttribute("data-theme", state.theme);
@@ -1764,7 +1763,6 @@
       setupResizer();
       bindKeyboardShortcuts();
 
-      // Restore panel open/close states (all start closed by default)
       if (state.newTaskPanelOpen) openPanel("newtask-panel");
       if (state.catPanelOpen) openPanel("cat-panel");
       if (state.permPanelOpen) openPanel("perm-panel");
@@ -1821,9 +1819,7 @@
              document.getElementById("modal-move").style.display === "flex";
     }
 
-    // ─────────────────────────────────────────
-    // PANEL TOGGLE HELPERS
-    // ─────────────────────────────────────────
+    // ─── PANEL HELPERS ───
     function openPanel(panelId) {
       const panel = document.getElementById(panelId);
       if (!panel) return;
@@ -1853,9 +1849,7 @@
       isOpen ? closePanel("cat-panel") : openPanel("cat-panel");
       state.catPanelOpen = !isOpen;
       persistState();
-      if (!isOpen) {
-        renderColorSettings();
-      }
+      if (!isOpen) renderColorSettings();
     }
 
     function togglePermSection() {
@@ -1873,9 +1867,7 @@
       persistState();
     }
 
-    // ─────────────────────────────────────────
-    // FUNZIONI DROPDOWN
-    // ─────────────────────────────────────────
+    // ─── FUNZIONI DROPDOWN ───
     function toggleFunzioniMenu() {
       const menu = document.getElementById("funzioni-menu");
       const btn = document.getElementById("btn-funzioni");
@@ -1896,9 +1888,7 @@
       if (btn) btn.setAttribute("aria-expanded", "false");
     }
 
-    // ─────────────────────────────────────────
-    // PERMANENTI
-    // ─────────────────────────────────────────
+    // ─── PERMANENTI ───
     function togglePermanentTask(taskId) {
       const id = Number(taskId);
       const idx = safeArray(state.permanentTasks).findIndex(t => t.id === id);
@@ -2005,9 +1995,7 @@
       taskEl.innerHTML = html;
     }
 
-    // ─────────────────────────────────────────
-    // CATEGORIES
-    // ─────────────────────────────────────────
+    // ─── CATEGORIES ───
     function getSortedCategories() {
       return Object.keys(state.customCats).sort((a, b) => a.localeCompare(b, "it"));
     }
@@ -2088,9 +2076,7 @@
       if (state.permPanelOpen) renderPermanentSection();
     }
 
-    // ─────────────────────────────────────────
-    // FORM
-    // ─────────────────────────────────────────
+    // ─── FORM ───
     function getFormData() {
       return {
         text: sanitizeString(document.getElementById("task-text").value),
@@ -2135,6 +2121,7 @@
       document.getElementById("btn-save").textContent = "Salva";
       document.getElementById("btn-cancel").style.display = "none";
       document.getElementById("form-container").classList.remove("editing");
+      document.querySelectorAll(".task-card").forEach(c => c.classList.remove("is-editing"));
       const cats = getSortedCategories();
       if (cats.length) document.getElementById("task-cat").value = cats[0];
       updateSubs(true);
@@ -2151,7 +2138,7 @@
           state.entries[idx] = { ...state.entries[idx], ...data };
         }
         resetForm();
-        showToast("Task aggiornato");
+        showToast("Task aggiornato ✓");
       } else {
         state.entries.push({
           id: Date.now(),
@@ -2163,20 +2150,30 @@
         document.getElementById("task-link").value = "";
         document.getElementById("task-time").value = "";
         document.getElementById("task-text").focus();
-        showToast("Task salvato");
+        showToast("Task salvato ✓");
       }
       saveAndRender();
     }
 
+    // ─── EDIT TASK: apre il pannello e popola il form ───
     function editTask(id) {
       const task = state.entries.find(e => e.id === id);
       if (!task) return;
 
+      // Apre il pannello "✨ Nuovo Task" se è chiuso
+      if (!isPanelOpen("newtask-panel")) {
+        openPanel("newtask-panel");
+        state.newTaskPanelOpen = true;
+        persistState();
+      }
+
+      // Evidenzia la card in editing
       document.querySelectorAll(".task-card").forEach(c => c.classList.remove("is-editing"));
       document.querySelectorAll(".task-card").forEach(c => {
         if (c.getAttribute("data-id") === String(id)) c.classList.add("is-editing");
       });
 
+      // Popola il form
       document.getElementById("task-id").value = String(task.id);
       document.getElementById("task-text").value = task.text;
       document.getElementById("task-link").value = task.link || "";
@@ -2201,13 +2198,16 @@
       const categoryColor = state.catColors[task.cat] || DEFAULT_TASK_COLOR;
       document.getElementById("task-color").value = sanitizeHexColor(task.taskColor || "", categoryColor);
 
-      document.getElementById("form-title").textContent = "Modifica task";
+      document.getElementById("form-title").textContent = "✏️ Modifica task";
       document.getElementById("btn-save").textContent = "Aggiorna";
       document.getElementById("btn-cancel").style.display = "block";
       document.getElementById("form-container").classList.add("editing");
-      document.getElementById("form-container").scrollIntoView({ behavior: "smooth", block: "start" });
 
-      setTimeout(() => document.getElementById("task-text").focus(), 150);
+      // Scrolla la sidebar in cima per mostrare il form
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) sidebar.scrollTo({ top: 0, behavior: "smooth" });
+
+      setTimeout(() => document.getElementById("task-text").focus(), 200);
     }
 
     function deleteTask(id) {
@@ -2227,9 +2227,7 @@
       showToast("Task spostato al giorno successivo");
     }
 
-    // ─────────────────────────────────────────
-    // TASK LOGIC
-    // ─────────────────────────────────────────
+    // ─── TASK LOGIC ───
     function isRecurring(task) { return task.repeat && task.repeat !== "none"; }
 
     function isTaskScheduledForDate(task, dateStr) {
@@ -2302,9 +2300,7 @@
         .sort((a, b) => b.id - a.id);
     }
 
-    // ─────────────────────────────────────────
-    // RENDER
-    // ─────────────────────────────────────────
+    // ─── RENDER ───
     function render() {
       const focusDate = state.selectedFocusDate || todayStr();
       const archiveTasks = getArchiveTasks();
@@ -2330,7 +2326,6 @@
       if (moveAllBtn) moveAllBtn.style.display = pendingCount > 0 ? "block" : "none";
 
       let html = "";
-
       const permTasks = getPermanentTasks();
 
       if (!tasks.length && !permTasks.length) {
@@ -2418,9 +2413,7 @@
       }
     }
 
-    // ─────────────────────────────────────────
-    // CARD BUILDER
-    // ─────────────────────────────────────────
+    // ─── CARD BUILDER ───
     function removeFromPermanents(taskId) {
       const id = Number(taskId);
       const idx = safeArray(state.permanentTasks).findIndex(t => t.id === id);
@@ -2466,11 +2459,11 @@
       ` : "";
 
       const notesHtml = task.notes ? `
-        <button class="btn-toggle-notes" type="button" onclick="event.stopPropagation(); toggleNotes(${task.id})">Mostra note</button>
+        <button class="btn-toggle-notes" type="button" onclick="event.stopPropagation(); toggleNotes(${task.id})">📋 Note</button>
         <div id="notes-${task.id}" class="task-notes">${escapeHtml(task.notes)}</div>
       ` : "";
 
-      const imageHtml = task.image && task.image.startsWith("") ? `
+      const imageHtml = task.image && task.image.startsWith("data:") ? `
         <div class="task-image-display" onclick="event.stopPropagation(); editTask(${task.id})">
           <img src="${task.image}" alt="Immagine task" />
         </div>
@@ -2492,12 +2485,13 @@
               <span class="badge">${escapeHtml(task.cat)}</span>
               <span class="task-date">${escapeHtml(dateDisplay)}</span>
             </div>
-            <div class="task-title" onclick="editTask(${task.id})">${escapeHtml(task.text)}</div>
+            <div class="task-title" onclick="editTask(${task.id})" title="Clicca per modificare">${escapeHtml(task.text)}</div>
             <div class="task-meta">${meta.join("")}</div>
             ${linkHtml}
             ${subtaskHtml}
             ${notesHtml}
             ${imageHtml}
+            <button class="btn-edit-task" type="button" onclick="editTask(${task.id})">✏️ Modifica</button>
           </div>
           <div class="task-actions">
             ${isPermanentContext ? `
@@ -2505,6 +2499,7 @@
                 onclick="removeFromPermanents(${task.id})"
                 style="font-size:0.8rem;">📌✕</button>
             ` : `
+              <button class="edit-btn" type="button" title="Modifica task" aria-label="Modifica task" onclick="editTask(${task.id})">✏️</button>
               <button class="move-btn" type="button" title="Sposta al giorno successivo" aria-label="Sposta al giorno successivo" onclick="moveToNextDay(${task.id})">➔</button>
               <button class="move-btn" type="button" title="Cambia categoria" aria-label="Cambia categoria" onclick="openMoveModal(${task.id})">📂</button>
               <button class="trash-btn" type="button" title="Elimina task" aria-label="Elimina task" onclick="deleteTask(${task.id})">✕</button>
@@ -2527,9 +2522,7 @@
       return "🟢 Bassa";
     }
 
-    // ─────────────────────────────────────────
-    // QUICK ADD
-    // ─────────────────────────────────────────
+    // ─── QUICK ADD ───
     function quickAddTask() {
       const input = document.getElementById("quick-add-input");
       const text = sanitizeString(input.value);
@@ -2560,17 +2553,13 @@
       document.getElementById("focus-cat-filter").value = state.focusCatFilter || "all";
     }
 
-    // ─────────────────────────────────────────
-    // THEME
-    // ─────────────────────────────────────────
+    // ─── THEME ───
     function toggleTheme() {
       state.theme = state.theme === "light" ? "dark" : "light";
       saveAndRender();
     }
 
-    // ─────────────────────────────────────────
-    // CATEGORY CRUD
-    // ─────────────────────────────────────────
+    // ─── CATEGORY CRUD ───
     function openCatModal() {
       const modal = document.getElementById("modal-input");
       modal.style.display = "flex";
@@ -2625,9 +2614,7 @@
       showToast("Categoria eliminata");
     }
 
-    // ─────────────────────────────────────────
-    // MOVE MODAL
-    // ─────────────────────────────────────────
+    // ─── MOVE MODAL ───
     function openMoveModal(taskId) {
       const task = state.entries.find(e => e.id === taskId);
       if (!task) return;
@@ -2660,9 +2647,7 @@
       closeMoveModal();
     }
 
-    // ─────────────────────────────────────────
-    // ARCHIVE CLEAR
-    // ─────────────────────────────────────────
+    // ─── ARCHIVE CLEAR ───
     function openConfirm() {
       const modal = document.getElementById("modal-confirm");
       modal.style.display = "flex";
@@ -2689,9 +2674,7 @@
       showToast("Archivio pulito");
     }
 
-    // ─────────────────────────────────────────
-    // IMPORT / EXPORT
-    // ─────────────────────────────────────────
+    // ─── IMPORT / EXPORT ───
     function exportData() {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -2756,9 +2739,7 @@
       showToast("Export CDV pronto");
     }
 
-    // ─────────────────────────────────────────
-    // CALENDAR
-    // ─────────────────────────────────────────
+    // ─── CALENDAR ───
     function renderCalendar() {
       const grid = document.getElementById("calendar-days");
       const monthName = document.getElementById("month-name");
@@ -2862,9 +2843,7 @@
       renderCalendar();
     }
 
-    // ─────────────────────────────────────────
-    // SUBTASK / NOTES / IMAGE
-    // ─────────────────────────────────────────
+    // ─── SUBTASK / NOTES / IMAGE ───
     function toggleSubtask(taskId, subIdx) {
       const task = state.entries.find(e => e.id === taskId);
       if (!task || !task.subtasks[subIdx]) return;
@@ -2890,7 +2869,7 @@
       el.classList.toggle("show");
       const btn = el.previousElementSibling;
       if (btn && btn.classList.contains("btn-toggle-notes")) {
-        btn.textContent = el.classList.contains("show") ? "Nascondi note" : "Mostra note";
+        btn.textContent = el.classList.contains("show") ? "🔼 Nascondi note" : "📋 Note";
       }
     }
 
@@ -2916,9 +2895,7 @@
       document.getElementById("image-preview-container").style.display = "none";
     }
 
-    // ─────────────────────────────────────────
-    // MOVE ALL PENDING
-    // ─────────────────────────────────────────
+    // ─── MOVE ALL PENDING ───
     function moveAllPendingToNextDay() {
       const focusDate = state.selectedFocusDate || todayStr();
       const focusTasks = getFocusTasks(focusDate);
@@ -2934,9 +2911,7 @@
       showToast(`${pendingTasks.length} task spostati`);
     }
 
-    // ─────────────────────────────────────────
-    // RESIZER
-    // ─────────────────────────────────────────
+    // ─── RESIZER ───
     function setupResizer() {
       const resizer = document.getElementById("resizer");
       const sidebar = document.getElementById("sidebar");
@@ -2964,9 +2939,7 @@
       });
     }
 
-    // ─────────────────────────────────────────
-    // TOAST
-    // ─────────────────────────────────────────
+    // ─── TOAST ───
     function showToast(message, isError = false) {
       const toast = document.getElementById("toast");
       toast.textContent = message;
