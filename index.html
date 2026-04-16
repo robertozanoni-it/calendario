@@ -1371,6 +1371,7 @@
                 <label class="sr-only" for="task-repeat">Ripetizione</label>
                 <select class="select" id="task-repeat">
                   <option value="none">No ripetizione</option>
+                  <option value="daily">Giornaliero</option>
                   <option value="weekly">Settimanale</option>
                   <option value="monthly">Mensile</option>
                   <option value="yearly">Annuale</option>
@@ -1387,6 +1388,10 @@
 
       <!-- NUOVA SEZIONE: FILTRI TASK RICORRENTI -->
       <div class="recurring-filters">
+        <button class="btn-recurring" id="btn-daily" type="button" onclick="setRecurringFilter('daily')" aria-label="Mostra task giornalieri">
+          <span>📋 Giornalieri</span>
+          <span class="count-badge" id="count-daily">0</span>
+        </button>
         <button class="btn-recurring" id="btn-weekly" type="button" onclick="setRecurringFilter('weekly')" aria-label="Mostra task settimanali">
           <span>🔄 Settimanali</span>
           <span class="count-badge" id="count-weekly">0</span>
@@ -1612,7 +1617,7 @@
       selectedFocusDate: "",
       archiveFilterDate: "",
       focusCatFilter: "all",
-      recurringFilter: null, // NUOVO: 'weekly' | 'monthly' | 'yearly' | null
+      recurringFilter: null, // NUOVO: 'daily' | 'weekly' | 'monthly' | 'yearly' | null
       permanentTasks: [],
       catPanelOpen: false,
       permPanelOpen: false,
@@ -1736,7 +1741,7 @@
     }
 
     function sanitizeRepeat(v) {
-      return ["none","weekly","monthly","yearly"].includes(v) ? v : "none";
+      return ["none","daily","weekly","monthly","yearly"].includes(v) ? v : "none";
     }
 
     function sanitizePriority(v) {
@@ -1867,7 +1872,7 @@
         selectedFocusDate: data.selectedFocusDate ? sanitizeDate(data.selectedFocusDate) : todayStr(),
         archiveFilterDate: data.archiveFilterDate ? sanitizeDate(data.archiveFilterDate) : "",
         focusCatFilter: sanitizeString(data.focusCatFilter, "all"),
-        recurringFilter: ["weekly","monthly","yearly"].includes(data.recurringFilter) ? data.recurringFilter : null,
+        recurringFilter: ["daily","weekly","monthly","yearly"].includes(data.recurringFilter) ? data.recurringFilter : null,
         permanentTasks,
         catPanelOpen: false,
         permPanelOpen: false,
@@ -1987,13 +1992,17 @@
         // NUOVO: Scorciatoie per filtri ricorrenti
         if (e.altKey && e.key === "1" && !isInput) {
           e.preventDefault();
-          setRecurringFilter('weekly');
+          setRecurringFilter('daily');
         }
         if (e.altKey && e.key === "2" && !isInput) {
           e.preventDefault();
-          setRecurringFilter('monthly');
+          setRecurringFilter('weekly');
         }
         if (e.altKey && e.key === "3" && !isInput) {
+          e.preventDefault();
+          setRecurringFilter('monthly');
+        }
+        if (e.altKey && e.key === "4" && !isInput) {
           e.preventDefault();
           setRecurringFilter('yearly');
         }
@@ -2078,7 +2087,7 @@
     }
 
     function updateRecurringButtons() {
-      ['weekly', 'monthly', 'yearly'].forEach(type => {
+      ['daily', 'weekly', 'monthly', 'yearly'].forEach(type => {
         const btn = document.getElementById(`btn-${type}`);
         const badge = document.getElementById(`count-${type}`);
         if (btn) {
@@ -2456,6 +2465,7 @@
       const base = new Date(task.date + "T00:00:00");
       const target = new Date(dateStr + "T00:00:00");
       if (base > target) return false;
+      if (task.repeat === "daily") return true; // Ogni giorno
       if (task.repeat === "weekly") return base.getDay() === target.getDay();
       if (task.repeat === "monthly") return base.getDate() === target.getDate();
       if (task.repeat === "yearly") return base.getDate() === target.getDate() && base.getMonth() === target.getMonth();
@@ -2564,7 +2574,7 @@
       
       // Aggiorna titolo e label in base al filtro attivo
       if (state.recurringFilter) {
-        const labels = { weekly: "Task Settimanali", monthly: "Task Mensili", yearly: "Task Annuali" };
+        const labels = { daily: "Task Giornalieri", weekly: "Task Settimanali", monthly: "Task Mensili", yearly: "Task Annuali" };
         focusTitle.textContent = labels[state.recurringFilter] || "Focus";
         counterLabel.textContent = "Totali";
         document.getElementById("focus-date-label").textContent = "Visualizzazione per ripetizione";
@@ -2770,6 +2780,7 @@
     }
 
     function repeatLabel(r) {
+      if (r === "daily") return "giornaliero";
       if (r === "weekly") return "settimanale";
       if (r === "monthly") return "mensile";
       if (r === "yearly") return "annuale";
