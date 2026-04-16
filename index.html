@@ -397,7 +397,7 @@
       align-items: start;
     }
 
-    .btn-main, .btn-tool, .btn-danger, .btn-secondary, .btn-subtle {
+    .btn-main, .btn-tool, .btn-danger, .btn-secondary, .btn-subtle, .btn-recurring {
       border: none;
       cursor: pointer;
       border-radius: 10px;
@@ -471,6 +471,58 @@
     }
 
     .btn-danger:hover { background: var(--danger); color: white; }
+
+    /* NUOVI STILI PER I BOTTONI RICORRENTI */
+    .recurring-filters {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .btn-recurring {
+      width: 100%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      color: var(--text-main);
+      font-weight: 700;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+    .btn-recurring:hover {
+      background: var(--surface-2);
+      border-color: var(--primary);
+    }
+
+    .btn-recurring.active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .btn-recurring .count-badge {
+      background: var(--surface-2);
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .btn-recurring.active .count-badge {
+      background: var(--primary);
+      color: white;
+    }
 
     .funzioni-wrap {
       position: relative;
@@ -1333,6 +1385,22 @@
         </div>
       </div>
 
+      <!-- NUOVA SEZIONE: FILTRI TASK RICORRENTI -->
+      <div class="recurring-filters">
+        <button class="btn-recurring" id="btn-weekly" type="button" onclick="setRecurringFilter('weekly')" aria-label="Mostra task settimanali">
+          <span>🔄 Settimanali</span>
+          <span class="count-badge" id="count-weekly">0</span>
+        </button>
+        <button class="btn-recurring" id="btn-monthly" type="button" onclick="setRecurringFilter('monthly')" aria-label="Mostra task mensili">
+          <span>📅 Mensili</span>
+          <span class="count-badge" id="count-monthly">0</span>
+        </button>
+        <button class="btn-recurring" id="btn-yearly" type="button" onclick="setRecurringFilter('yearly')" aria-label="Mostra task annuali">
+          <span>🗓️ Annuali</span>
+          <span class="count-badge" id="count-yearly">0</span>
+        </button>
+      </div>
+
       <div class="sidebar-scroll">
 
         <div class="calendar-widget" id="calendar-widget">
@@ -1445,12 +1513,12 @@
     <main class="col-right">
       <div class="focus-header">
         <div>
-          <h2 class="focus-title">Focus giornaliero</h2>
+          <h2 class="focus-title" id="focus-title">Focus giornaliero</h2>
           <div id="focus-date-label" class="muted small" style="font-weight:700;"></div>
         </div>
         <div class="focus-counter">
           <span id="count-today" class="big">0</span>
-          <div class="label">Aperti</div>
+          <div class="label" id="counter-label">Aperti</div>
         </div>
       </div>
 
@@ -1544,6 +1612,7 @@
       selectedFocusDate: "",
       archiveFilterDate: "",
       focusCatFilter: "all",
+      recurringFilter: null, // NUOVO: 'weekly' | 'monthly' | 'yearly' | null
       permanentTasks: [],
       catPanelOpen: false,
       permPanelOpen: false,
@@ -1798,6 +1867,7 @@
         selectedFocusDate: data.selectedFocusDate ? sanitizeDate(data.selectedFocusDate) : todayStr(),
         archiveFilterDate: data.archiveFilterDate ? sanitizeDate(data.archiveFilterDate) : "",
         focusCatFilter: sanitizeString(data.focusCatFilter, "all"),
+        recurringFilter: ["weekly","monthly","yearly"].includes(data.recurringFilter) ? data.recurringFilter : null,
         permanentTasks,
         catPanelOpen: false,
         permPanelOpen: false,
@@ -1914,6 +1984,23 @@
           e.preventDefault();
           document.getElementById("search-box").focus();
         }
+        // NUOVO: Scorciatoie per filtri ricorrenti
+        if (e.altKey && e.key === "1" && !isInput) {
+          e.preventDefault();
+          setRecurringFilter('weekly');
+        }
+        if (e.altKey && e.key === "2" && !isInput) {
+          e.preventDefault();
+          setRecurringFilter('monthly');
+        }
+        if (e.altKey && e.key === "3" && !isInput) {
+          e.preventDefault();
+          setRecurringFilter('yearly');
+        }
+        if (e.altKey && e.key === "0" && !isInput) {
+          e.preventDefault();
+          setRecurringFilter(null);
+        }
       });
     }
 
@@ -1969,6 +2056,39 @@
       isOpen ? closePanel("archive-panel") : openPanel("archive-panel");
       state.archivePanelOpen = !isOpen;
       persistState();
+    }
+
+    // ─── NUOVE FUNZIONI PER FILTRI RICORRENTI ───
+    function setRecurringFilter(filterType) {
+      // Se clicco lo stesso filtro già attivo, lo disattivo
+      if (state.recurringFilter === filterType) {
+        state.recurringFilter = null;
+      } else {
+        state.recurringFilter = filterType;
+      }
+      
+      // Aggiorna stato UI dei bottoni
+      updateRecurringButtons();
+      
+      // Resetta altri filtri in conflitto
+      state.focusCatFilter = "all";
+      document.getElementById("focus-cat-filter").value = "all";
+      
+      saveAndRender();
+    }
+
+    function updateRecurringButtons() {
+      ['weekly', 'monthly', 'yearly'].forEach(type => {
+        const btn = document.getElementById(`btn-${type}`);
+        const badge = document.getElementById(`count-${type}`);
+        if (btn) {
+          btn.classList.toggle('active', state.recurringFilter === type);
+        }
+        if (badge) {
+          const count = state.entries.filter(t => t.repeat === type).length;
+          badge.textContent = count;
+        }
+      });
     }
 
     // ─── FUNZIONI DROPDOWN ───
@@ -2353,6 +2473,23 @@
     }
 
     function getFocusTasks(dateStr) {
+      // Se c'è un filtro ricorrente attivo, mostra tutti i task di quel tipo
+      if (state.recurringFilter) {
+        const query = sanitizeString(document.getElementById("search-box").value).toLowerCase();
+        return state.entries
+          .filter(e => {
+            const matchesRepeat = e.repeat === state.recurringFilter;
+            const haystack = [e.text, e.cat, e.sub, e.link].join(" ").toLowerCase();
+            const matchesSearch = !query || haystack.includes(query);
+            return matchesRepeat && matchesSearch;
+          })
+          .sort((a, b) => {
+            const catDiff = a.cat.localeCompare(b.cat, "it");
+            if (catDiff !== 0) return catDiff;
+            return a.text.localeCompare(b.text, "it");
+          });
+      }
+      
       const catFilter = state.focusCatFilter || "all";
       const query = sanitizeString(document.getElementById("search-box").value).toLowerCase();
       return state.entries
@@ -2367,6 +2504,11 @@
     }
 
     function updateFocusCatFilter(val) {
+      // Se cambio filtro categoria, resetta filtro ricorrente
+      if (state.recurringFilter) {
+        state.recurringFilter = null;
+        updateRecurringButtons();
+      }
       state.focusCatFilter = sanitizeString(val, "all");
       saveAndRender();
     }
@@ -2410,26 +2552,44 @@
       renderArchive(archiveTasks);
       renderStats(focusTasks, archiveTasks, focusDate);
       syncUiValues();
+      updateRecurringButtons();
 
       if (state.permPanelOpen) renderPermanentSection();
     }
 
     function renderFocus(tasks, dateStr) {
       const list = document.getElementById("list-focus");
-      document.getElementById("focus-date-label").textContent =
-        formatHumanDate(dateStr, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-      document.getElementById("focus-date-pill").textContent =
-        "Focus: " + formatHumanDate(dateStr, { day: "2-digit", month: "2-digit", year: "numeric" });
+      const focusTitle = document.getElementById("focus-title");
+      const counterLabel = document.getElementById("counter-label");
+      
+      // Aggiorna titolo e label in base al filtro attivo
+      if (state.recurringFilter) {
+        const labels = { weekly: "Task Settimanali", monthly: "Task Mensili", yearly: "Task Annuali" };
+        focusTitle.textContent = labels[state.recurringFilter] || "Focus";
+        counterLabel.textContent = "Totali";
+        document.getElementById("focus-date-label").textContent = "Visualizzazione per ripetizione";
+        document.getElementById("focus-date-pill").textContent = `Filtro: ${labels[state.recurringFilter]}`;
+      } else {
+        focusTitle.textContent = "Focus giornaliero";
+        counterLabel.textContent = "Aperti";
+        document.getElementById("focus-date-label").textContent =
+          formatHumanDate(dateStr, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+        document.getElementById("focus-date-pill").textContent =
+          "Focus: " + formatHumanDate(dateStr, { day: "2-digit", month: "2-digit", year: "numeric" });
+      }
 
       const pendingCount = tasks.filter(t => !isTaskCompletedForDate(t, dateStr)).length;
       const moveAllBtn = document.getElementById("btn-move-all");
-      if (moveAllBtn) moveAllBtn.style.display = pendingCount > 0 ? "block" : "none";
+      if (moveAllBtn) moveAllBtn.style.display = (pendingCount > 0 && !state.recurringFilter) ? "block" : "none";
 
       let html = "";
       const permTasks = getPermanentTasks();
 
       if (!tasks.length && !permTasks.length) {
-        list.innerHTML = `<div class="empty-state">Nessun task per questa data</div>`;
+        const msg = state.recurringFilter 
+          ? "Nessun task ricorrente di questo tipo" 
+          : "Nessun task per questa data";
+        list.innerHTML = `<div class="empty-state">${msg}</div>`;
         return;
       }
 
@@ -2538,7 +2698,7 @@
       if (task.sub) meta.push(`<span class="meta-chip"># ${escapeHtml(task.sub)}</span>`);
       if (isRecurring(task)) meta.push(`<span class="meta-chip">↺ ${repeatLabel(task.repeat)}</span>`);
       meta.push(`<span class="meta-chip">${priorityLabel(task.pri)}</span>`);
-      if (isFocusArea && task.date !== effectiveDate) {
+      if (isFocusArea && task.date !== effectiveDate && !state.recurringFilter) {
         meta.push(`<span class="meta-chip">origine ${escapeHtml(dateDisplay)}</span>`);
       }
 
@@ -2891,6 +3051,11 @@
     }
 
     function setFocusDate(dateStr) {
+      // Se clicco sul calendario, resetta filtro ricorrente
+      if (state.recurringFilter) {
+        state.recurringFilter = null;
+        updateRecurringButtons();
+      }
       const safeDate = sanitizeDate(dateStr);
       state.selectedFocusDate = safeDate;
       document.getElementById("task-date").value = safeDate;
