@@ -672,7 +672,6 @@
       transform: scale(1.02);
     }
 
-    /* ── EDIT BUTTON visible on hover ── */
     .task-card .btn-edit-task {
       display: none;
       background: rgba(255,255,255,0.18);
@@ -870,7 +869,6 @@
     .trash-btn:hover { background: var(--danger); color: white; }
     .move-btn:hover { background: var(--primary); color: white; }
 
-    /* Edit action button in task actions column */
     .edit-btn {
       background: rgba(0, 0, 0, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1367,6 +1365,7 @@
             <button class="funzioni-item" role="menuitem" type="button" onclick="toggleCatSection(); closeFunzioniMenu()" id="funzioni-cat-btn">🏷️ Categorie <span id="count-cats" style="margin-left:auto; font-size:0.68rem; background:var(--primary-light); color:var(--primary); border-radius:999px; padding:0.15rem 0.5rem; font-weight:800;">0</span></button>
             <button class="funzioni-item" role="menuitem" type="button" onclick="togglePermSection(); closeFunzioniMenu()" id="funzioni-perm-btn">📌 Permanenti <span id="count-perm" style="margin-left:auto; font-size:0.68rem; background:rgba(16,185,129,0.18); color:var(--success); border-radius:999px; padding:0.15rem 0.5rem; font-weight:800;">0</span></button>
             <button class="funzioni-item" role="menuitem" type="button" onclick="toggleArchiveSection(); closeFunzioniMenu()" id="funzioni-archive-btn">🗂️ Archivio <span id="count-all-funzioni" style="margin-left:auto; font-size:0.68rem; background:rgba(245,158,11,0.18); color:var(--warning); border-radius:999px; padding:0.15rem 0.5rem; font-weight:800;">0</span></button>
+            <button class="funzioni-item" role="menuitem" type="button" onclick="requestNotificationPermission(); closeFunzioniMenu()">🔔 Notifiche</button>
           </div>
         </div>
         <input type="file" id="imp" style="display:none" accept=".json" onchange="importData(event)" />
@@ -1493,6 +1492,11 @@
 
   <script>
     const STORE_KEY = "omnimind_v10_data";
+    
+    // 🔔 Variabili per le notifiche temporali
+    let notifiedTasks = new Set();
+    let alarmInterval = null;
+    const ALARM_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLHPM8uKCNAoqZ8n36pMzCihUwPjwpSsKJ0619M+ZKQolSKvyyJYmCiJGp+7MkiQKH0Gg68mQIAofP5vpxY4eChs7l+bBihwKGjaR4L+JGgkZMI7euIkaCRkujNy2iBgIFyuJ2bOIFwgWKIfXsIgWCBQmgdWviBUHDyR+zK2IFQYNI3zJrIgUBgsie8aqiBQFCCF5w6iIFAUGIHbBpogUBAQgdL6liBQDAx5zvKOIEQIA";
 
     const INITIAL_CATS = {
       "App.ti": ["Visita", "Call"],
@@ -1545,11 +1549,97 @@
       permPanelOpen: false,
       archivePanelOpen: false,
       calendarOpen: false,
-      newTaskPanelOpen: false
+      newTaskPanelOpen: false,
+      notificationsEnabled: false
     };
 
     let state = structuredClone(DEFAULT_STATE);
     let currentMonth = new Date();
+
+    // 🔔 Funzioni per le notifiche temporali
+    function requestNotificationPermission() {
+      if ("Notification" in window) {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            state.notificationsEnabled = true;
+            showToast("✅ Notifiche abilitate! Riceverai avvisi per i task con ora impostata.");
+            startAlarmChecker();
+            persistState();
+          } else {
+            showToast("❌ Permesso notifiche negato", true);
+          }
+        });
+      } else {
+        showToast("❌ Notifiche non supportate in questo browser", true);
+      }
+    }
+
+    function playAlarmSound() {
+      try {
+        const audio = new Audio(ALARM_SOUND);
+        audio.volume = 0.7;
+        audio.play().catch(e => console.log("Audio play error:", e));
+      } catch (e) {
+        console.log("Sound error:", e);
+      }
+    }
+
+    function showTaskNotification(task) {
+      playAlarmSound();
+      
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("⏰ OmniMind - Task in scadenza", {
+          body: `${task.text} - ${task.cat}${task.time ? " alle " + task.time : ""}`,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><circle cx='64' cy='64' r='60' fill='%234f46e5'/><text x='64' y='72' font-size='40' text-anchor='middle' fill='white'>⏰</text></svg>",
+          silent: false
+        });
+      }
+      
+      showToast(`🔔 ${task.text} - Ora: ${task.time || "immediata"}`);
+    }
+
+    function getCurrentTimeKey() {
+      const now = new Date();
+      return `${localDateToYmd(now)}_${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function checkTaskAlarms() {
+      const now = new Date();
+      const currentTimeKey = getCurrentTimeKey();
+      const currentYMD = localDateToYmd(now);
+      const currentHM = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      
+      state.entries.forEach(task => {
+        if (!task.time || task.time === "") return;
+        if (task.date !== currentYMD) return;
+        
+        const taskKey = `${task.id}_${task.date}_${task.time}`;
+        
+        if (task.time === currentHM && !notifiedTasks.has(taskKey)) {
+          if (!isTaskCompletedForDate(task, task.date)) {
+            showTaskNotification(task);
+            notifiedTasks.add(taskKey);
+            
+            setTimeout(() => {
+              notifiedTasks.delete(taskKey);
+            }, 3600000);
+          }
+        }
+      });
+    }
+
+    function startAlarmChecker() {
+      if (alarmInterval) clearInterval(alarmInterval);
+      checkTaskAlarms();
+      alarmInterval = setInterval(checkTaskAlarms, 30000);
+    }
+
+    function stopAlarmChecker() {
+      if (alarmInterval) {
+        clearInterval(alarmInterval);
+        alarmInterval = null;
+      }
+    }
 
     function localDateToYmd(date) {
       const y = date.getFullYear();
@@ -1713,7 +1803,8 @@
         permPanelOpen: false,
         archivePanelOpen: false,
         calendarOpen: false,
-        newTaskPanelOpen: false
+        newTaskPanelOpen: false,
+        notificationsEnabled: !!data.notificationsEnabled
       };
     }
 
@@ -1787,6 +1878,19 @@
       currentMonth = new Date(state.selectedFocusDate + "T00:00:00");
       renderCalendar();
       render();
+      
+      // 🔔 Inizializza controllo allarmi se notifiche abilitate
+      if (state.notificationsEnabled && "Notification" in window && Notification.permission === "granted") {
+        startAlarmChecker();
+      }
+      
+      // 🔔 Richiedi interazione utente per abilitare audio
+      document.addEventListener("click", function enableAudioOnFirstClick() {
+        if (state.notificationsEnabled) {
+          playAlarmSound();
+          document.removeEventListener("click", enableAudioOnFirstClick);
+        }
+      }, { once: true });
     }
 
     function bindKeyboardShortcuts() {
@@ -2155,25 +2259,22 @@
       saveAndRender();
     }
 
-    // ─── EDIT TASK: apre il pannello e popola il form ───
+    // ─── EDIT TASK ───
     function editTask(id) {
       const task = state.entries.find(e => e.id === id);
       if (!task) return;
 
-      // Apre il pannello "✨ Nuovo Task" se è chiuso
       if (!isPanelOpen("newtask-panel")) {
         openPanel("newtask-panel");
         state.newTaskPanelOpen = true;
         persistState();
       }
 
-      // Evidenzia la card in editing
       document.querySelectorAll(".task-card").forEach(c => c.classList.remove("is-editing"));
       document.querySelectorAll(".task-card").forEach(c => {
         if (c.getAttribute("data-id") === String(id)) c.classList.add("is-editing");
       });
 
-      // Popola il form
       document.getElementById("task-id").value = String(task.id);
       document.getElementById("task-text").value = task.text;
       document.getElementById("task-link").value = task.link || "";
@@ -2203,7 +2304,6 @@
       document.getElementById("btn-cancel").style.display = "block";
       document.getElementById("form-container").classList.add("editing");
 
-      // Scrolla la sidebar in cima per mostrare il form
       const sidebar = document.getElementById("sidebar");
       if (sidebar) sidebar.scrollTo({ top: 0, behavior: "smooth" });
 
@@ -2950,6 +3050,11 @@
     }
 
     window.onload = init;
+    
+    // 🔔 Cleanup on page unload
+    window.addEventListener("beforeunload", () => {
+      stopAlarmChecker();
+    });
   </script>
 </body>
 </html>
