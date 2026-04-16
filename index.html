@@ -508,6 +508,29 @@
       box-shadow: 0 0 0 2px var(--primary-light);
     }
 
+    /* Stile speciale per il bottone Oggi */
+    .btn-recurring.today-btn {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .btn-recurring.today-btn:hover {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--success);
+    }
+
+    .btn-recurring.today-btn.active {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: var(--success);
+      color: var(--success);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-recurring.today-btn.active .count-badge {
+      background: var(--success);
+      color: white;
+    }
+
     .btn-recurring .count-badge {
       background: var(--surface-2);
       color: var(--text-muted);
@@ -1386,8 +1409,12 @@
         </div>
       </div>
 
-      <!-- NUOVA SEZIONE: FILTRI TASK RICORRENTI -->
+      <!-- NUOVA SEZIONE: FILTRI TASK RICORRENTI + OGGI -->
       <div class="recurring-filters">
+        <button class="btn-recurring today-btn" id="btn-today" type="button" onclick="setRecurringFilter('today')" aria-label="Mostra task di oggi">
+          <span>📅 Oggi</span>
+          <span class="count-badge" id="count-today-filter">0</span>
+        </button>
         <button class="btn-recurring" id="btn-daily" type="button" onclick="setRecurringFilter('daily')" aria-label="Mostra task giornalieri">
           <span>📋 Giornalieri</span>
           <span class="count-badge" id="count-daily">0</span>
@@ -1617,7 +1644,7 @@
       selectedFocusDate: "",
       archiveFilterDate: "",
       focusCatFilter: "all",
-      recurringFilter: null, // NUOVO: 'daily' | 'weekly' | 'monthly' | 'yearly' | null
+      recurringFilter: null, // NUOVO: 'today' | 'daily' | 'weekly' | 'monthly' | 'yearly' | null
       permanentTasks: [],
       catPanelOpen: false,
       permPanelOpen: false,
@@ -1664,7 +1691,7 @@
       if ("Notification" in window && Notification.permission === "granted") {
         new Notification("⏰ OmniMind - Task in scadenza", {
           body: `${task.text} - ${task.cat}${task.time ? " alle " + task.time : ""}`,
-          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><circle cx='64' cy='64' r='60' fill='%234f46e5'/><text x='64' y='72' font-size='40' text-anchor='middle' fill='white'>⏰</text></svg>",
+          icon: "image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><circle cx='64' cy='64' r='60' fill='%234f46e5'/><text x='64' y='72' font-size='40' text-anchor='middle' fill='white'>⏰</text></svg>",
           silent: false
         });
       }
@@ -1872,7 +1899,7 @@
         selectedFocusDate: data.selectedFocusDate ? sanitizeDate(data.selectedFocusDate) : todayStr(),
         archiveFilterDate: data.archiveFilterDate ? sanitizeDate(data.archiveFilterDate) : "",
         focusCatFilter: sanitizeString(data.focusCatFilter, "all"),
-        recurringFilter: ["daily","weekly","monthly","yearly"].includes(data.recurringFilter) ? data.recurringFilter : null,
+        recurringFilter: ["today","daily","weekly","monthly","yearly"].includes(data.recurringFilter) ? data.recurringFilter : null,
         permanentTasks,
         catPanelOpen: false,
         permPanelOpen: false,
@@ -1989,7 +2016,11 @@
           e.preventDefault();
           document.getElementById("search-box").focus();
         }
-        // NUOVO: Scorciatoie per filtri ricorrenti
+        // Scorciatoie per filtri ricorrenti
+        if (e.altKey && e.key.toLowerCase() === "t" && !isInput) {
+          e.preventDefault();
+          setRecurringFilter('today');
+        }
         if (e.altKey && e.key === "1" && !isInput) {
           e.preventDefault();
           setRecurringFilter('daily');
@@ -2087,14 +2118,21 @@
     }
 
     function updateRecurringButtons() {
-      ['daily', 'weekly', 'monthly', 'yearly'].forEach(type => {
+      const filters = ['today', 'daily', 'weekly', 'monthly', 'yearly'];
+      filters.forEach(type => {
         const btn = document.getElementById(`btn-${type}`);
-        const badge = document.getElementById(`count-${type}`);
+        const badge = document.getElementById(`count-${type === 'today' ? 'today-filter' : type}`);
         if (btn) {
           btn.classList.toggle('active', state.recurringFilter === type);
         }
         if (badge) {
-          const count = state.entries.filter(t => t.repeat === type).length;
+          let count = 0;
+          if (type === 'today') {
+            const today = todayStr();
+            count = state.entries.filter(t => isTaskScheduledForDate(t, today)).length;
+          } else {
+            count = state.entries.filter(t => t.repeat === type).length;
+          }
           badge.textContent = count;
         }
       });
@@ -2486,18 +2524,33 @@
       // Se c'è un filtro ricorrente attivo, mostra tutti i task di quel tipo
       if (state.recurringFilter) {
         const query = sanitizeString(document.getElementById("search-box").value).toLowerCase();
-        return state.entries
-          .filter(e => {
-            const matchesRepeat = e.repeat === state.recurringFilter;
-            const haystack = [e.text, e.cat, e.sub, e.link].join(" ").toLowerCase();
-            const matchesSearch = !query || haystack.includes(query);
-            return matchesRepeat && matchesSearch;
-          })
-          .sort((a, b) => {
-            const catDiff = a.cat.localeCompare(b.cat, "it");
-            if (catDiff !== 0) return catDiff;
-            return a.text.localeCompare(b.text, "it");
-          });
+        
+        if (state.recurringFilter === 'today') {
+          // Filtro speciale: mostra solo task per oggi
+          const today = todayStr();
+          return state.entries
+            .filter(e => {
+              const matchesDate = isTaskScheduledForDate(e, today);
+              const haystack = [e.text, e.cat, e.sub, e.link].join(" ").toLowerCase();
+              const matchesSearch = !query || haystack.includes(query);
+              return matchesDate && matchesSearch;
+            })
+            .sort(sortTasksForFocus(today));
+        } else {
+          // Filtri per ripetizione: daily, weekly, monthly, yearly
+          return state.entries
+            .filter(e => {
+              const matchesRepeat = e.repeat === state.recurringFilter;
+              const haystack = [e.text, e.cat, e.sub, e.link].join(" ").toLowerCase();
+              const matchesSearch = !query || haystack.includes(query);
+              return matchesRepeat && matchesSearch;
+            })
+            .sort((a, b) => {
+              const catDiff = a.cat.localeCompare(b.cat, "it");
+              if (catDiff !== 0) return catDiff;
+              return a.text.localeCompare(b.text, "it");
+            });
+        }
       }
       
       const catFilter = state.focusCatFilter || "all";
@@ -2574,11 +2627,23 @@
       
       // Aggiorna titolo e label in base al filtro attivo
       if (state.recurringFilter) {
-        const labels = { daily: "Task Giornalieri", weekly: "Task Settimanali", monthly: "Task Mensili", yearly: "Task Annuali" };
+        const labels = { 
+          today: "Task di Oggi", 
+          daily: "Task Giornalieri", 
+          weekly: "Task Settimanali", 
+          monthly: "Task Mensili", 
+          yearly: "Task Annuali" 
+        };
         focusTitle.textContent = labels[state.recurringFilter] || "Focus";
-        counterLabel.textContent = "Totali";
-        document.getElementById("focus-date-label").textContent = "Visualizzazione per ripetizione";
-        document.getElementById("focus-date-pill").textContent = `Filtro: ${labels[state.recurringFilter]}`;
+        counterLabel.textContent = state.recurringFilter === 'today' ? "Oggi" : "Totali";
+        document.getElementById("focus-date-label").textContent = 
+          state.recurringFilter === 'today' 
+            ? formatHumanDate(todayStr(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+            : "Visualizzazione per ripetizione";
+        document.getElementById("focus-date-pill").textContent = 
+          state.recurringFilter === 'today'
+            ? `📅 ${formatHumanDate(todayStr(), { day: "2-digit", month: "2-digit" })}`
+            : `Filtro: ${labels[state.recurringFilter]}`;
       } else {
         focusTitle.textContent = "Focus giornaliero";
         counterLabel.textContent = "Aperti";
@@ -2597,7 +2662,7 @@
 
       if (!tasks.length && !permTasks.length) {
         const msg = state.recurringFilter 
-          ? "Nessun task ricorrente di questo tipo" 
+          ? (state.recurringFilter === 'today' ? "Nessun task per oggi" : "Nessun task ricorrente di questo tipo")
           : "Nessun task per questa data";
         list.innerHTML = `<div class="empty-state">${msg}</div>`;
         return;
@@ -2733,7 +2798,7 @@
         <div id="notes-${task.id}" class="task-notes">${escapeHtml(task.notes)}</div>
       ` : "";
 
-      const imageHtml = task.image && task.image.startsWith("data:") ? `
+      const imageHtml = task.image && task.image.startsWith("") ? `
         <div class="task-image-display" onclick="event.stopPropagation(); editTask(${task.id})">
           <img src="${task.image}" alt="Immagine task" />
         </div>
