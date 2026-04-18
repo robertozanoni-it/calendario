@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OmniMind Lite - Focus & Archive</title>
+  <title>Calendario</title>
   <style>
     :root {
       --bg-main: #ffffff;
@@ -472,7 +472,6 @@
 
     .btn-danger:hover { background: var(--danger); color: white; }
 
-    /* NUOVI STILI PER I BOTTONI RICORRENTI */
     .recurring-filters {
       display: flex;
       flex-direction: column;
@@ -508,7 +507,6 @@
       box-shadow: 0 0 0 2px var(--primary-light);
     }
 
-    /* Stile speciale per il bottone Oggi */
     .btn-recurring.today-btn {
       border-color: var(--success);
       background: rgba(16, 185, 129, 0.08);
@@ -1307,7 +1305,7 @@
 
       <div class="topbar">
         <div>
-          <h1 class="app-title">OmniMind Lite</h1>
+          <h1 class="app-title">Calendario</h1>
           <div id="date-display" class="muted small"></div>
         </div>
       </div>
@@ -1409,7 +1407,6 @@
         </div>
       </div>
 
-      <!-- NUOVA SEZIONE: FILTRI TASK RICORRENTI + OGGI -->
       <div class="recurring-filters">
         <button class="btn-recurring today-btn" id="btn-today" type="button" onclick="setRecurringFilter('today')" aria-label="Mostra task di oggi">
           <span>📅 Oggi</span>
@@ -1593,7 +1590,6 @@
   <script>
     const STORE_KEY = "omnimind_v10_data";
     
-    // 🔔 Variabili per le notifiche temporali
     let notifiedTasks = new Set();
     let alarmInterval = null;
     const ALARM_SOUND = "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLHPM8uKCNAoqZ8n36pMzCihUwPjwpSsKJ0619M+ZKQolSKvyyJYmCiJGp+7MkiQKH0Gg68mQIAofP5vpxY4eChs7l+bBihwKGjaR4L+JGgkZMI7euIkaCRkujNy2iBgIFyuJ2bOIFwgWKIfXsIgWCBQmgdWviBUHDyR+zK2IFQYNI3zJrIgUBgsie8aqiBQFCCF5w6iIFAUGIHbBpogUBAQgdL6liBQDAx5zvKOIEQIA";
@@ -1644,7 +1640,7 @@
       selectedFocusDate: "",
       archiveFilterDate: "",
       focusCatFilter: "all",
-      recurringFilter: null, // NUOVO: 'today' | 'daily' | 'weekly' | 'monthly' | 'yearly' | null
+      recurringFilter: null,
       permanentTasks: [],
       catPanelOpen: false,
       permPanelOpen: false,
@@ -1657,7 +1653,6 @@
     let state = structuredClone(DEFAULT_STATE);
     let currentMonth = new Date();
 
-    // 🔔 Funzioni per le notifiche temporali
     function requestNotificationPermission() {
       if ("Notification" in window) {
         Notification.requestPermission().then(permission => {
@@ -1689,7 +1684,7 @@
       playAlarmSound();
       
       if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("⏰ OmniMind - Task in scadenza", {
+        new Notification("⏰ Calendario - Task in scadenza", {
           body: `${task.text} - ${task.cat}${task.time ? " alle " + task.time : ""}`,
           icon: "image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'><circle cx='64' cy='64' r='60' fill='%234f46e5'/><text x='64' y='72' font-size='40' text-anchor='middle' fill='white'>⏰</text></svg>",
           silent: false
@@ -1910,7 +1905,6 @@
       };
     }
 
-    // ─── STORAGE ───
     function loadState() {
       const saved = localStorage.getItem(STORE_KEY);
       if (!saved) {
@@ -1935,7 +1929,6 @@
       render();
     }
 
-    // ─── INIT ───
     function init() {
       loadState();
       document.body.setAttribute("data-theme", state.theme);
@@ -1981,12 +1974,10 @@
       renderCalendar();
       render();
       
-      // 🔔 Inizializza controllo allarmi se notifiche abilitate
       if (state.notificationsEnabled && "Notification" in window && Notification.permission === "granted") {
         startAlarmChecker();
       }
       
-      // 🔔 Richiedi interazione utente per abilitare audio
       document.addEventListener("click", function enableAudioOnFirstClick() {
         if (state.notificationsEnabled) {
           playAlarmSound();
@@ -2016,7 +2007,6 @@
           e.preventDefault();
           document.getElementById("search-box").focus();
         }
-        // Scorciatoie per filtri ricorrenti
         if (e.altKey && e.key.toLowerCase() === "t" && !isInput) {
           e.preventDefault();
           setRecurringFilter('today');
@@ -2050,7 +2040,6 @@
              document.getElementById("modal-move").style.display === "flex";
     }
 
-    // ─── PANEL HELPERS ───
     function openPanel(panelId) {
       const panel = document.getElementById(panelId);
       if (!panel) return;
@@ -2098,19 +2087,15 @@
       persistState();
     }
 
-    // ─── NUOVE FUNZIONI PER FILTRI RICORRENTI ───
     function setRecurringFilter(filterType) {
-      // Se clicco lo stesso filtro già attivo, lo disattivo
       if (state.recurringFilter === filterType) {
         state.recurringFilter = null;
       } else {
         state.recurringFilter = filterType;
       }
       
-      // Aggiorna stato UI dei bottoni
       updateRecurringButtons();
       
-      // Resetta altri filtri in conflitto
       state.focusCatFilter = "all";
       document.getElementById("focus-cat-filter").value = "all";
       
@@ -2138,7 +2123,6 @@
       });
     }
 
-    // ─── FUNZIONI DROPDOWN ───
     function toggleFunzioniMenu() {
       const menu = document.getElementById("funzioni-menu");
       const btn = document.getElementById("btn-funzioni");
@@ -2159,7 +2143,6 @@
       if (btn) btn.setAttribute("aria-expanded", "false");
     }
 
-    // ─── PERMANENTI ───
     function togglePermanentTask(taskId) {
       const id = Number(taskId);
       const idx = safeArray(state.permanentTasks).findIndex(t => t.id === id);
@@ -2266,7 +2249,6 @@
       taskEl.innerHTML = html;
     }
 
-    // ─── CATEGORIES ───
     function getSortedCategories() {
       return Object.keys(state.customCats).sort((a, b) => a.localeCompare(b, "it"));
     }
@@ -2347,7 +2329,6 @@
       if (state.permPanelOpen) renderPermanentSection();
     }
 
-    // ─── FORM ───
     function getFormData() {
       return {
         text: sanitizeString(document.getElementById("task-text").value),
@@ -2426,7 +2407,6 @@
       saveAndRender();
     }
 
-    // ─── EDIT TASK ───
     function editTask(id) {
       const task = state.entries.find(e => e.id === id);
       if (!task) return;
@@ -2494,7 +2474,6 @@
       showToast("Task spostato al giorno successivo");
     }
 
-    // ─── TASK LOGIC ───
     function isRecurring(task) { return task.repeat && task.repeat !== "none"; }
 
     function isTaskScheduledForDate(task, dateStr) {
@@ -2503,7 +2482,7 @@
       const base = new Date(task.date + "T00:00:00");
       const target = new Date(dateStr + "T00:00:00");
       if (base > target) return false;
-      if (task.repeat === "daily") return true; // Ogni giorno
+      if (task.repeat === "daily") return true;
       if (task.repeat === "weekly") return base.getDay() === target.getDay();
       if (task.repeat === "monthly") return base.getDate() === target.getDate();
       if (task.repeat === "yearly") return base.getDate() === target.getDate() && base.getMonth() === target.getMonth();
@@ -2521,12 +2500,10 @@
     }
 
     function getFocusTasks(dateStr) {
-      // Se c'è un filtro ricorrente attivo, mostra tutti i task di quel tipo
       if (state.recurringFilter) {
         const query = sanitizeString(document.getElementById("search-box").value).toLowerCase();
         
         if (state.recurringFilter === 'today') {
-          // Filtro speciale: mostra solo task per oggi
           const today = todayStr();
           return state.entries
             .filter(e => {
@@ -2537,7 +2514,6 @@
             })
             .sort(sortTasksForFocus(today));
         } else {
-          // Filtri per ripetizione: daily, weekly, monthly, yearly
           return state.entries
             .filter(e => {
               const matchesRepeat = e.repeat === state.recurringFilter;
@@ -2567,7 +2543,6 @@
     }
 
     function updateFocusCatFilter(val) {
-      // Se cambio filtro categoria, resetta filtro ricorrente
       if (state.recurringFilter) {
         state.recurringFilter = null;
         updateRecurringButtons();
@@ -2605,7 +2580,6 @@
         .sort((a, b) => b.id - a.id);
     }
 
-    // ─── RENDER ───
     function render() {
       const focusDate = state.selectedFocusDate || todayStr();
       const archiveTasks = getArchiveTasks();
@@ -2625,7 +2599,6 @@
       const focusTitle = document.getElementById("focus-title");
       const counterLabel = document.getElementById("counter-label");
       
-      // Aggiorna titolo e label in base al filtro attivo
       if (state.recurringFilter) {
         const labels = { 
           today: "Task di Oggi", 
@@ -2748,7 +2721,6 @@
       }
     }
 
-    // ─── CARD BUILDER ───
     function removeFromPermanents(taskId) {
       const id = Number(taskId);
       const idx = safeArray(state.permanentTasks).findIndex(t => t.id === id);
@@ -2858,7 +2830,6 @@
       return "🟢 Bassa";
     }
 
-    // ─── QUICK ADD ───
     function quickAddTask() {
       const input = document.getElementById("quick-add-input");
       const text = sanitizeString(input.value);
@@ -2889,13 +2860,11 @@
       document.getElementById("focus-cat-filter").value = state.focusCatFilter || "all";
     }
 
-    // ─── THEME ───
     function toggleTheme() {
       state.theme = state.theme === "light" ? "dark" : "light";
       saveAndRender();
     }
 
-    // ─── CATEGORY CRUD ───
     function openCatModal() {
       const modal = document.getElementById("modal-input");
       modal.style.display = "flex";
@@ -2950,7 +2919,6 @@
       showToast("Categoria eliminata");
     }
 
-    // ─── MOVE MODAL ───
     function openMoveModal(taskId) {
       const task = state.entries.find(e => e.id === taskId);
       if (!task) return;
@@ -2983,7 +2951,6 @@
       closeMoveModal();
     }
 
-    // ─── ARCHIVE CLEAR ───
     function openConfirm() {
       const modal = document.getElementById("modal-confirm");
       modal.style.display = "flex";
@@ -3010,13 +2977,12 @@
       showToast("Archivio pulito");
     }
 
-    // ─── IMPORT / EXPORT ───
     function exportData() {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `omnimind_backup_${todayStr()}.json`;
+      a.download = `calendario_backup_${todayStr()}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast("Backup scaricato");
@@ -3068,14 +3034,13 @@
       const csvContent = "text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
       const link = document.createElement("a");
       link.setAttribute("href", encodeURI(csvContent));
-      link.setAttribute("download", `omnimind_export_${todayStr()}.csv`);
+      link.setAttribute("download", `calendario_export_${todayStr()}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       showToast("Export CDV pronto");
     }
 
-    // ─── CALENDAR ───
     function renderCalendar() {
       const grid = document.getElementById("calendar-days");
       const monthName = document.getElementById("month-name");
@@ -3127,7 +3092,6 @@
     }
 
     function setFocusDate(dateStr) {
-      // Se clicco sul calendario, resetta filtro ricorrente
       if (state.recurringFilter) {
         state.recurringFilter = null;
         updateRecurringButtons();
@@ -3184,7 +3148,6 @@
       renderCalendar();
     }
 
-    // ─── SUBTASK / NOTES / IMAGE ───
     function toggleSubtask(taskId, subIdx) {
       const task = state.entries.find(e => e.id === taskId);
       if (!task || !task.subtasks[subIdx]) return;
@@ -3236,7 +3199,6 @@
       document.getElementById("image-preview-container").style.display = "none";
     }
 
-    // ─── MOVE ALL PENDING ───
     function moveAllPendingToNextDay() {
       const focusDate = state.selectedFocusDate || todayStr();
       const focusTasks = getFocusTasks(focusDate);
@@ -3252,7 +3214,6 @@
       showToast(`${pendingTasks.length} task spostati`);
     }
 
-    // ─── RESIZER ───
     function setupResizer() {
       const resizer = document.getElementById("resizer");
       const sidebar = document.getElementById("sidebar");
@@ -3280,7 +3241,6 @@
       });
     }
 
-    // ─── TOAST ───
     function showToast(message, isError = false) {
       const toast = document.getElementById("toast");
       toast.textContent = message;
@@ -3292,7 +3252,6 @@
 
     window.onload = init;
     
-    // 🔔 Cleanup on page unload
     window.addEventListener("beforeunload", () => {
       stopAlarmChecker();
     });
