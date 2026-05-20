@@ -245,21 +245,23 @@
 
   <script>
     const STORE_KEY = "calendario_task_v12_corretto";
+    const LEGACY_STORE_KEYS = ["calendario_task_v11_corretto","calendario_task_v10_corretto","calendario_task_v9_corretto","calendario_task_v8_corretto","calendario_task","tasks","calendario_tasks"];
+    const deepClone = typeof structuredClone === "function" ? structuredClone : (v)=>JSON.parse(JSON.stringify(v));
     const DEFAULT_TASK_COLOR = "#4f46e5";
     const INITIAL_CATS = {
       "App.ti":["Visita","Call"],"Casa":["Spese","Pulizia"],"Clienti":["Fattura","Social"],"Disdire":["Abbonamento"],"Famiglia":["Evento"],"Idee":["Web App"],"Lavoro":["SEO","Copywriter"],"Salute":["Visita"],"Spesa":["Alimentari"],"Tasse":["IVA","INPS"],"Tel":["Chiamata"]
     };
     const INITIAL_COLORS = {"App.ti":"#6366f1","Casa":"#f59e0b","Clienti":"#2563eb","Disdire":"#ef4444","Famiglia":"#f97316","Idee":"#ca8a04","Lavoro":"#3b82f6","Salute":"#059669","Spesa":"#16a34a","Tasse":"#475569","Tel":"#06b6d4"};
     const COLOR_PALETTE = ["#4f46e5","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#06b6d4","#f97316","#14b8a6","#3b82f6","#6366f1","#a855f7","#0ea5e9","#f43f5e","#84cc16","#d946ef"];
-    const DEFAULT_STATE = {version:12, entries:[], theme:"dark", sideWidth:470, customCats:structuredClone(INITIAL_CATS), catColors:{...INITIAL_COLORS}, selectedFocusDate:"", archiveFilterDate:"", focusCatFilter:"all", recurringFilter:null, permanentTasks:[], notificationsEnabled:false, panels:{calendar:false, cats:false, perm:false, archive:false}};
-    let state = structuredClone(DEFAULT_STATE);
+    const DEFAULT_STATE = {version:12, entries:[], theme:"dark", sideWidth:470, customCats:deepClone(INITIAL_CATS), catColors:{...INITIAL_COLORS}, selectedFocusDate:"", archiveFilterDate:"", focusCatFilter:"all", recurringFilter:null, permanentTasks:[], notificationsEnabled:false, panels:{calendar:false, cats:false, perm:false, archive:false}};
+    let state = deepClone(DEFAULT_STATE);
     let currentMonth = new Date();
     let alarmInterval = null;
     let notifiedTasks = new Set();
 
     function localDateToYmd(date){const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,"0");const d=String(date.getDate()).padStart(2,"0");return `${y}-${m}-${d}`;}
     function todayStr(){return localDateToYmd(new Date());}
-    function clone(v){return JSON.parse(JSON.stringify(v));}
+    function clone(v){return deepClone(v);}
     function safeArray(v){return Array.isArray(v)?v:[];}
     function safeObject(v){return v && typeof v==="object" && !Array.isArray(v)?v:{};}
     function sanitizeString(v,fb=""){return typeof v==="string"?v.trim():fb;}
@@ -287,7 +289,7 @@
     function getPermanentId(item){if(typeof item==="number"||typeof item==="string")return Number(item);if(item&&typeof item==="object")return Number(item.id);return NaN;}
     function sanitizeState(raw){const data=safeObject(raw);const customCats=sanitizeCats(data.customCats);const entries=safeArray(data.entries||data.tasks).map(sanitizeEntry);const ids=new Set(entries.map(e=>e.id));const permanentTasks=safeArray(data.permanentTasks).map(item=>{const id=getPermanentId(item);if(Number.isFinite(id)&&ids.has(id))return {id};return null;}).filter(Boolean);return {version:12, entries, theme:data.theme==="light"?"light":"dark", sideWidth:Number.isFinite(data.sideWidth)?Math.min(860,Math.max(360,data.sideWidth)):470, customCats, catColors:sanitizeColors(data.catColors,customCats), selectedFocusDate:data.selectedFocusDate?sanitizeDate(data.selectedFocusDate):todayStr(), archiveFilterDate:sanitizeOptionalDate(data.archiveFilterDate), focusCatFilter:sanitizeString(data.focusCatFilter,"all"), recurringFilter:["today","daily","weekly","monthly","yearly"].includes(data.recurringFilter)?data.recurringFilter:null, permanentTasks, notificationsEnabled:!!data.notificationsEnabled, panels:{calendar:!!safeObject(data.panels).calendar,cats:false,perm:false,archive:false}};}
     function persistState(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
-    function loadState(){try{const saved=localStorage.getItem(STORE_KEY);state=saved?sanitizeState(JSON.parse(saved)):structuredClone(DEFAULT_STATE);}catch(err){console.error(err);state=structuredClone(DEFAULT_STATE);}if(!state.selectedFocusDate)state.selectedFocusDate=todayStr();}
+    function loadState(){try{const saved=localStorage.getItem(STORE_KEY);state=saved?sanitizeState(JSON.parse(saved)):deepClone(DEFAULT_STATE);}catch(err){console.error(err);state=deepClone(DEFAULT_STATE);}if(!state.selectedFocusDate)state.selectedFocusDate=todayStr();}
     function saveAndRender(){persistState();renderCalendar();render();}
 
     function init(){loadState();document.body.setAttribute("data-theme",state.theme);document.getElementById("sidebar").style.width=state.sideWidth+"px";document.getElementById("date-display").textContent=new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});document.getElementById("task-date").value=state.selectedFocusDate;document.getElementById("archive-date-filter").value=state.archiveFilterDate||"";currentMonth=new Date((state.selectedFocusDate||todayStr())+"T00:00:00");refreshCatSelects();renderColorSettings();resetTaskColor();setupResizer();bindKeyboardShortcuts();document.addEventListener("click",e=>{const wrap=document.getElementById("funzioni-wrap");if(wrap&&!wrap.contains(e.target))closeFunzioniMenu();});if(state.panels.calendar){document.getElementById("calendar-content").style.display="block";document.getElementById("calendar-toggle").textContent="▲";}renderCalendar();render();if(state.notificationsEnabled && "Notification" in window && Notification.permission==="granted")startAlarmChecker();}
@@ -300,7 +302,7 @@
     function syncTaskColorFromCategory(){document.getElementById("task-color").value=getSelectedCategoryColor();}
     function resetTaskColor(){syncTaskColorFromCategory();}
     function renderColorSettings(){const el=document.getElementById("color-list");el.innerHTML=getSortedCategories().map(cat=>`<div class="color-row"><span>${escapeHtml(cat)}</span><input type="color" value="${escapeHtml(state.catColors[cat]||DEFAULT_TASK_COLOR)}" onchange="updateCatColor('${escapeJs(cat)}',this.value)"></div>`).join("");}
-    function updateCatColor(cat,color){const hex=sanitizeHexColor(color,state.catColors[cat]||DEFAULT_TASK_COLOR);state.catColors[cat]=hex;state.entries.forEach(e=>{if(e.cat===cat && (!e.taskColor || e.taskColor===state.catColors[cat])) e.taskColor=hex;});if(document.getElementById("task-cat").value===cat && !document.getElementById("task-id").value)syncTaskColorFromCategory();saveAndRender();renderColorSettings();renderPermTaskPicker();}
+    function updateCatColor(cat,color){const oldColor=state.catColors[cat]||DEFAULT_TASK_COLOR;const hex=sanitizeHexColor(color,oldColor);state.catColors[cat]=hex;state.entries.forEach(e=>{if(e.cat===cat && (!e.taskColor || e.taskColor===oldColor)) e.taskColor=hex;});if(document.getElementById("task-cat").value===cat && !document.getElementById("task-id").value)syncTaskColorFromCategory();saveAndRender();renderColorSettings();renderPermTaskPicker();}
 
     function getFormData(){const rawImage=document.getElementById("image-preview").getAttribute("src")||"";return {text:sanitizeString(document.getElementById("task-text").value), cat:sanitizeString(document.getElementById("task-cat").value,"Lavoro"), sub:sanitizeString(document.getElementById("task-sub").value), link:normalizeUrl(document.getElementById("task-link").value), subtasks:document.getElementById("task-subtasks").value.split("\n").map(s=>s.trim()).filter(Boolean).map(s=>({text:s,isComplete:false})), notes:sanitizeString(document.getElementById("task-notes").value), image:rawImage.startsWith("data:image/")?rawImage:"", taskColor:sanitizeHexColor(document.getElementById("task-color").value,getSelectedCategoryColor()), date:sanitizeDate(document.getElementById("task-date").value), time:sanitizeTime(document.getElementById("task-time").value), pri:sanitizePriority(document.getElementById("task-pri").value), repeat:sanitizeRepeat(document.getElementById("task-repeat").value)};}
     function validateTask(data){if(!data.text){showToast("Inserisci un titolo per il task",true);document.getElementById("task-text").focus();return false;}if(!state.customCats[data.cat]){showToast("Categoria non valida",true);return false;}return true;}
@@ -378,7 +380,33 @@
     function toggleNotes(id){const el=document.getElementById(`notes-${id}`);if(!el)return;el.classList.toggle("show");}
 
     function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`calendario_backup_${todayStr()}.json`;a.click();URL.revokeObjectURL(url);showToast("Backup scaricato");}
-    function importData(event){const file=event.target.files&&event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{state=sanitizeState(JSON.parse(String(e.target.result||"{}")));persistState();refreshCatSelects();renderColorSettings();currentMonth=new Date((state.selectedFocusDate||todayStr())+"T00:00:00");renderCalendar();render();showToast("Dati caricati correttamente");}catch(err){console.error(err);showToast("Errore nel file JSON",true);}finally{event.target.value="";}};reader.readAsText(file);}
+    function importData(event){
+      const file=event.target.files&&event.target.files[0];
+      if(!file)return;
+      const reader=new FileReader();
+      reader.onload=e=>{
+        try{
+          const raw=JSON.parse(String(e.target.result||"{}"));
+          const imported=sanitizeState(normalizeImportPayload(raw));
+          if(!imported.entries.length){
+            showToast("JSON valido, ma nessun task trovato",true);
+            return;
+          }
+          state=imported;
+          persistState();
+          refreshCatSelects();
+          renderColorSettings();
+          document.getElementById("task-date").value=state.selectedFocusDate||todayStr();
+          document.getElementById("archive-date-filter").value=state.archiveFilterDate||"";
+          currentMonth=new Date((state.selectedFocusDate||todayStr())+"T00:00:00");
+          renderCalendar();
+          render();
+          showToast(`${state.entries.length} task caricati correttamente`);
+        }catch(err){console.error(err);showToast("Errore nel file JSON",true);}
+        finally{event.target.value="";}
+      };
+      reader.readAsText(file);
+    }
     function exportCSV(){const headers=["ID","Titolo","Categoria","Sottocategoria","Link","Data","Ora","Priorita","Ripetizione","Creato il","Occorrenze escluse"];const rows=state.entries.map(e=>[e.id,e.text,e.cat,e.sub,e.link,e.date,e.time,e.pri,e.repeat,e.createdAt,safeArray(e.excludedDates).join(";")].map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(","));const csv="\ufeff"+[headers.join(","),...rows].join("\r\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`calendario_export_${todayStr()}.csv`;a.click();URL.revokeObjectURL(url);showToast("Export CSV pronto");}
 
     function requestNotificationPermission(){if(!("Notification" in window)){showToast("Notifiche non supportate",true);return;}Notification.requestPermission().then(permission=>{if(permission==="granted"){state.notificationsEnabled=true;persistState();startAlarmChecker();showToast("Notifiche abilitate");}else{showToast("Permesso notifiche negato",true);}});}
