@@ -32,6 +32,12 @@
     .color-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.8rem;margin-bottom:8px}.color-row input[type=color]{width:38px;height:28px;padding:0;background:transparent;border:0}.perm-task-grid{display:flex;flex-wrap:wrap;gap:6px}.perm-chip{display:inline-flex;align-items:center;gap:5px;padding:.3rem .65rem;border-radius:999px;font-size:.72rem;font-weight:800;cursor:pointer;border:1px solid var(--border);background:var(--surface-2);color:var(--text-muted)}.perm-chip.active{border-color:var(--success);background:rgba(16,185,129,.12);color:var(--success)}.archive-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.empty-state{text-align:center;color:var(--text-muted);padding:1.5rem 1rem;border:1px dashed var(--border);border-radius:14px;background:var(--surface);width:100%}.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.72);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}.modal-content{width:100%;max-width:430px;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:1.4rem;box-shadow:var(--shadow)}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--success);color:white;font-weight:900;font-size:.85rem;padding:.85rem 1.2rem;border-radius:12px;display:none;z-index:999;box-shadow:var(--shadow)}
     .confetti{position:fixed;width:10px;height:10px;background:var(--primary);z-index:1000;pointer-events:none}
     @media(max-width:1300px){.focus-grid .task-card{width:calc(50% - 7px)}}@media(max-width:1120px){.col-left{width:400px;min-width:340px}.field-row-4{grid-template-columns:1fr 1fr}.stats-footer{grid-template-columns:1fr}.field-inline-row{grid-template-columns:1fr}}@media(max-width:860px){body{overflow:auto}.app-container{flex-direction:column;height:auto;min-height:100vh}.resizer{display:none}.col-left,.col-right{width:100%!important;min-width:100%;max-width:none;height:auto}.focus-grid .task-card{width:100%;min-width:100%}}
+
+    .task-card{flex-wrap:wrap}
+    .task-month-band{flex-basis:100%;width:100%;margin:.35rem 0 0 28px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.12)}
+    .task-month-band-inner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:.48rem .72rem;background:var(--month-band-color);color:var(--month-band-text);font-size:.86rem;font-weight:950;letter-spacing:.03em;text-transform:uppercase}
+    .task-month-band-inner .month-band-label{opacity:.75;font-size:.68rem;letter-spacing:.06em}
+    .task-month-band-inner .month-band-date{font-size:.78rem;opacity:.9;text-transform:none;letter-spacing:0}
   </style>
 </head>
 <body data-theme="dark">
@@ -253,6 +259,11 @@
     };
     const INITIAL_COLORS = {"App.ti":"#6366f1","Casa":"#f59e0b","Clienti":"#2563eb","Disdire":"#ef4444","Famiglia":"#f97316","Idee":"#ca8a04","Lavoro":"#3b82f6","Salute":"#059669","Spesa":"#16a34a","Tasse":"#475569","Tel":"#06b6d4"};
     const COLOR_PALETTE = ["#4f46e5","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#06b6d4","#f97316","#14b8a6","#3b82f6","#6366f1","#a855f7","#0ea5e9","#f43f5e","#84cc16","#d946ef"];
+    const MONTH_BAND_COLORS = [
+      "#2563eb", "#7c3aed", "#db2777", "#dc2626",
+      "#ea580c", "#ca8a04", "#16a34a", "#059669",
+      "#0891b2", "#4f46e5", "#9333ea", "#be123c"
+    ];
     const DEFAULT_STATE = {version:12, entries:[], theme:"dark", sideWidth:470, customCats:deepClone(INITIAL_CATS), catColors:{...INITIAL_COLORS}, selectedFocusDate:"", archiveFilterDate:"", focusCatFilter:"all", recurringFilter:null, permanentTasks:[], notificationsEnabled:false, panels:{calendar:false, cats:false, perm:false, archive:false}};
     let state = deepClone(DEFAULT_STATE);
     let currentMonth = new Date();
@@ -289,6 +300,47 @@
         candidate=new Date(nextYear,month,Math.min(base.getDate(),daysInMonth(nextYear,month)));
       }
       return localDateToYmd(candidate);
+    }
+    function getNextWeeklyDate(task,fromDateStr=todayStr()){
+      const from=new Date(fromDateStr+"T00:00:00");
+      const base=new Date(task.date+"T00:00:00");
+      if(Number.isNaN(base.getTime()))return task.date;
+      const fromKey=from.getDay()===0?7:from.getDay();
+      const taskKey=base.getDay()===0?7:base.getDay();
+      const offset=(taskKey-fromKey+7)%7;
+      const candidate=new Date(from);
+      candidate.setDate(from.getDate()+offset);
+      return localDateToYmd(candidate);
+    }
+    function getNextMonthlyDate(task,fromDateStr=todayStr()){
+      const from=new Date(fromDateStr+"T00:00:00");
+      const base=new Date(task.date+"T00:00:00");
+      if(Number.isNaN(base.getTime()))return task.date;
+      const wantedDay=base.getDate();
+      let candidate=new Date(from.getFullYear(),from.getMonth(),Math.min(wantedDay,daysInMonth(from.getFullYear(),from.getMonth())));
+      if(candidate<from){
+        const nextMonth=new Date(from.getFullYear(),from.getMonth()+1,1);
+        candidate=new Date(nextMonth.getFullYear(),nextMonth.getMonth(),Math.min(wantedDay,daysInMonth(nextMonth.getFullYear(),nextMonth.getMonth())));
+      }
+      return localDateToYmd(candidate);
+    }
+    function getNextOccurrenceDate(task,fromDateStr=todayStr()){
+      if(task.repeat==="weekly")return getNextWeeklyDate(task,fromDateStr);
+      if(task.repeat==="monthly")return getNextMonthlyDate(task,fromDateStr);
+      if(task.repeat==="yearly")return getNextYearlyDate(task,fromDateStr);
+      return task.date;
+    }
+    function getMonthBandHtml(task){
+      if(!["weekly","monthly","yearly"].includes(task.repeat))return "";
+      const nextDate=getNextOccurrenceDate(task);
+      const d=new Date(nextDate+"T00:00:00");
+      if(Number.isNaN(d.getTime()))return "";
+      const monthIndex=d.getMonth();
+      const color=MONTH_BAND_COLORS[monthIndex]||DEFAULT_TASK_COLOR;
+      const textColor=getContrastColor(color);
+      const monthName=d.toLocaleDateString("it-IT",{month:"long"});
+      const fullDate=formatHumanDate(nextDate,{day:"2-digit",month:"2-digit",year:"numeric"});
+      return `<div class="task-month-band" style="--month-band-color:${escapeHtml(color)};--month-band-text:${escapeHtml(textColor)}"><div class="task-month-band-inner"><span><span class="month-band-label">Mese</span> ${escapeHtml(monthName)}</span><span class="month-band-date">${escapeHtml(fullDate)}</span></div></div>`;
     }
     function getYearlyMonthDayKey(task){
       const base=new Date(task.date+"T00:00:00");
