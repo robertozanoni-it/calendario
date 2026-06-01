@@ -244,8 +244,8 @@
   </div>
 
   <script>
-    const STORE_KEY = "calendario_task_v12_corretto";
-    const LEGACY_STORE_KEYS = ["calendario_task_v11_corretto","calendario_task_v10_corretto","calendario_task_v9_corretto","calendario_task_v8_corretto","calendario_task","tasks","calendario_tasks"];
+    const STORE_KEY = "calendario_task_v13_corretto";
+    const LEGACY_STORE_KEYS = ["calendario_task_v12_corretto","calendario_task_v11_corretto","calendario_task_v10_corretto","calendario_task_v9_corretto","calendario_task_v8_corretto","calendario_task","tasks","calendario_tasks"];
     const deepClone = typeof structuredClone === "function" ? structuredClone : (v)=>JSON.parse(JSON.stringify(v));
     const DEFAULT_TASK_COLOR = "#4f46e5";
     const INITIAL_CATS = {
@@ -280,6 +280,7 @@
     function priorityLabel(p){return p==="high"?"🔴 Alta":p==="med"?"🟡 Media":"🟢 Bassa";}
     function randomColor(){return "#"+Math.floor(Math.random()*16777215).toString(16).padStart(6,"0");}
     function getNextAvailableColor(currentColors=state.catColors){const used=new Set(Object.values(currentColors));for(const c of COLOR_PALETTE){if(!used.has(c))return c;}let c=randomColor();while(used.has(c))c=randomColor();return c;}
+    function makeTaskId(){let id=Date.now()+Math.floor(Math.random()*1000000);const used=new Set(state.entries.map(e=>Number(e.id)));while(used.has(id)){id=Date.now()+Math.floor(Math.random()*1000000);}return id;}
 
     function ensureCompletedDates(entry){if(Array.isArray(entry.completedDates))return [...new Set(entry.completedDates.filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)))];if(entry.isComplete===true && entry.date)return [sanitizeDate(entry.date)];return [];}
     function ensureExcludedDates(entry){return Array.isArray(entry.excludedDates)?[...new Set(entry.excludedDates.filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)).map(sanitizeDate))]:[];}
@@ -287,10 +288,62 @@
     function sanitizeColors(rawColors,cats){const source=safeObject(rawColors);const out={};const used=new Set();Object.keys(cats).forEach(cat=>{let color=sanitizeHexColor(source[cat],"");if(!color||used.has(color))color=INITIAL_COLORS[cat];if(!color||used.has(color))color=getNextAvailableColor(out);out[cat]=color;used.add(color);});return out;}
     function sanitizeEntry(raw){const e=safeObject(raw);const numericId=Number(e.id);return {id:Number.isFinite(numericId)?numericId:Date.now()+Math.floor(Math.random()*10000), text:sanitizeString(e.text,"Task senza titolo"), cat:sanitizeString(e.cat,"Lavoro"), sub:sanitizeString(e.sub,""), link:normalizeUrl(e.link), taskColor:sanitizeHexColor(e.taskColor||e.color||"",""), date:sanitizeDate(e.date), time:sanitizeTime(e.time), pri:sanitizePriority(e.pri), repeat:sanitizeRepeat(e.repeat), subtasks:safeArray(e.subtasks).map(st=>({text:sanitizeString(st.text,""),isComplete:!!st.isComplete})).filter(st=>st.text), notes:sanitizeString(e.notes,""), image:typeof e.image==="string" && e.image.startsWith("data:image/")?e.image:"", completedDates:ensureCompletedDates(e), excludedDates:ensureExcludedDates(e), createdAt:sanitizeDate(e.createdAt||e.date||todayStr())};}
     function getPermanentId(item){if(typeof item==="number"||typeof item==="string")return Number(item);if(item&&typeof item==="object")return Number(item.id);return NaN;}
-    function sanitizeState(raw){const data=safeObject(raw);const customCats=sanitizeCats(data.customCats);const entries=safeArray(data.entries||data.tasks).map(sanitizeEntry);const ids=new Set(entries.map(e=>e.id));const permanentTasks=safeArray(data.permanentTasks).map(item=>{const id=getPermanentId(item);if(Number.isFinite(id)&&ids.has(id))return {id};return null;}).filter(Boolean);return {version:12, entries, theme:data.theme==="light"?"light":"dark", sideWidth:Number.isFinite(data.sideWidth)?Math.min(860,Math.max(360,data.sideWidth)):470, customCats, catColors:sanitizeColors(data.catColors,customCats), selectedFocusDate:data.selectedFocusDate?sanitizeDate(data.selectedFocusDate):todayStr(), archiveFilterDate:sanitizeOptionalDate(data.archiveFilterDate), focusCatFilter:sanitizeString(data.focusCatFilter,"all"), recurringFilter:["today","daily","weekly","monthly","yearly"].includes(data.recurringFilter)?data.recurringFilter:null, permanentTasks, notificationsEnabled:!!data.notificationsEnabled, panels:{calendar:!!safeObject(data.panels).calendar,cats:false,perm:false,archive:false}};}
-    function persistState(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
-    function loadState(){try{const saved=localStorage.getItem(STORE_KEY);state=saved?sanitizeState(JSON.parse(saved)):deepClone(DEFAULT_STATE);}catch(err){console.error(err);state=deepClone(DEFAULT_STATE);}if(!state.selectedFocusDate)state.selectedFocusDate=todayStr();}
-    function saveAndRender(){persistState();renderCalendar();render();}
+    function normalizeImportPayload(raw){
+      const data=safeObject(raw);
+      if(Array.isArray(raw))return {entries:raw};
+      if(Array.isArray(data.entries))return data;
+      if(Array.isArray(data.tasks))return {...data,entries:data.tasks};
+      if(Array.isArray(data.data))return {...data,entries:data.data};
+      return data;
+    }
+    function repairCategoriesFromEntries(customCats,entries){
+      const out=clone(customCats);
+      entries.forEach(e=>{if(e.cat&&!out[e.cat])out[e.cat]=e.sub?[e.sub]:[];else if(e.cat&&e.sub&&!out[e.cat].includes(e.sub))out[e.cat].push(e.sub);});
+      return out;
+    }
+    function dedupeEntries(entries){
+      const used=new Set();
+      return entries.map(e=>{let id=Number(e.id);if(!Number.isFinite(id)||used.has(id)){id=Date.now()+Math.floor(Math.random()*1000000);while(used.has(id))id++;}used.add(id);return {...e,id};});
+    }
+    function sanitizeState(raw){
+      const data=safeObject(normalizeImportPayload(raw));
+      let entries=dedupeEntries(safeArray(data.entries||data.tasks).map(sanitizeEntry));
+      let customCats=repairCategoriesFromEntries(sanitizeCats(data.customCats),entries);
+      const ids=new Set(entries.map(e=>e.id));
+      const permanentTasks=safeArray(data.permanentTasks).map(item=>{const id=getPermanentId(item);if(Number.isFinite(id)&&ids.has(id))return {id};return null;}).filter(Boolean);
+      return {version:13, entries, theme:data.theme==="light"?"light":"dark", sideWidth:Number.isFinite(data.sideWidth)?Math.min(860,Math.max(360,data.sideWidth)):470, customCats, catColors:sanitizeColors(data.catColors,customCats), selectedFocusDate:data.selectedFocusDate?sanitizeDate(data.selectedFocusDate):todayStr(), archiveFilterDate:sanitizeOptionalDate(data.archiveFilterDate), focusCatFilter:sanitizeString(data.focusCatFilter,"all"), recurringFilter:["today","daily","weekly","monthly","yearly"].includes(data.recurringFilter)?data.recurringFilter:null, permanentTasks, notificationsEnabled:!!data.notificationsEnabled, panels:{calendar:!!safeObject(data.panels).calendar,cats:false,perm:false,archive:false}};
+    }
+    function readStoredState(){
+      const keys=[STORE_KEY,...LEGACY_STORE_KEYS];
+      for(const key of keys){
+        try{
+          const saved=localStorage.getItem(key);
+          if(!saved)continue;
+          const parsed=JSON.parse(saved);
+          const candidate=sanitizeState(parsed);
+          if(candidate.entries.length || key===STORE_KEY)return {state:candidate,key};
+        }catch(err){console.warn("Archivio non leggibile:",key,err);}
+      }
+      return {state:deepClone(DEFAULT_STATE),key:null};
+    }
+    function persistState(){
+      try{
+        state.version=13;
+        localStorage.setItem(STORE_KEY,JSON.stringify(state));
+        return true;
+      }catch(err){
+        console.error("Salvataggio localStorage fallito",err);
+        showToast("Memoria browser piena: scarica un backup JSON e riduci immagini",true);
+        return false;
+      }
+    }
+    function loadState(){
+      const loaded=readStoredState();
+      state=loaded.state;
+      if(!state.selectedFocusDate)state.selectedFocusDate=todayStr();
+      if(loaded.key && loaded.key!==STORE_KEY){persistState();showToast(`Task recuperati da vecchio archivio: ${loaded.key}`);}
+    }
+    function saveAndRender(){const ok=persistState();renderCalendar();render();return ok;}
 
     function init(){loadState();document.body.setAttribute("data-theme",state.theme);document.getElementById("sidebar").style.width=state.sideWidth+"px";document.getElementById("date-display").textContent=new Date().toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long",year:"numeric"});document.getElementById("task-date").value=state.selectedFocusDate;document.getElementById("archive-date-filter").value=state.archiveFilterDate||"";currentMonth=new Date((state.selectedFocusDate||todayStr())+"T00:00:00");refreshCatSelects();renderColorSettings();resetTaskColor();setupResizer();bindKeyboardShortcuts();document.addEventListener("click",e=>{const wrap=document.getElementById("funzioni-wrap");if(wrap&&!wrap.contains(e.target))closeFunzioniMenu();});if(state.panels.calendar){document.getElementById("calendar-content").style.display="block";document.getElementById("calendar-toggle").textContent="▲";}renderCalendar();render();if(state.notificationsEnabled && "Notification" in window && Notification.permission==="granted")startAlarmChecker();}
     function bindKeyboardShortcuts(){document.addEventListener("keydown",e=>{const tag=document.activeElement.tagName;const isInput=["INPUT","TEXTAREA","SELECT"].includes(tag);if(e.key==="Escape"){closeDeleteModal();closeCatModal();closeMoveModal();closeClearModal();closeFunzioniMenu();resetForm();}if(e.altKey&&e.key.toLowerCase()==="n"&&!isInput){e.preventDefault();document.getElementById("task-text").focus();}if(e.altKey&&e.key.toLowerCase()==="f"&&!isInput){e.preventDefault();document.getElementById("search-box").focus();}if(e.altKey&&e.key==="0"&&!isInput){e.preventDefault();setRecurringFilter(null);}});}
@@ -307,7 +360,7 @@
     function getFormData(){const rawImage=document.getElementById("image-preview").getAttribute("src")||"";return {text:sanitizeString(document.getElementById("task-text").value), cat:sanitizeString(document.getElementById("task-cat").value,"Lavoro"), sub:sanitizeString(document.getElementById("task-sub").value), link:normalizeUrl(document.getElementById("task-link").value), subtasks:document.getElementById("task-subtasks").value.split("\n").map(s=>s.trim()).filter(Boolean).map(s=>({text:s,isComplete:false})), notes:sanitizeString(document.getElementById("task-notes").value), image:rawImage.startsWith("data:image/")?rawImage:"", taskColor:sanitizeHexColor(document.getElementById("task-color").value,getSelectedCategoryColor()), date:sanitizeDate(document.getElementById("task-date").value), time:sanitizeTime(document.getElementById("task-time").value), pri:sanitizePriority(document.getElementById("task-pri").value), repeat:sanitizeRepeat(document.getElementById("task-repeat").value)};}
     function validateTask(data){if(!data.text){showToast("Inserisci un titolo per il task",true);document.getElementById("task-text").focus();return false;}if(!state.customCats[data.cat]){showToast("Categoria non valida",true);return false;}return true;}
     function mergeSubtaskCompletion(oldTask,newSubtasks){return newSubtasks.map((st,i)=>{const oldByIndex=safeArray(oldTask.subtasks)[i];const oldByText=safeArray(oldTask.subtasks).find(x=>x.text===st.text);return {...st,isComplete:!!(oldByIndex?.text===st.text?oldByIndex.isComplete:oldByText?.isComplete)};});}
-    function saveTask(){const data=getFormData();if(!validateTask(data))return;const editId=sanitizeString(document.getElementById("task-id").value);if(editId){const idx=state.entries.findIndex(e=>String(e.id)===editId);if(idx!==-1){data.subtasks=mergeSubtaskCompletion(state.entries[idx],data.subtasks);state.entries[idx]={...state.entries[idx],...data};showToast("Task aggiornato ✓");}else{showToast("Task non trovato",true);}resetForm();}else{state.entries.push({id:Date.now(),...data,completedDates:[],excludedDates:[],createdAt:todayStr()});document.getElementById("task-text").value="";document.getElementById("task-link").value="";document.getElementById("task-subtasks").value="";document.getElementById("task-notes").value="";document.getElementById("task-time").value="";document.getElementById("task-pri").value="low";document.getElementById("task-repeat").value="none";clearImageInput();syncTaskColorFromCategory();document.getElementById("task-text").focus();showToast("Task salvato ✓");}saveAndRender();}
+    function saveTask(){const data=getFormData();if(!validateTask(data))return;const editId=sanitizeString(document.getElementById("task-id").value);if(editId){const idx=state.entries.findIndex(e=>String(e.id)===editId);if(idx!==-1){data.subtasks=mergeSubtaskCompletion(state.entries[idx],data.subtasks);state.entries[idx]={...state.entries[idx],...data};showToast("Task aggiornato ✓");}else{showToast("Task non trovato",true);}resetForm();}else{state.entries.push({id:makeTaskId(),...data,completedDates:[],excludedDates:[],createdAt:todayStr()});document.getElementById("task-text").value="";document.getElementById("task-link").value="";document.getElementById("task-subtasks").value="";document.getElementById("task-notes").value="";document.getElementById("task-time").value="";document.getElementById("task-pri").value="low";document.getElementById("task-repeat").value="none";clearImageInput();syncTaskColorFromCategory();document.getElementById("task-text").focus();showToast("Task salvato ✓");}saveAndRender();}
     function editTask(id){const task=state.entries.find(e=>e.id===Number(id));if(!task){showToast("Task non trovato",true);return;}document.querySelectorAll(".task-card").forEach(c=>c.classList.toggle("is-editing",c.dataset.id===String(id)));document.getElementById("task-id").value=String(task.id);document.getElementById("task-text").value=task.text;document.getElementById("task-link").value=task.link||"";document.getElementById("task-subtasks").value=safeArray(task.subtasks).map(st=>st.text).join("\n");document.getElementById("task-notes").value=task.notes||"";document.getElementById("task-cat").value=task.cat;updateSubs(false);document.getElementById("task-sub").value=task.sub||"";document.getElementById("task-date").value=task.date;document.getElementById("task-time").value=task.time||"";document.getElementById("task-pri").value=task.pri;document.getElementById("task-repeat").value=sanitizeRepeat(task.repeat);document.getElementById("task-color").value=sanitizeHexColor(task.taskColor||"",state.catColors[task.cat]||DEFAULT_TASK_COLOR);if(task.image){document.getElementById("image-preview").src=task.image;document.getElementById("image-preview-wrap").style.display="block";}else{clearImageInput();}document.getElementById("form-title").textContent="✏️ Modifica task";document.getElementById("btn-save").textContent="Aggiorna";document.getElementById("btn-cancel").style.display="block";document.getElementById("form-container").classList.add("editing");document.getElementById("sidebar").scrollTo({top:0,behavior:"smooth"});setTimeout(()=>document.getElementById("task-text").focus(),150);}
     function resetForm(){document.getElementById("task-id").value="";document.getElementById("task-text").value="";document.getElementById("task-link").value="";document.getElementById("task-subtasks").value="";document.getElementById("task-notes").value="";clearImageInput();document.getElementById("task-date").value=state.selectedFocusDate||todayStr();document.getElementById("task-time").value="";document.getElementById("task-pri").value="low";document.getElementById("task-repeat").value="none";document.getElementById("form-title").textContent="Nuovo task";document.getElementById("btn-save").textContent="Salva";document.getElementById("btn-cancel").style.display="none";document.getElementById("form-container").classList.remove("editing");document.querySelectorAll(".task-card").forEach(c=>c.classList.remove("is-editing"));const cats=getSortedCategories();if(cats.length)document.getElementById("task-cat").value=cats[0];updateSubs(true);}
 
@@ -360,13 +413,13 @@
     function renderPermTaskPicker(){const select=document.getElementById("perm-cat-select"), picker=document.getElementById("perm-task-picker");if(!select||!picker)return;const cat=select.value;if(!cat){picker.innerHTML=`<div class="small muted">Seleziona una categoria</div>`;return;}const ids=new Set(state.permanentTasks.map(getPermanentId));const tasks=state.entries.filter(e=>e.cat===cat).sort((a,b)=>a.text.localeCompare(b.text,"it"));picker.innerHTML=tasks.length?tasks.map(t=>`<span class="perm-chip ${ids.has(t.id)?"active":""}" onclick="togglePermanentTask(${t.id})">${ids.has(t.id)?"✓":"+"} ${escapeHtml(t.text)}</span>`).join(""):`<div class="small muted">Nessun task in questa categoria</div>`;}
     function renderPermanentList(){const el=document.getElementById("perm-task-list");if(!el)return;const tasks=getPermanentTasks();el.innerHTML=tasks.length?tasks.map(t=>createCard(t,false,t.date,true)).join(""):`<div class="empty-state" style="font-size:.78rem;padding:.8rem">Nessun task permanente</div>`;}
 
-    function duplicateTask(id){const task=state.entries.find(e=>e.id===Number(id));if(!task)return;const copy=clone(task);copy.id=Date.now();copy.text=copy.text+" copia";copy.completedDates=[];copy.excludedDates=[];copy.createdAt=todayStr();state.entries.push(copy);saveAndRender();showToast("Task duplicato");}
+    function duplicateTask(id){const task=state.entries.find(e=>e.id===Number(id));if(!task)return;const copy=clone(task);copy.id=makeTaskId();copy.text=copy.text+" copia";copy.completedDates=[];copy.excludedDates=[];copy.createdAt=todayStr();state.entries.push(copy);saveAndRender();showToast("Task duplicato");}
     function openDeleteModal(id,effectiveDate=""){const task=state.entries.find(e=>e.id===Number(id));if(!task)return;const date=sanitizeOptionalDate(effectiveDate)||task.date;document.getElementById("delete-task-id").value=id;document.getElementById("delete-task-date").value=date;const options=document.getElementById("delete-recurring-options");const msg=document.getElementById("delete-task-message");const label=document.getElementById("delete-single-date-label");const recurring=isRecurring(task);if(options)options.style.display=recurring?"block":"none";if(label)label.textContent=date?`(${formatHumanDate(date,{day:"2-digit",month:"2-digit",year:"numeric"})})`:"";if(msg)msg.textContent=recurring?`Il task “${task.text}” è ${repeatLabel(task.repeat)}.`:"Questa operazione elimina il task anche dai permanenti.";const single=document.querySelector('input[name="delete-recurring-mode"][value="single"]');if(single)single.checked=true;const m=document.getElementById("modal-delete");m.style.display="flex";m.setAttribute("aria-hidden","false");}
     function closeDeleteModal(){const m=document.getElementById("modal-delete");m.style.display="none";m.setAttribute("aria-hidden","true");}
     function confirmDeleteTask(){const id=Number(document.getElementById("delete-task-id").value);const date=sanitizeOptionalDate(document.getElementById("delete-task-date").value);const task=state.entries.find(e=>e.id===id);if(!task){closeDeleteModal();return;}const mode=(document.querySelector('input[name="delete-recurring-mode"]:checked')||{}).value||"all";if(isRecurring(task)&&mode==="single"){task.excludedDates=[...new Set([...safeArray(task.excludedDates),date||task.date])];task.completedDates=safeArray(task.completedDates).filter(d=>d!==date);closeDeleteModal();saveAndRender();showToast("Occorrenza ricorrente eliminata");return;}state.entries=state.entries.filter(e=>e.id!==id);state.permanentTasks=state.permanentTasks.filter(t=>getPermanentId(t)!==id);closeDeleteModal();saveAndRender();showToast(isRecurring(task)?"Serie ricorrente eliminata":"Task eliminato");}
     function moveToNextDay(id){const task=state.entries.find(e=>e.id===Number(id));if(!task)return;const d=new Date(task.date+"T00:00:00");d.setDate(d.getDate()+1);task.date=localDateToYmd(d);saveAndRender();showToast("Task spostato al giorno successivo");}
     function moveAllPendingToNextDay(){const date=state.selectedFocusDate||todayStr();const pending=getVisibleTasks(date).filter(t=>!isTaskCompletedForDate(t,date)&&!isRecurring(t));if(!pending.length){showToast("Nessun task non ricorrente da spostare",true);return;}if(!confirm(`Spostare ${pending.length} task pendenti non ricorrenti al giorno successivo?`))return;const next=new Date(date+"T00:00:00");next.setDate(next.getDate()+1);const nextDate=localDateToYmd(next);pending.forEach(t=>{t.date=nextDate;});saveAndRender();showToast(`${pending.length} task spostati`);}
-    function quickAddTask(){const input=document.getElementById("quick-add-input");const text=sanitizeString(input.value);if(!text)return;const cat=document.getElementById("task-cat").value||getSortedCategories()[0]||"Lavoro";state.entries.push({id:Date.now(),text,cat,sub:"",link:"",taskColor:state.catColors[cat]||DEFAULT_TASK_COLOR,date:state.selectedFocusDate||todayStr(),time:"",pri:"low",repeat:"none",subtasks:[],notes:"",image:"",completedDates:[],excludedDates:[],createdAt:todayStr()});input.value="";saveAndRender();showToast("Task aggiunto rapidamente");}
+    function quickAddTask(){const input=document.getElementById("quick-add-input");const text=sanitizeString(input.value);if(!text)return;const cat=document.getElementById("task-cat").value||getSortedCategories()[0]||"Lavoro";state.entries.push({id:makeTaskId(),text,cat,sub:"",link:"",taskColor:state.catColors[cat]||DEFAULT_TASK_COLOR,date:state.selectedFocusDate||todayStr(),time:"",pri:"low",repeat:"none",subtasks:[],notes:"",image:"",completedDates:[],excludedDates:[],createdAt:todayStr()});input.value="";saveAndRender();showToast("Task aggiunto rapidamente");}
 
     function syncArchiveDateFilter(){state.archiveFilterDate=sanitizeOptionalDate(document.getElementById("archive-date-filter").value);saveAndRender();}
     function applyFocusDateToArchive(){state.archiveFilterDate=state.selectedFocusDate||todayStr();saveAndRender();}
