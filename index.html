@@ -295,9 +295,38 @@
       if(Number.isNaN(base.getTime()))return 9999;
       return (base.getMonth()+1)*100+base.getDate();
     }
+    function getMonthlyDayKey(task){
+      const base=new Date(task.date+"T00:00:00");
+      if(Number.isNaN(base.getTime()))return 99;
+      return base.getDate();
+    }
+    function getWeeklyDayKey(task){
+      const base=new Date(task.date+"T00:00:00");
+      if(Number.isNaN(base.getTime()))return 9;
+      const day=base.getDay();
+      return day===0?7:day;
+    }
+    function sortRecurringByDate(a,b){
+      if(a.repeat==="yearly" && b.repeat==="yearly"){
+        return getYearlyMonthDayKey(a)-getYearlyMonthDayKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
+      }
+      if(a.repeat==="monthly" && b.repeat==="monthly"){
+        return getMonthlyDayKey(a)-getMonthlyDayKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
+      }
+      if(a.repeat==="weekly" && b.repeat==="weekly"){
+        return getWeeklyDayKey(a)-getWeeklyDayKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
+      }
+      return a.date.localeCompare(b.date) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
+    }
+    function getRecurringOrderLabel(type){
+      if(type==="weekly")return "🔄 Settimanali ordinati da lunedì a domenica";
+      if(type==="monthly")return "📅 Mensili ordinati dal giorno più basso";
+      if(type==="yearly")return "🗓️ Annuali ordinati dalla data più bassa";
+      return "Task ricorrenti";
+    }
     function getSortDateForTask(task){return task.repeat==="yearly"?String(getYearlyMonthDayKey(task)).padStart(4,"0"):task.date;}
     function formatTaskDateForCard(task,effectiveDate){
-      const displayDate=task.repeat==="yearly"?task.date:(effectiveDate||task.date);
+      const displayDate=["weekly","monthly","yearly"].includes(task.repeat)?task.date:(effectiveDate||task.date);
       return formatHumanDate(displayDate,{day:"2-digit",month:"2-digit",year:"numeric"});
     }
     function repeatLabel(r){return {daily:"giornaliero",weekly:"settimanale",monthly:"mensile",yearly:"annuale",none:"nessuna"}[r]||"nessuna";}
@@ -379,7 +408,7 @@
     function syncTaskColorFromCategory(){document.getElementById("task-color").value=getSelectedCategoryColor();}
     function resetTaskColor(){syncTaskColorFromCategory();}
     function renderColorSettings(){const el=document.getElementById("color-list");el.innerHTML=getSortedCategories().map(cat=>`<div class="color-row"><span>${escapeHtml(cat)}</span><input type="color" value="${escapeHtml(state.catColors[cat]||DEFAULT_TASK_COLOR)}" onchange="updateCatColor('${escapeJs(cat)}',this.value)"></div>`).join("");}
-    function updateCatColor(cat,color){const oldColor=state.catColors[cat]||DEFAULT_TASK_COLOR;const hex=sanitizeHexColor(color,oldColor);state.catColors[cat]=hex;state.entries.forEach(e=>{if(e.cat===cat && (!e.taskColor || e.taskColor===oldColor)) e.taskColor=hex;});if(document.getElementById("task-cat").value===cat && !document.getElementById("task-id").value)syncTaskColorFromCategory();saveAndRender();renderColorSettings();renderPermTaskPicker();}
+    function updateCatColor(cat,color){const oldColor=state.catColors[cat]||DEFAULT_TASK_COLOR;const hex=sanitizeHexColor(color,oldColor);state.catColors[cat]=hex;state.entries.forEach(e=>{if(e.cat===cat) e.taskColor=hex;});if(document.getElementById("task-cat").value===cat)document.getElementById("task-color").value=hex;saveAndRender();renderColorSettings();renderPermTaskPicker();showToast(`Colore applicato a tutte le card: ${cat}`);}
 
     function getFormData(){const rawImage=document.getElementById("image-preview").getAttribute("src")||"";return {text:sanitizeString(document.getElementById("task-text").value), cat:sanitizeString(document.getElementById("task-cat").value,"Lavoro"), sub:sanitizeString(document.getElementById("task-sub").value), link:normalizeUrl(document.getElementById("task-link").value), subtasks:document.getElementById("task-subtasks").value.split("\n").map(s=>s.trim()).filter(Boolean).map(s=>({text:s,isComplete:false})), notes:sanitizeString(document.getElementById("task-notes").value), image:rawImage.startsWith("data:image/")?rawImage:"", taskColor:sanitizeHexColor(document.getElementById("task-color").value,getSelectedCategoryColor()), date:sanitizeDate(document.getElementById("task-date").value), time:sanitizeTime(document.getElementById("task-time").value), pri:sanitizePriority(document.getElementById("task-pri").value), repeat:sanitizeRepeat(document.getElementById("task-repeat").value)};}
     function validateTask(data){if(!data.text){showToast("Inserisci un titolo per il task",true);document.getElementById("task-text").focus();return false;}if(!state.customCats[data.cat]){showToast("Categoria non valida",true);return false;}return true;}
@@ -400,12 +429,12 @@
     function jumpFocusToToday(){setFocusDate(todayStr());}
     function timeRank(time){if(!time)return -1;const [h,m]=time.split(":").map(Number);return h*60+m;}
     function sortTasksForFocus(dateStr){return (a,b)=>{const ac=isTaskCompletedForDate(a,dateStr)?1:0,bc=isTaskCompletedForDate(b,dateStr)?1:0;if(ac!==bc)return ac-bc;const cd=a.cat.localeCompare(b.cat,"it");if(cd)return cd;const tr=timeRank(a.time)-timeRank(b.time);if(tr)return tr;return a.text.localeCompare(b.text,"it");};}
-    function getVisibleTasks(dateStr){const q=sanitizeString(document.getElementById("search-box").value).toLowerCase();let arr=[];if(state.recurringFilter==="today"){const t=todayStr();arr=state.entries.filter(e=>isTaskScheduledForDate(e,t));return arr.filter(e=>matchesQuery(e,q)).sort(sortTasksForFocus(t));}if(["daily","weekly","monthly","yearly"].includes(state.recurringFilter)){arr=state.entries.filter(e=>e.repeat===state.recurringFilter).filter(e=>matchesQuery(e,q));if(state.recurringFilter==="yearly"){return arr.sort((a,b)=>getYearlyMonthDayKey(a)-getYearlyMonthDayKey(b)||a.date.localeCompare(b.date)||a.text.localeCompare(b.text,"it"));}return arr.sort((a,b)=>a.cat.localeCompare(b.cat,"it")||a.text.localeCompare(b.text,"it"));}const cat=state.focusCatFilter||"all";arr=state.entries.filter(e=>isTaskScheduledForDate(e,dateStr)&&(cat==="all"||e.cat===cat));return arr.filter(e=>matchesQuery(e,q)).sort(sortTasksForFocus(dateStr));}
+    function getVisibleTasks(dateStr){const q=sanitizeString(document.getElementById("search-box").value).toLowerCase();let arr=[];if(state.recurringFilter==="today"){const t=todayStr();arr=state.entries.filter(e=>isTaskScheduledForDate(e,t));return arr.filter(e=>matchesQuery(e,q)).sort(sortTasksForFocus(t));}if(["daily","weekly","monthly","yearly"].includes(state.recurringFilter)){arr=state.entries.filter(e=>e.repeat===state.recurringFilter).filter(e=>matchesQuery(e,q));if(["weekly","monthly","yearly"].includes(state.recurringFilter)){return arr.sort(sortRecurringByDate);}return arr.sort((a,b)=>a.date.localeCompare(b.date)||timeRank(a.time)-timeRank(b.time)||a.text.localeCompare(b.text,"it"));}const cat=state.focusCatFilter||"all";arr=state.entries.filter(e=>isTaskScheduledForDate(e,dateStr)&&(cat==="all"||e.cat===cat));return arr.filter(e=>matchesQuery(e,q)).sort(sortTasksForFocus(dateStr));}
     function matchesQuery(e,q){if(!q)return true;return [e.text,e.cat,e.sub,e.link,e.time,e.notes].join(" ").toLowerCase().includes(q);}
     function getArchiveTasks(){const q=sanitizeString(document.getElementById("search-box").value).toLowerCase();const cat=document.getElementById("archive-cat-filter").value;const date=state.archiveFilterDate;return state.entries.filter(e=>(cat==="all"||e.cat===cat)&&(!date||e.date===date)&&matchesQuery(e,q)).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id);}
 
     function render(){const date=state.selectedFocusDate||todayStr();const tasks=getVisibleTasks(date);const archiveTasks=getArchiveTasks();renderFocus(tasks,date);renderArchive(archiveTasks);renderStats(tasks,archiveTasks,date);syncUiValues();updateRecurringButtons();renderPermTaskPicker();renderPermanentList();}
-    function renderFocus(tasks,dateStr){const list=document.getElementById("list-focus");const labels={today:"Task di oggi",daily:"Task giornalieri",weekly:"Task settimanali",monthly:"Task mensili",yearly:"Task annuali"};document.getElementById("focus-title").textContent=state.recurringFilter?labels[state.recurringFilter]:"Focus giornaliero";document.getElementById("counter-label").textContent=state.recurringFilter?"Totali":"Aperti";document.getElementById("focus-date-label").textContent=state.recurringFilter==="today"?formatHumanDate(todayStr(),{weekday:"long",day:"numeric",month:"long",year:"numeric"}):state.recurringFilter?"Visualizzazione per ripetizione":formatHumanDate(dateStr,{weekday:"long",day:"numeric",month:"long",year:"numeric"});document.getElementById("focus-date-pill").textContent=state.recurringFilter?`Filtro: ${labels[state.recurringFilter]}`:`Focus: ${formatHumanDate(dateStr,{day:"2-digit",month:"2-digit",year:"numeric"})}`;const pending=tasks.filter(t=>!isTaskCompletedForDate(t,state.recurringFilter==="today"?todayStr():dateStr)).length;document.getElementById("btn-move-all").style.display=(pending>0&&!state.recurringFilter)?"block":"none";const permTasks=getPermanentTasks();if(!tasks.length&&!permTasks.length){list.innerHTML=`<div class="empty-state">${state.recurringFilter?"Nessun task per questo filtro":"Nessun task per questa data"}</div>`;return;}let html="";if(tasks.length){if(state.recurringFilter==="yearly"){html+=`<div class="focus-cat-header" style="border-color:var(--primary)">🗓️ Annuali ordinati dalla data più bassa <span>${tasks.length}</span></div>`;html+=tasks.map(t=>createCard(t,true,t.date,false)).join("");}else{const grouped=groupBy(tasks,"cat");Object.keys(grouped).sort((a,b)=>a.localeCompare(b,"it")).forEach(cat=>{html+=`<div class="focus-cat-header" style="border-color:${escapeHtml(state.catColors[cat]||"var(--border)")}">${escapeHtml(cat)} <span>${grouped[cat].length}</span></div>`;html+=grouped[cat].map(t=>createCard(t,true,state.recurringFilter==="today"?todayStr():dateStr,false)).join("");});}}if(permTasks.length){html+=`<div class="focus-cat-header perm-focus-header">📌 Permanenti <span>${permTasks.length}</span></div>`;html+=permTasks.map(t=>createCard(t,false,t.date,true)).join("");}list.innerHTML=html;}
+    function renderFocus(tasks,dateStr){const list=document.getElementById("list-focus");const labels={today:"Task di oggi",daily:"Task giornalieri",weekly:"Task settimanali",monthly:"Task mensili",yearly:"Task annuali"};document.getElementById("focus-title").textContent=state.recurringFilter?labels[state.recurringFilter]:"Focus giornaliero";document.getElementById("counter-label").textContent=state.recurringFilter?"Totali":"Aperti";document.getElementById("focus-date-label").textContent=state.recurringFilter==="today"?formatHumanDate(todayStr(),{weekday:"long",day:"numeric",month:"long",year:"numeric"}):state.recurringFilter?"Visualizzazione per ripetizione":formatHumanDate(dateStr,{weekday:"long",day:"numeric",month:"long",year:"numeric"});document.getElementById("focus-date-pill").textContent=state.recurringFilter?`Filtro: ${labels[state.recurringFilter]}`:`Focus: ${formatHumanDate(dateStr,{day:"2-digit",month:"2-digit",year:"numeric"})}`;const pending=tasks.filter(t=>!isTaskCompletedForDate(t,state.recurringFilter==="today"?todayStr():dateStr)).length;document.getElementById("btn-move-all").style.display=(pending>0&&!state.recurringFilter)?"block":"none";const permTasks=getPermanentTasks();if(!tasks.length&&!permTasks.length){list.innerHTML=`<div class="empty-state">${state.recurringFilter?"Nessun task per questo filtro":"Nessun task per questa data"}</div>`;return;}let html="";if(tasks.length){if(["weekly","monthly","yearly"].includes(state.recurringFilter)){html+=`<div class="focus-cat-header" style="border-color:var(--primary)">${getRecurringOrderLabel(state.recurringFilter)} <span>${tasks.length}</span></div>`;html+=tasks.map(t=>createCard(t,true,t.date,false)).join("");}else{const grouped=groupBy(tasks,"cat");Object.keys(grouped).sort((a,b)=>a.localeCompare(b,"it")).forEach(cat=>{html+=`<div class="focus-cat-header" style="border-color:${escapeHtml(state.catColors[cat]||"var(--border)")}">${escapeHtml(cat)} <span>${grouped[cat].length}</span></div>`;html+=grouped[cat].map(t=>createCard(t,true,state.recurringFilter==="today"?todayStr():dateStr,false)).join("");});}}if(permTasks.length){html+=`<div class="focus-cat-header perm-focus-header">📌 Permanenti <span>${permTasks.length}</span></div>`;html+=permTasks.map(t=>createCard(t,false,t.date,true)).join("");}list.innerHTML=html;}
     function groupBy(arr,key){return arr.reduce((acc,item)=>{const k=item[key]||"Altro";(acc[k] ||= []).push(item);return acc;},{});}
     function renderArchive(tasks){const list=document.getElementById("list-archive");list.innerHTML=tasks.length?tasks.map(t=>createCard(t,false,t.date,false)).join(""):`<div class="empty-state">Nessun task trovato nell'archivio</div>`;}
     function createCard(task,isFocusArea,effectiveDate,isPermanentContext=false){
@@ -422,6 +451,8 @@
       if(isRecurring(task))meta.push(`<span class="meta-chip">↺ ${repeatLabel(task.repeat)}</span>`);
       meta.push(`<span class="meta-chip">${priorityLabel(task.pri)}</span>`);
       if(isFocusArea&&task.date!==effectiveDate&&!state.recurringFilter)meta.push(`<span class="meta-chip">origine ${escapeHtml(originalDateDisplay)}</span>`);
+      if(task.repeat==="weekly")meta.push(`<span class="meta-chip">giorno settimanale</span>`);
+      if(task.repeat==="monthly")meta.push(`<span class="meta-chip">giorno mensile</span>`);
       if(task.repeat==="yearly")meta.push(`<span class="meta-chip">data annuale</span>`);
       const link=task.link?`<a class="task-link" href="${escapeHtml(task.link)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">🔗 ${escapeHtml(task.link)}</a>`:"";
       const subs=safeArray(task.subtasks).length?`<div class="subtask-list">${safeArray(task.subtasks).map((st,i)=>`<div class="subtask-item ${st.isComplete?"is-finished":""}"><input type="checkbox" class="subtask-check" ${st.isComplete?"checked":""} onclick="event.stopPropagation();toggleSubtask(${task.id},${i})"><span>${escapeHtml(st.text)}</span></div>`).join("")}</div>`:"";
