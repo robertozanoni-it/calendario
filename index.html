@@ -306,22 +306,43 @@
       const day=base.getDay();
       return day===0?7:day;
     }
+    function getCyclicWeeklyKey(task){
+      const today=new Date();
+      const todayKey=today.getDay()===0?7:today.getDay();
+      const taskKey=getWeeklyDayKey(task);
+      return (taskKey-todayKey+7)%7;
+    }
+    function getCyclicMonthlyKey(task){
+      const today=new Date();
+      const todayDay=today.getDate();
+      const taskDay=getMonthlyDayKey(task);
+      return (taskDay-todayDay+31)%31;
+    }
+    function getCyclicYearlyKey(task){
+      const base=new Date(task.date+"T00:00:00");
+      if(Number.isNaN(base.getTime()))return 999999;
+      const today=new Date();
+      const currentMonth=today.getMonth()+1;
+      const taskMonth=base.getMonth()+1;
+      const monthOffset=(taskMonth-currentMonth+12)%12;
+      return monthOffset*100+base.getDate();
+    }
     function sortRecurringByDate(a,b){
       if(a.repeat==="yearly" && b.repeat==="yearly"){
-        return getYearlyMonthDayKey(a)-getYearlyMonthDayKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
+        return getCyclicYearlyKey(a)-getCyclicYearlyKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
       }
       if(a.repeat==="monthly" && b.repeat==="monthly"){
-        return getMonthlyDayKey(a)-getMonthlyDayKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
+        return getCyclicMonthlyKey(a)-getCyclicMonthlyKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
       }
       if(a.repeat==="weekly" && b.repeat==="weekly"){
-        return getWeeklyDayKey(a)-getWeeklyDayKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
+        return getCyclicWeeklyKey(a)-getCyclicWeeklyKey(b) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
       }
       return a.date.localeCompare(b.date) || timeRank(a.time)-timeRank(b.time) || a.text.localeCompare(b.text,"it");
     }
     function getRecurringOrderLabel(type){
-      if(type==="weekly")return "🔄 Settimanali ordinati da lunedì a domenica";
-      if(type==="monthly")return "📅 Mensili ordinati dal giorno più basso";
-      if(type==="yearly")return "🗓️ Annuali ordinati dalla data più bassa";
+      if(type==="weekly")return "🔄 Settimanali ordinati da oggi in avanti";
+      if(type==="monthly")return "📅 Mensili ordinati dal giorno corrente in avanti";
+      if(type==="yearly")return "🗓️ Annuali ordinati dal mese corrente in avanti";
       return "Task ricorrenti";
     }
     function getSortDateForTask(task){return task.repeat==="yearly"?String(getYearlyMonthDayKey(task)).padStart(4,"0"):task.date;}
