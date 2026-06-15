@@ -36,6 +36,7 @@
       --radius-sm: 9px;
       --nav-width: 292px;
       --editor-width: 368px;
+      --resize-width: 12px;
       --gap: 16px;
       --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -100,8 +101,10 @@
       margin: 0 auto;
       padding: var(--gap);
       display: grid;
-      grid-template-columns: var(--nav-width) minmax(0, 1fr) var(--editor-width);
-      gap: var(--gap);
+      grid-template-columns: var(--nav-width) var(--resize-width) minmax(0, 1fr) var(--resize-width) var(--editor-width);
+      gap: 0;
+      column-gap: 0;
+      row-gap: var(--gap);
     }
 
     .panel {
@@ -127,6 +130,52 @@
       gap: var(--gap);
       align-content: start;
     }
+
+    .nav-panel { margin-right: 6px; }
+    .workspace { margin-inline: 6px; }
+    .editor-panel { margin-left: 6px; }
+
+    .resize-bar {
+      position: sticky;
+      top: var(--gap);
+      z-index: 20;
+      align-self: start;
+      height: calc(100vh - (var(--gap) * 2));
+      min-width: var(--resize-width);
+      cursor: col-resize;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      touch-action: none;
+    }
+
+    .resize-bar::before {
+      content: "";
+      width: 4px;
+      margin-block: 12px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--border) 80%, transparent);
+      border: 1px solid color-mix(in srgb, var(--surface) 70%, var(--border));
+      transition: width .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+
+    .resize-bar:hover::before,
+    .resize-bar:focus-visible::before,
+    .resize-bar.is-dragging::before {
+      width: 8px;
+      background: var(--primary-strong);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+    }
+
+    body.is-resizing {
+      cursor: col-resize;
+      user-select: none;
+    }
+
+    body.is-resizing * { cursor: col-resize !important; }
 
     .workspace-head,
     .quick-add,
@@ -290,6 +339,42 @@
     .badge-primary { color: var(--primary); background: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 25%, var(--border)); }
     .badge-danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); border-color: color-mix(in srgb, var(--danger) 25%, var(--border)); }
     .badge-success { color: var(--success); background: color-mix(in srgb, var(--success) 10%, transparent); border-color: color-mix(in srgb, var(--success) 25%, var(--border)); }
+
+    .category-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      max-width: 100%;
+      border-radius: 999px;
+      padding: .42rem .72rem;
+      background: var(--cat-bg, var(--primary-strong));
+      color: var(--cat-text, #fff);
+      border: 1px solid color-mix(in srgb, var(--cat-bg, var(--primary-strong)) 72%, #fff 28%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 6px 16px rgba(15,23,42,.10);
+      font-size: .76rem;
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: .045em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      text-shadow: 0 1px 1px rgba(0,0,0,.18);
+    }
+
+    .category-pill .category-sub {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: .9;
+      font-weight: 850;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .category-manager-pill {
+      min-width: 112px;
+      justify-content: center;
+    }
 
     details.clean-details {
       border: 1px solid var(--border);
@@ -668,18 +753,20 @@
        8) RESPONSIVE
        ========================================================= */
     @media (max-width: 1380px) {
-      .app-shell { grid-template-columns: 260px minmax(0, 1fr) 340px; }
       .stats-strip { grid-template-columns: repeat(3, 1fr); }
     }
 
     @media (max-width: 1120px) {
-      .app-shell { grid-template-columns: 260px minmax(0, 1fr); }
-      .editor-panel { position: static; max-height: none; grid-column: 1 / -1; }
+      .app-shell { grid-template-columns: var(--nav-width) var(--resize-width) minmax(0, 1fr); }
+      .editor-resizer { display: none; }
+      .editor-panel { position: static; max-height: none; grid-column: 1 / -1; margin-left: 0; margin-top: var(--gap); }
     }
 
     @media (max-width: 820px) {
       :root { --gap: 10px; }
       .app-shell { grid-template-columns: 1fr; padding: 10px; }
+      .resize-bar { display: none; }
+      .nav-panel, .workspace, .editor-panel { margin: 0; }
       .nav-panel, .editor-panel { position: static; max-height: none; overflow: visible; }
       .workspace-head { grid-template-columns: 1fr; }
       .counter-card { width: 100%; }
@@ -843,6 +930,8 @@
       </details>
     </aside>
 
+    <button class="resize-bar nav-resizer" id="nav-resizer" type="button" aria-label="Modifica larghezza sidebar sinistra" aria-orientation="vertical"></button>
+
     <!-- AREA PRINCIPALE -->
     <main class="workspace" aria-label="Area task">
       <header class="workspace-head">
@@ -892,6 +981,8 @@
         <div class="stat-box"><span>Focus giorno</span><strong id="stat-score">0%</strong><div class="progress"><div id="stat-progress"></div></div></div>
       </section>
     </main>
+
+    <button class="resize-bar editor-resizer" id="editor-resizer" type="button" aria-label="Modifica larghezza sidebar destra" aria-orientation="vertical"></button>
 
     <!-- EDITOR -->
     <aside class="editor-panel panel" aria-label="Editor task">
@@ -1013,7 +1104,7 @@
     /* =========================================================
        1) CONFIGURAZIONE E STATO
        ========================================================= */
-    const APP_VERSION = 30;
+    const APP_VERSION = 31;
     const DB_NAME = "calendario_task_pro_db";
     const DB_VERSION = 1;
     const STORE_STATE = "state";
@@ -1058,6 +1149,8 @@
       categoryFilter: "all",
       sort: "smart",
       theme: "light",
+      navWidth: 292,
+      editorWidth: 368,
       notificationsEnabled: false,
       completionArchive: {},
       createdAt: ""
@@ -1143,8 +1236,29 @@
       return /^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : fallback;
     }
 
+    function clampNumber(value, min, max, fallback) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return fallback;
+      return Math.min(max, Math.max(min, number));
+    }
+
+    function textColorForBackground(color) {
+      const hex = cleanColor(color, "#4f46e5");
+      const r = parseInt(hex.slice(1, 3), 16) / 255;
+      const g = parseInt(hex.slice(3, 5), 16) / 255;
+      const b = parseInt(hex.slice(5, 7), 16) / 255;
+      const linear = [r, g, b].map((channel) => channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4));
+      const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+      return luminance > 0.58 ? "#111827" : "#ffffff";
+    }
+
     function categoryColor(category) {
       return state.categories[category]?.color || "#4f46e5";
+    }
+
+    function categoryPillStyle(category) {
+      const color = cleanColor(categoryColor(category));
+      return `--cat-bg:${color};--cat-text:${textColorForBackground(color)};`;
     }
 
     function escapeHtml(value) {
@@ -1402,6 +1516,8 @@
         categoryFilter: cleanText(data.categoryFilter || data.focusCatFilter, "all"),
         sort: ["smart", "time", "priority", "category", "manual"].includes(data.sort) ? data.sort : "smart",
         theme: data.theme === "dark" ? "dark" : "light",
+        navWidth: clampNumber(data.navWidth || data.sideWidth, 230, 560, 292),
+        editorWidth: clampNumber(data.editorWidth, 300, 680, 368),
         notificationsEnabled: !!data.notificationsEnabled,
         completionArchive: safeObject(data.completionArchive),
         createdAt: validDate(data.createdAt) ? data.createdAt : today()
@@ -1656,7 +1772,11 @@
     }
 
     function renderTheme() {
+      state.navWidth = clampNumber(state.navWidth, 230, 560, 292);
+      state.editorWidth = clampNumber(state.editorWidth, 300, 680, 368);
       document.body.dataset.theme = state.theme;
+      document.documentElement.style.setProperty("--nav-width", `${state.navWidth}px`);
+      document.documentElement.style.setProperty("--editor-width", `${state.editorWidth}px`);
       document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#020617" : "#4f46e5");
     }
 
@@ -1691,7 +1811,7 @@
         <div class="mini-card" data-category-row="${escapeHtml(category)}">
           <div class="row">
             <input class="color-input" style="width: 52px; min-height: 36px;" type="color" data-category-color="${escapeHtml(category)}" value="${escapeHtml(state.categories[category].color)}" aria-label="Colore categoria ${escapeHtml(category)}">
-            <strong>${escapeHtml(category)}</strong>
+            <span class="category-pill category-manager-pill" style="${categoryPillStyle(category)}">${escapeHtml(category)}</span>
             <span class="spacer"></span>
             <button class="btn btn-danger btn-icon" type="button" data-remove-category="${escapeHtml(category)}" title="Elimina categoria">×</button>
           </div>
@@ -1791,7 +1911,7 @@
           <div>
             <h3 class="task-title"><button type="button" data-action="edit">${highlight(task.text)}</button></h3>
             <div class="task-meta">
-              <span class="badge badge-primary">${escapeHtml(task.cat)}${task.sub ? ` · ${escapeHtml(task.sub)}` : ""}</span>
+              <span class="category-pill" style="${categoryPillStyle(task.cat)}"><span>${escapeHtml(task.cat)}</span>${task.sub ? `<span class="category-sub">· ${escapeHtml(task.sub)}</span>` : ""}</span>
               <span class="badge ${priorityBadge}">${task.priority === "high" ? "🔴" : task.priority === "med" ? "🟡" : "🟢"} ${priorityLabel(task.priority)}</span>
               ${repeatText}
               ${overdue ? `<span class="badge badge-danger">Scaduto</span>` : ""}
@@ -2421,7 +2541,7 @@
 
     function notifyTask(task, date) {
       showToast(`🔔 ${task.text}${task.time ? ` · ${task.time}` : ""}`);
-      if (("Notification" in window) && Notification.permission === "granted") {
+      if (Notification.permission === "granted") {
         const notification = new Notification("Task in scadenza", {
           body: `${task.text} · ${task.cat}${task.time ? ` alle ${task.time}` : ""}`,
           tag: `${task.id}@${date}`
@@ -2518,10 +2638,82 @@
       }
     }
 
+    function applySidebarWidths() {
+      state.navWidth = clampNumber(state.navWidth, 230, 560, 292);
+      state.editorWidth = clampNumber(state.editorWidth, 300, 680, 368);
+      document.documentElement.style.setProperty("--nav-width", `${state.navWidth}px`);
+      document.documentElement.style.setProperty("--editor-width", `${state.editorWidth}px`);
+    }
+
+    function setupResizeBars() {
+      const navResizer = $("nav-resizer");
+      const editorResizer = $("editor-resizer");
+      const saveWidths = async () => {
+        applySidebarWidths();
+        await persistState();
+      };
+
+      const startDrag = (event, side) => {
+        if (window.matchMedia("(max-width: 820px)").matches) return;
+        event.preventDefault();
+        const handle = side === "nav" ? navResizer : editorResizer;
+        const startX = event.clientX;
+        const startNavWidth = state.navWidth;
+        const startEditorWidth = state.editorWidth;
+        handle.classList.add("is-dragging");
+        document.body.classList.add("is-resizing");
+        handle.setPointerCapture?.(event.pointerId);
+
+        const onMove = (moveEvent) => {
+          const delta = moveEvent.clientX - startX;
+          if (side === "nav") {
+            state.navWidth = clampNumber(startNavWidth + delta, 230, 560, 292);
+          } else {
+            state.editorWidth = clampNumber(startEditorWidth - delta, 300, 680, 368);
+          }
+          applySidebarWidths();
+        };
+
+        const onEnd = async () => {
+          handle.classList.remove("is-dragging");
+          document.body.classList.remove("is-resizing");
+          window.removeEventListener("pointermove", onMove);
+          window.removeEventListener("pointerup", onEnd);
+          await saveWidths();
+        };
+
+        window.addEventListener("pointermove", onMove);
+        window.addEventListener("pointerup", onEnd, { once: true });
+      };
+
+      const keyboardResize = async (event, side) => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const step = event.shiftKey ? 40 : 16;
+        if (side === "nav") {
+          if (event.key === "Home") state.navWidth = 230;
+          else if (event.key === "End") state.navWidth = 560;
+          else state.navWidth = clampNumber(state.navWidth + (event.key === "ArrowRight" ? step : -step), 230, 560, 292);
+        } else {
+          if (event.key === "Home") state.editorWidth = 300;
+          else if (event.key === "End") state.editorWidth = 680;
+          else state.editorWidth = clampNumber(state.editorWidth + (event.key === "ArrowLeft" ? step : -step), 300, 680, 368);
+        }
+        applySidebarWidths();
+        await persistState();
+      };
+
+      navResizer.addEventListener("pointerdown", (event) => startDrag(event, "nav"));
+      editorResizer.addEventListener("pointerdown", (event) => startDrag(event, "editor"));
+      navResizer.addEventListener("keydown", (event) => keyboardResize(event, "nav"));
+      editorResizer.addEventListener("keydown", (event) => keyboardResize(event, "editor"));
+    }
+
     /* =========================================================
        10) EVENTI
        ========================================================= */
     function bindEvents() {
+      setupResizeBars();
       $("task-form").addEventListener("submit", saveTask);
       $("cancel-edit").addEventListener("click", resetForm);
       $("task-category").addEventListener("change", renderSubcategories);
@@ -2708,11 +2900,9 @@
         const category = event.target.dataset.categoryColor;
         if (!category) return;
         await mutate("Colore categoria aggiornato", async () => {
-          const oldColor = state.categories[category].color;
-          const newColor = cleanColor(event.target.value, oldColor);
-          state.categories[category].color = newColor;
+          state.categories[category].color = cleanColor(event.target.value, state.categories[category].color);
           state.entries.filter((task) => task.cat === category).forEach((task) => {
-            if (!task.color || task.color === oldColor) task.color = newColor;
+            if (!task.color || task.color === categoryColor(category)) task.color = state.categories[category].color;
           });
         }, false);
       });
