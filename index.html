@@ -959,7 +959,7 @@
           <span class="badge badge-primary" id="date-pill"></span>
           <button class="btn btn-ghost" type="button" id="prev-day">← Giorno prima</button>
           <button class="btn btn-soft" type="button" id="go-today">Oggi</button>
-          <button class="btn btn-ghost" type="button" id="next-day">Giorno dopo →</button>
+          <button class="btn btn-ghost" type="button" id="next-day">Vai al giorno dopo →</button>
           <span class="spacer"></span>
           <select class="select" id="sort-select" aria-label="Ordina task">
             <option value="smart">Ordine intelligente</option>
@@ -1104,12 +1104,13 @@
     /* =========================================================
        1) CONFIGURAZIONE E STATO
        ========================================================= */
-    const APP_VERSION = 31;
+    const APP_VERSION = 32;
     const DB_NAME = "calendario_task_pro_db";
     const DB_VERSION = 1;
     const STORE_STATE = "state";
     const STORE_IMAGES = "images";
     const STATE_KEY = "main";
+    const FALLBACK_STATE_KEY = "calendario_task_pro_fallback";
 
     const LEGACY_KEYS = [
       "calendario_task_v13_corretto",
@@ -1167,6 +1168,8 @@
     let pendingImageBlob = null;
     let imageRemoved = false;
     let renderImageToken = 0;
+    let memoryFallbackState = null;
+    const memoryFallbackImages = new Map();
     let alarmTimer = null;
     let notified = new Set();
     let lastFocused = null;
@@ -1311,47 +1314,110 @@
       setTimeout(() => URL.revokeObjectURL(url), 500);
     }
 
+    function getLocalText(key) {
+      try { return localStorage.getItem(key); }
+      catch (error) { return key === FALLBACK_STATE_KEY ? memoryFallbackState : null; }
+    }
+
+    function setLocalText(key, value) {
+      try {
+        localStorage.setItem(key, value);
+        return true;
+      } catch (error) {
+        if (key === FALLBACK_STATE_KEY) memoryFallbackState = value;
+        console.warn("Salvataggio locale non disponibile: uso memoria temporanea.", error);
+        return false;
+      }
+    }
+
+    function parseStoredJson(raw) {
+      if (!raw) return null;
+      try { return JSON.parse(raw); }
+      catch (error) {
+        console.warn("Dati salvati non leggibili", error);
+        return null;
+      }
+    }
+
     /* =========================================================
        3) INDEXEDDB E IMMAGINI
        ========================================================= */
     function openDb() {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         if (!window.indexedDB) return resolve(null);
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        let request;
+        try {
+          request = indexedDB.open(DB_NAME, DB_VERSION);
+        } catch (error) {
+          console.warn("IndexedDB non disponibile: uso salvataggio locale di riserva.", error);
+          return resolve(null);
+        }
+
         request.onupgradeneeded = () => {
           const database = request.result;
           if (!database.objectStoreNames.contains(STORE_STATE)) database.createObjectStore(STORE_STATE);
           if (!database.objectStoreNames.contains(STORE_IMAGES)) database.createObjectStore(STORE_IMAGES);
         };
         request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        request.onerror = () => {
+          console.warn("IndexedDB non apribile: uso salvataggio locale di riserva.", request.error);
+          resolve(null);
+        };
+        request.onblocked = () => {
+          console.warn("IndexedDB bloccato da un'altra scheda: uso salvataggio locale di riserva.");
+          resolve(null);
+        };
       });
     }
 
     function dbGet(store, key) {
       if (!db) return Promise.resolve(null);
-      return new Promise((resolve, reject) => {
-        const request = db.transaction(store, "readonly").objectStore(store).get(key);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+      return new Promise((resolve) => {
+        try {
+          const request = db.transaction(store, "readonly").objectStore(store).get(key);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => {
+            console.warn("Lettura IndexedDB non riuscita", request.error);
+            resolve(null);
+          };
+        } catch (error) {
+          console.warn("Lettura IndexedDB non disponibile", error);
+          resolve(null);
+        }
       });
     }
 
     function dbPut(store, value, key) {
       if (!db) return Promise.resolve(key);
       return new Promise((resolve, reject) => {
-        const request = db.transaction(store, "readwrite").objectStore(store).put(value, key);
-        request.onsuccess = () => resolve(key);
-        request.onerror = () => reject(request.error);
+        try {
+          const request = db.transaction(store, "readwrite").objectStore(store).put(value, key);
+          request.onsuccess = () => resolve(key);
+          request.onerror = () => reject(request.error);
+        } catch (error) {
+          reject(error);
+        }
       });
     }
 
     function dbDelete(store, key) {
-      if (!db) return Promise.resolve();
-      return new Promise((resolve, reject) => {
-        const request = db.transaction(store, "readwrite").objectStore(store).delete(key);
-        request.onsuccess = () => resolve();
-        request.onerror = () => reject(request.error);
+      if (!db) {
+        if (store === STORE_IMAGES) memoryFallbackImages.delete(key);
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        try {
+          const request = db.transaction(store, "readwrite").objectStore(store).delete(key);
+          request.onsuccess = () => resolve();
+          request.onerror = () => {
+            console.warn("Eliminazione IndexedDB non riuscita", request.error);
+            resolve();
+          };
+        } catch (error) {
+          console.warn("Eliminazione IndexedDB non disponibile", error);
+          resolve();
+        }
       });
     }
 
@@ -1374,12 +1440,24 @@
     }
 
     async function putImage(blob, id = uid()) {
-      await dbPut(STORE_IMAGES, blob, id);
-      return id;
+      if (!blob) return "";
+      if (!db) {
+        memoryFallbackImages.set(id, blob);
+        return id;
+      }
+      try {
+        await dbPut(STORE_IMAGES, blob, id);
+        return id;
+      } catch (error) {
+        console.warn("Immagine non salvata in IndexedDB: uso memoria temporanea.", error);
+        memoryFallbackImages.set(id, blob);
+        return id;
+      }
     }
 
     async function getImage(id) {
       if (!id) return null;
+      if (memoryFallbackImages.has(id)) return memoryFallbackImages.get(id);
       return await dbGet(STORE_IMAGES, id);
     }
 
@@ -1540,15 +1618,15 @@
       let saved = await dbGet(STORE_STATE, STATE_KEY);
 
       if (!saved) {
+        saved = parseStoredJson(getLocalText(FALLBACK_STATE_KEY));
+      }
+
+      if (!saved) {
         for (const key of LEGACY_KEYS) {
-          try {
-            const raw = localStorage.getItem(key);
-            if (raw) {
-              saved = JSON.parse(raw);
-              break;
-            }
-          } catch (error) {
-            console.warn("Backup legacy non leggibile", key, error);
+          const legacy = parseStoredJson(getLocalText(key));
+          if (legacy) {
+            saved = legacy;
+            break;
           }
         }
       }
@@ -1561,8 +1639,15 @@
 
     async function persistState() {
       state.version = APP_VERSION;
-      if (db) await dbPut(STORE_STATE, state, STATE_KEY);
-      else localStorage.setItem("calendario_task_pro_fallback", JSON.stringify(state));
+      if (db) {
+        try {
+          await dbPut(STORE_STATE, state, STATE_KEY);
+          return;
+        } catch (error) {
+          console.warn("Salvataggio IndexedDB non riuscito: uso salvataggio locale di riserva.", error);
+        }
+      }
+      setLocalText(FALLBACK_STATE_KEY, JSON.stringify(state));
     }
 
     function captureUndo() {
@@ -1649,6 +1734,68 @@
 
     function subtaskDoneOn(task, date, subtaskId) {
       return safeArray(task.subtaskDone?.[date]).includes(String(subtaskId));
+    }
+
+    function selectDate(dateString, view = "day") {
+      const nextDate = cleanDate(dateString, today());
+      state.selectedDate = nextDate;
+      state.view = view;
+      currentMonth = parseDate(nextDate);
+      if ($("task-date")) $("task-date").value = nextDate;
+      return nextDate;
+    }
+
+    function moveTaskOccurrenceInState(task, date) {
+      const sourceDate = cleanDate(date, task.date);
+      const next = addDays(sourceDate, 1);
+      const sourceDone = completedOn(task, sourceDate);
+      const sourceSubtaskDone = safeArray(task.subtaskDone?.[sourceDate]);
+      const sourceSnooze = task.snoozed?.[sourceDate];
+
+      if (isRecurring(task)) {
+        task.excludedDates = [...new Set([...safeArray(task.excludedDates), sourceDate])];
+        task.updatedAt = today();
+
+        const movedTask = {
+          ...clone(task),
+          id: uid(),
+          date: next,
+          repeat: "none",
+          untilDate: "",
+          completedDates: sourceDone ? [next] : [],
+          excludedDates: [],
+          subtaskDone: sourceSubtaskDone.length ? { [next]: sourceSubtaskDone } : {},
+          snoozed: sourceSnooze ? { [next]: sourceSnooze } : {},
+          status: "active",
+          archivedAt: "",
+          deletedAt: "",
+          originSeriesId: task.id,
+          originalDate: sourceDate,
+          createdAt: today(),
+          updatedAt: today(),
+          order: Date.now()
+        };
+        state.entries.push(movedTask);
+      } else {
+        task.date = next;
+        task.completedDates = [...new Set(safeArray(task.completedDates).map((day) => day === sourceDate ? next : day).filter(validDate))];
+
+        task.subtaskDone = safeObject(task.subtaskDone);
+        if (task.subtaskDone[sourceDate]) {
+          task.subtaskDone[next] = safeArray(task.subtaskDone[sourceDate]);
+          delete task.subtaskDone[sourceDate];
+        }
+
+        task.snoozed = safeObject(task.snoozed);
+        if (task.snoozed[sourceDate]) {
+          task.snoozed[next] = task.snoozed[sourceDate];
+          delete task.snoozed[sourceDate];
+        }
+
+        task.updatedAt = today();
+      }
+
+      return next;
     }
 
     function visibleOccurrences() {
@@ -2244,29 +2391,10 @@
     }
 
     async function moveOccurrence(task, date) {
-      await mutate("Task spostato al giorno successivo", async () => {
-        const next = addDays(date, 1);
-        if (isRecurring(task)) {
-          task.excludedDates = [...new Set([...task.excludedDates, date])];
-          state.entries.push({
-            ...clone(task),
-            id: uid(),
-            date: next,
-            repeat: "none",
-            untilDate: "",
-            completedDates: [],
-            excludedDates: [],
-            subtaskDone: {},
-            originSeriesId: task.id,
-            originalDate: date,
-            createdAt: today(),
-            updatedAt: today(),
-            order: Date.now()
-          });
-        } else {
-          task.date = next;
-          task.updatedAt = today();
-        }
+      const next = addDays(cleanDate(date, task.date), 1);
+      await mutate(`Task spostato al ${humanDate(next)}`, async () => {
+        const movedTo = moveTaskOccurrenceInState(task, date);
+        selectDate(movedTo);
       });
     }
 
@@ -2325,11 +2453,12 @@
     async function moveAllPending() {
       const selected = state.selectedDate;
       const next = addDays(selected, 1);
-      const pending = state.entries.filter((task) => task.status === "active" && task.repeat === "none" && task.date === selected && !completedOn(task, selected));
+      const pending = state.entries.filter((task) => task.status === "active" && scheduledOn(task, selected) && !completedOn(task, selected));
       if (!pending.length) return showToast("Non ci sono task pendenti da spostare.");
 
-      await mutate(`${pending.length} task spostati a domani`, async () => {
-        pending.forEach((task) => { task.date = next; task.updatedAt = today(); });
+      await mutate(`${pending.length} task spostati al ${humanDate(next)}`, async () => {
+        pending.forEach((task) => moveTaskOccurrenceInState(task, selected));
+        selectDate(next);
       });
     }
 
@@ -2498,6 +2627,7 @@
           const existingIds = new Set(state.entries.map((task) => task.id));
           pendingImport.state.entries.forEach((task) => {
             if (existingIds.has(task.id)) task.id = uid();
+            existingIds.add(task.id);
             state.entries.push(task);
           });
           Object.entries(pendingImport.state.categories).forEach(([name, value]) => {
@@ -2541,16 +2671,16 @@
 
     function notifyTask(task, date) {
       showToast(`🔔 ${task.text}${task.time ? ` · ${task.time}` : ""}`);
-      if (Notification.permission === "granted") {
+      if ("Notification" in window && Notification.permission === "granted") {
         const notification = new Notification("Task in scadenza", {
           body: `${task.text} · ${task.cat}${task.time ? ` alle ${task.time}` : ""}`,
           tag: `${task.id}@${date}`
         });
-        notification.onclick = () => {
+        notification.onclick = async () => {
           window.focus();
-          state.selectedDate = date;
-          state.view = "day";
-          renderAll();
+          selectDate(date);
+          await persistState();
+          await renderAll();
         };
       }
     }
@@ -2753,9 +2883,7 @@
       $("calendar-grid").addEventListener("click", async (event) => {
         const button = event.target.closest("[data-calendar-date]");
         if (!button) return;
-        state.selectedDate = button.dataset.calendarDate;
-        state.view = "day";
-        $("task-date").value = state.selectedDate;
+        selectDate(button.dataset.calendarDate);
         await persistState();
         await renderAll();
       });
@@ -2791,26 +2919,17 @@
       });
 
       $("prev-day").addEventListener("click", async () => {
-        state.selectedDate = addDays(state.selectedDate, -1);
-        state.view = "day";
-        currentMonth = parseDate(state.selectedDate);
-        $("task-date").value = state.selectedDate;
+        selectDate(addDays(state.selectedDate, -1));
         await persistState();
         await renderAll();
       });
       $("next-day").addEventListener("click", async () => {
-        state.selectedDate = addDays(state.selectedDate, 1);
-        state.view = "day";
-        currentMonth = parseDate(state.selectedDate);
-        $("task-date").value = state.selectedDate;
+        selectDate(addDays(state.selectedDate, 1));
         await persistState();
         await renderAll();
       });
       $("go-today").addEventListener("click", async () => {
-        state.selectedDate = today();
-        state.view = "day";
-        currentMonth = parseDate(today());
-        $("task-date").value = state.selectedDate;
+        selectDate(today());
         await persistState();
         await renderAll();
       });
@@ -2899,10 +3018,12 @@
       $("category-manager").addEventListener("change", async (event) => {
         const category = event.target.dataset.categoryColor;
         if (!category) return;
+        const oldColor = state.categories[category]?.color || "";
+        const newColor = cleanColor(event.target.value, oldColor || "#4f46e5");
         await mutate("Colore categoria aggiornato", async () => {
-          state.categories[category].color = cleanColor(event.target.value, state.categories[category].color);
+          state.categories[category].color = newColor;
           state.entries.filter((task) => task.cat === category).forEach((task) => {
-            if (!task.color || task.color === categoryColor(category)) task.color = state.categories[category].color;
+            if (!task.color || task.color === oldColor) task.color = newColor;
           });
         }, false);
       });
