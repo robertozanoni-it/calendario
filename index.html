@@ -864,6 +864,12 @@
         </div>
       </section>
 
+      <section class="filter-card stack" aria-label="Categoria Attesa" style="margin-top: 12px; border-color: color-mix(in srgb, var(--warning) 34%, var(--border));">
+        <p class="section-title">Categoria speciale</p>
+        <button class="view-btn" type="button" data-view="waiting"><span>⏳ Attesa</span><span class="view-count" id="count-waiting">0</span></button>
+        <p class="tiny muted" style="margin: 0;">Raccoglie automaticamente i task in categoria Attesa o con la parola “attesa”.</p>
+      </section>
+
       <section class="filter-card stack" aria-label="Ricerca e filtri" style="margin-top: 12px;">
         <p class="section-title">Ricerca</p>
         <div>
@@ -1104,7 +1110,7 @@
     /* =========================================================
        1) CONFIGURAZIONE E STATO
        ========================================================= */
-    const APP_VERSION = 32;
+    const APP_VERSION = 33;
     const DB_NAME = "calendario_task_pro_db";
     const DB_VERSION = 1;
     const STORE_STATE = "state";
@@ -1124,7 +1130,12 @@
       "calendario_tasks"
     ];
 
+    const WAITING_CATEGORY = "Attesa";
+    const WAITING_PATTERN = /(^|[^\p{L}\p{N}])(attesa|in attesa|attendo|attendere|aspettando|aspetto|sospeso|sospesa|follow[- ]?up)(?=$|[^\p{L}\p{N}])/iu;
+    const VALID_VIEWS = ["day", "overdue", "tomorrow", "week", "high", "completed", "no-time", "recurring", "waiting"];
+
     const DEFAULT_CATEGORIES = {
+      "Attesa": { subs: ["Da seguire", "In sospeso", "Follow-up"], color: "#d97706" },
       "App.ti": { subs: ["Visita", "Call"], color: "#6366f1" },
       "Casa": { subs: ["Spese", "Pulizia"], color: "#f59e0b" },
       "Clienti": { subs: ["Fattura", "Social"], color: "#2563eb" },
@@ -1510,7 +1521,15 @@
         });
       }
 
-      return Object.keys(out).length ? out : clone(DEFAULT_CATEGORIES);
+      const merged = clone(DEFAULT_CATEGORIES);
+      Object.entries(out).forEach(([name, value]) => {
+        merged[name] = {
+          subs: [...new Set([...(merged[name]?.subs || []), ...safeArray(value.subs)])],
+          color: cleanColor(value.color, merged[name]?.color || PALETTE[Object.keys(merged).length % PALETTE.length])
+        };
+      });
+      if (!merged[WAITING_CATEGORY]) merged[WAITING_CATEGORY] = { subs: ["Da seguire", "In sospeso", "Follow-up"], color: "#d97706" };
+      return merged;
     }
 
     function normalizeTask(raw) {
@@ -1572,6 +1591,14 @@
       const categories = normalizeCategories(data);
 
       entries.forEach((task) => {
+        if (isWaitingTask(task)) {
+          task.cat = WAITING_CATEGORY;
+          if (!task.sub) task.sub = "Da seguire";
+          task.color = categories[WAITING_CATEGORY]?.color || "#d97706";
+        }
+      });
+
+      entries.forEach((task) => {
         if (!categories[task.cat]) {
           categories[task.cat] = { subs: [], color: PALETTE[Object.keys(categories).length % PALETTE.length] };
         }
@@ -1590,7 +1617,7 @@
         categories,
         permanentIds,
         selectedDate: cleanDate(data.selectedDate || data.selectedFocusDate),
-        view: ["day", "overdue", "tomorrow", "week", "high", "completed", "no-time", "recurring"].includes(data.view) ? data.view : "day",
+        view: VALID_VIEWS.includes(data.view) ? data.view : "day",
         categoryFilter: cleanText(data.categoryFilter || data.focusCatFilter, "all"),
         sort: ["smart", "time", "priority", "category", "manual"].includes(data.sort) ? data.sort : "smart",
         theme: data.theme === "dark" ? "dark" : "light",
@@ -1679,6 +1706,16 @@
        ========================================================= */
     function isRecurring(task) {
       return task.repeat !== "none";
+    }
+
+    function isWaitingTask(task) {
+      if (!task) return false;
+      const category = cleanText(task.cat).toLowerCase();
+      const subcategory = cleanText(task.sub).toLowerCase();
+      const haystack = [task.text, task.notes, task.cat, task.sub].join(" ");
+      return category === WAITING_CATEGORY.toLowerCase()
+        || subcategory === WAITING_CATEGORY.toLowerCase()
+        || WAITING_PATTERN.test(haystack);
     }
 
     function scheduledOn(task, date) {
@@ -1839,6 +1876,11 @@
             const date = nextOccurrence(task, now);
             if (date) list.push({ task, date });
           });
+        } else if (state.view === "waiting") {
+          active.filter(isWaitingTask).forEach((task) => {
+            const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
+            if (date) list.push({ task, date });
+          });
         }
       }
 
@@ -1898,7 +1940,8 @@
         high: ["Priorità alta", "Prossime attività urgenti"],
         completed: ["Completati oggi", humanDate(today(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
         "no-time": ["Task senza orario", "Attività da pianificare"],
-        recurring: ["Task ricorrenti", "Prossime occorrenze delle serie attive"]
+        recurring: ["Task ricorrenti", "Prossime occorrenze delle serie attive"],
+        waiting: ["Attesa", "Task in attesa, sospesi o da seguire"]
       };
       return labels[state.view] || labels.day;
     }
@@ -2011,6 +2054,11 @@
       $("count-completed").textContent = active.filter((task) => scheduledOn(task, now) && completedOn(task, now)).length;
       $("count-no-time").textContent = active.filter((task) => !task.time).length;
       $("count-recurring").textContent = active.filter(isRecurring).length;
+      $("count-waiting").textContent = active.filter((task) => {
+        if (!isWaitingTask(task)) return false;
+        const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
+        return date && !completedOn(task, date);
+      }).length;
     }
 
     function renderTaskList() {
@@ -2136,19 +2184,28 @@
        7) FORM E CRUD TASK
        ========================================================= */
     function formData() {
+      const text = cleanText($("task-text").value);
+      const notes = cleanText($("task-notes").value);
+      let cat = $("task-category").value;
+      let sub = $("task-subcategory").value;
+      const autoWaiting = cat !== WAITING_CATEGORY && WAITING_PATTERN.test([text, notes, sub].join(" "));
+      if (autoWaiting) {
+        cat = WAITING_CATEGORY;
+        sub = "Da seguire";
+      }
       return {
-        text: cleanText($("task-text").value),
-        cat: $("task-category").value,
-        sub: $("task-subcategory").value,
+        text,
+        cat,
+        sub,
         date: cleanDate($("task-date").value, state.selectedDate),
         time: validTime($("task-time").value) ? $("task-time").value : "",
         priority: $("task-priority").value,
         repeat: $("task-repeat").value,
         reminderMinutes: Number($("task-reminder").value) || 0,
         link: normalizeUrl($("task-link").value),
-        notes: cleanText($("task-notes").value),
+        notes,
         subtasks: $("task-subtasks").value.split("\n").map((line) => cleanText(line)).filter(Boolean),
-        color: cleanColor($("task-color").value, categoryColor($("task-category").value))
+        color: cleanColor($("task-color").value, categoryColor(cat))
       };
     }
 
@@ -2506,6 +2563,7 @@
       if (/ogni\s+anno/i.test(text)) { repeat = "yearly"; text = text.replace(/ogni\s+anno/ig, ""); }
 
       text = cleanText(text.replace(/\s+/g, " "));
+      if (WAITING_PATTERN.test(text)) cat = WAITING_CATEGORY;
       if (!text) return showToast("Scrivi il titolo del task.", true);
 
       await mutate("Task aggiunto rapidamente", async () => {
@@ -2888,9 +2946,9 @@
         await renderAll();
       });
 
-      $("view-buttons").addEventListener("click", async (event) => {
+      document.addEventListener("click", async (event) => {
         const button = event.target.closest("[data-view]");
-        if (!button) return;
+        if (!button || !VALID_VIEWS.includes(button.dataset.view)) return;
         state.view = button.dataset.view;
         await persistState();
         await renderAll();
