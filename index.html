@@ -339,6 +339,20 @@
     .badge-primary { color: var(--primary); background: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 25%, var(--border)); }
     .badge-danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); border-color: color-mix(in srgb, var(--danger) 25%, var(--border)); }
     .badge-success { color: var(--success); background: color-mix(in srgb, var(--success) 10%, transparent); border-color: color-mix(in srgb, var(--success) 25%, var(--border)); }
+    .badge-warning { color: var(--warning); background: color-mix(in srgb, var(--warning) 12%, transparent); border-color: color-mix(in srgb, var(--warning) 30%, var(--border)); }
+
+    .status-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 11px;
+      border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--border));
+      border-radius: var(--radius-md);
+      background: color-mix(in srgb, var(--warning) 8%, var(--surface-soft));
+      color: var(--text);
+    }
+    .status-option input { margin-top: 3px; }
+    .status-option strong { display: block; line-height: 1.2; }
 
     .category-pill {
       display: inline-flex;
@@ -536,6 +550,10 @@
     }
     .task-card.is-complete { opacity: .62; }
     .task-card.is-overdue { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
+    .task-card.is-waiting {
+      background: color-mix(in srgb, var(--warning) 5%, var(--surface));
+      border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
+    }
     .task-timebox {
       border-radius: var(--radius-md);
       padding: 10px 8px;
@@ -610,7 +628,7 @@
     .stats-strip {
       padding: 14px;
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 10px;
     }
     .stat-box {
@@ -858,17 +876,13 @@
           <button class="view-btn" type="button" data-view="tomorrow"><span>➡️ Domani</span><span class="view-count" id="count-tomorrow">0</span></button>
           <button class="view-btn" type="button" data-view="week"><span>🗓️ Prossimi 7 giorni</span><span class="view-count" id="count-week">0</span></button>
           <button class="view-btn" type="button" data-view="high"><span>🔴 Priorità alta</span><span class="view-count" id="count-high">0</span></button>
+          <button class="view-btn" type="button" data-view="waiting"><span>⏳ In attesa</span><span class="view-count" id="count-waiting">0</span></button>
           <button class="view-btn" type="button" data-view="completed"><span>✅ Completati oggi</span><span class="view-count" id="count-completed">0</span></button>
           <button class="view-btn" type="button" data-view="no-time"><span>🕒 Senza orario</span><span class="view-count" id="count-no-time">0</span></button>
           <button class="view-btn" type="button" data-view="recurring"><span>🔁 Ricorrenti</span><span class="view-count" id="count-recurring">0</span></button>
         </div>
       </section>
 
-      <section class="filter-card stack" aria-label="Categoria Attesa" style="margin-top: 12px; border-color: color-mix(in srgb, var(--warning) 34%, var(--border));">
-        <p class="section-title">Categoria speciale</p>
-        <button class="view-btn" type="button" data-view="waiting"><span>⏳ Attesa</span><span class="view-count" id="count-waiting">0</span></button>
-        <p class="tiny muted" style="margin: 0;">Raccoglie automaticamente i task in categoria Attesa o con la parola “attesa”.</p>
-      </section>
 
       <section class="filter-card stack" aria-label="Ricerca e filtri" style="margin-top: 12px;">
         <p class="section-title">Ricerca</p>
@@ -901,6 +915,16 @@
           </div>
         </div>
         <button class="btn btn-ghost btn-block" type="button" id="reset-filters">Azzera filtri</button>
+      </section>
+
+      <section class="filter-card stack" aria-label="Legenda stati" style="margin-top: 12px;">
+        <p class="section-title">Legenda</p>
+        <div class="row-wrap">
+          <span class="badge badge-danger">Scaduto</span>
+          <span class="badge badge-warning">In attesa</span>
+          <span class="badge badge-success">Completato</span>
+          <span class="badge badge-primary">Programmato</span>
+        </div>
       </section>
 
       <section class="tools-card stack" aria-label="Strumenti" style="margin-top: 12px;">
@@ -957,7 +981,7 @@
           <input class="field" id="quick-add-input" placeholder="Esempio: Chiamare Marco domani @15:30 #Clienti !alta ogni settimana" />
           <button class="btn btn-primary" type="button" id="quick-add-button">Aggiungi</button>
         </div>
-        <p class="quick-help">Comandi: <strong>#categoria</strong>, <strong>!alta</strong>, <strong>@15:30</strong>, “domani”, “ogni giorno/settimana/mese/anno”.</p>
+        <p class="quick-help">Comandi: <strong>#categoria</strong>, <strong>!alta</strong>, <strong>@15:30</strong>, “domani”, “in attesa”, “ogni giorno/settimana/mese/anno”.</p>
       </section>
 
       <section class="task-list-wrap">
@@ -974,13 +998,14 @@
             <option value="category">Per categoria</option>
             <option value="manual">Manuale</option>
           </select>
-          <button class="btn btn-ghost" type="button" id="move-all">Sposta pendenti a domani</button>
+          <button class="btn btn-ghost" type="button" id="move-all">Sposta task aperti a domani</button>
         </div>
         <div class="task-list" id="task-list"></div>
       </section>
 
       <section class="stats-strip" aria-label="Statistiche">
         <div class="stat-box"><span>Task attivi</span><strong id="stat-active">0</strong></div>
+        <div class="stat-box"><span>In attesa</span><strong id="stat-waiting">0</strong></div>
         <div class="stat-box"><span>Completati oggi</span><strong id="stat-today">0</strong></div>
         <div class="stat-box"><span>Questa settimana</span><strong id="stat-week">0</strong></div>
         <div class="stat-box"><span>Totale completati</span><strong id="stat-all">0</strong></div>
@@ -1028,6 +1053,11 @@
             <select class="select" id="task-subcategory"></select>
           </div>
         </div>
+
+        <label class="status-option" for="task-waiting">
+          <input id="task-waiting" type="checkbox" />
+          <span><strong>Metti in attesa</strong><span class="tiny muted">Il task resta nella sua categoria, ma compare anche nella vista “In attesa”.</span></span>
+        </label>
 
         <div class="field-grid-3">
           <div>
@@ -1130,12 +1160,13 @@
       "calendario_tasks"
     ];
 
-    const WAITING_CATEGORY = "Attesa";
+    const WAITING_CATEGORY = "Attesa"; // usata solo per migrare vecchi dati: non viene più mostrata come categoria eliminabile
+    const WAITING_LABEL = "In attesa";
+    const DEFAULT_TASK_CATEGORY = "Lavoro";
     const WAITING_PATTERN = /(^|[^\p{L}\p{N}])(attesa|in attesa|attendo|attendere|aspettando|aspetto|sospeso|sospesa|follow[- ]?up)(?=$|[^\p{L}\p{N}])/iu;
     const VALID_VIEWS = ["day", "overdue", "tomorrow", "week", "high", "completed", "no-time", "recurring", "waiting"];
 
     const DEFAULT_CATEGORIES = {
-      "Attesa": { subs: ["Da seguire", "In sospeso", "Follow-up"], color: "#d97706" },
       "App.ti": { subs: ["Visita", "Call"], color: "#6366f1" },
       "Casa": { subs: ["Spese", "Pulizia"], color: "#f59e0b" },
       "Clienti": { subs: ["Fattura", "Social"], color: "#2563eb" },
@@ -1528,7 +1559,6 @@
           color: cleanColor(value.color, merged[name]?.color || PALETTE[Object.keys(merged).length % PALETTE.length])
         };
       });
-      if (!merged[WAITING_CATEGORY]) merged[WAITING_CATEGORY] = { subs: ["Da seguire", "In sospeso", "Follow-up"], color: "#d97706" };
       return merged;
     }
 
@@ -1548,10 +1578,13 @@
         if (oldDone.length) subtaskDone = { [date]: oldDone };
       }
 
-      const status = ["active", "archived", "trash"].includes(item.status) ? item.status : "active";
+      const rawStatus = cleanText(item.status, "active");
+      const status = ["active", "archived", "trash"].includes(rawStatus) ? rawStatus : "active";
       const repeat = ["none", "daily", "weekly", "monthly", "yearly"].includes(item.repeat) ? item.repeat : "none";
       const priority = ["low", "med", "high"].includes(item.priority || item.pri) ? (item.priority || item.pri) : "low";
-      const category = cleanText(item.cat || item.category, "Lavoro");
+      const category = cleanText(item.cat || item.category, DEFAULT_TASK_CATEGORY);
+      const legacyWaiting = rawStatus === "waiting" || cleanText(item.cat || item.category).toLowerCase() === WAITING_CATEGORY.toLowerCase() || cleanText(item.sub || item.subcategory).toLowerCase() === WAITING_CATEGORY.toLowerCase();
+      const waiting = !!item.waiting || !!item.isWaiting || legacyWaiting || WAITING_PATTERN.test([item.text || item.title, item.notes || item.note].join(" "));
 
       return {
         id: String(item.id || uid()),
@@ -1574,6 +1607,7 @@
         excludedDates: [...new Set(safeArray(item.excludedDates).filter(validDate))],
         reminderMinutes: Number.isFinite(Number(item.reminderMinutes)) ? Math.max(0, Math.min(1440, Number(item.reminderMinutes))) : 0,
         snoozed: safeObject(item.snoozed),
+        waiting,
         status,
         archivedAt: validDate(item.archivedAt) ? item.archivedAt : "",
         deletedAt: validDate(item.deletedAt) ? item.deletedAt : "",
@@ -1589,12 +1623,17 @@
       const data = Array.isArray(raw) ? { entries: raw } : safeObject(raw);
       const entries = safeArray(data.entries || data.tasks || data.data).map(normalizeTask);
       const categories = normalizeCategories(data);
+      delete categories[WAITING_CATEGORY];
+      if (!Object.keys(categories).length) Object.assign(categories, clone(DEFAULT_CATEGORIES));
+      if (!categories[DEFAULT_TASK_CATEGORY]) categories[DEFAULT_TASK_CATEGORY] = clone(DEFAULT_CATEGORIES[DEFAULT_TASK_CATEGORY] || { subs: [], color: "#3b82f6" });
 
       entries.forEach((task) => {
-        if (isWaitingTask(task)) {
-          task.cat = WAITING_CATEGORY;
-          if (!task.sub) task.sub = "Da seguire";
-          task.color = categories[WAITING_CATEGORY]?.color || "#d97706";
+        const wasWaitingCategory = cleanText(task.cat).toLowerCase() === WAITING_CATEGORY.toLowerCase();
+        if (wasWaitingCategory) {
+          task.waiting = true;
+          task.cat = DEFAULT_TASK_CATEGORY;
+          if (["da seguire", "in sospeso", "follow-up", "attesa"].includes(cleanText(task.sub).toLowerCase())) task.sub = "";
+          task.color = categories[task.cat]?.color || "#3b82f6";
         }
       });
 
@@ -1618,7 +1657,7 @@
         permanentIds,
         selectedDate: cleanDate(data.selectedDate || data.selectedFocusDate),
         view: VALID_VIEWS.includes(data.view) ? data.view : "day",
-        categoryFilter: cleanText(data.categoryFilter || data.focusCatFilter, "all"),
+        categoryFilter: cleanText(data.categoryFilter || data.focusCatFilter, "all") === WAITING_CATEGORY ? "all" : cleanText(data.categoryFilter || data.focusCatFilter, "all"),
         sort: ["smart", "time", "priority", "category", "manual"].includes(data.sort) ? data.sort : "smart",
         theme: data.theme === "dark" ? "dark" : "light",
         navWidth: clampNumber(data.navWidth || data.sideWidth, 230, 560, 292),
@@ -1709,13 +1748,7 @@
     }
 
     function isWaitingTask(task) {
-      if (!task) return false;
-      const category = cleanText(task.cat).toLowerCase();
-      const subcategory = cleanText(task.sub).toLowerCase();
-      const haystack = [task.text, task.notes, task.cat, task.sub].join(" ");
-      return category === WAITING_CATEGORY.toLowerCase()
-        || subcategory === WAITING_CATEGORY.toLowerCase()
-        || WAITING_PATTERN.test(haystack);
+      return !!task && !!task.waiting;
     }
 
     function scheduledOn(task, date) {
@@ -1850,29 +1883,30 @@
 
       if (status === "active" || status === "all") {
         const active = state.entries.filter((task) => task.status === "active");
+        const activeWork = active.filter((task) => !isWaitingTask(task));
 
         if (state.view === "day") {
-          active.forEach((task) => { if (scheduledOn(task, selected)) list.push({ task, date: selected }); });
+          activeWork.forEach((task) => { if (scheduledOn(task, selected)) list.push({ task, date: selected }); });
         } else if (state.view === "tomorrow") {
-          active.forEach((task) => { if (scheduledOn(task, tomorrow)) list.push({ task, date: tomorrow }); });
+          activeWork.forEach((task) => { if (scheduledOn(task, tomorrow)) list.push({ task, date: tomorrow }); });
         } else if (state.view === "week") {
-          active.forEach((task) => occurrencesBetween(task, now, weekEnd).forEach((date) => list.push({ task, date })));
+          activeWork.forEach((task) => occurrencesBetween(task, now, weekEnd).forEach((date) => list.push({ task, date })));
         } else if (state.view === "overdue") {
-          active.filter((task) => task.repeat === "none" && task.date < now && !completedOn(task, task.date)).forEach((task) => list.push({ task, date: task.date }));
+          activeWork.filter((task) => task.repeat === "none" && task.date < now && !completedOn(task, task.date)).forEach((task) => list.push({ task, date: task.date }));
         } else if (state.view === "high") {
-          active.filter((task) => task.priority === "high").forEach((task) => {
+          activeWork.filter((task) => task.priority === "high").forEach((task) => {
             const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
             if (date) list.push({ task, date });
           });
         } else if (state.view === "completed") {
-          active.forEach((task) => { if (scheduledOn(task, now) && completedOn(task, now)) list.push({ task, date: now }); });
+          activeWork.forEach((task) => { if (scheduledOn(task, now) && completedOn(task, now)) list.push({ task, date: now }); });
         } else if (state.view === "no-time") {
-          active.filter((task) => !task.time).forEach((task) => {
+          activeWork.filter((task) => !task.time).forEach((task) => {
             const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
             if (date) list.push({ task, date });
           });
         } else if (state.view === "recurring") {
-          active.filter(isRecurring).forEach((task) => {
+          activeWork.filter(isRecurring).forEach((task) => {
             const date = nextOccurrence(task, now);
             if (date) list.push({ task, date });
           });
@@ -1941,7 +1975,7 @@
         completed: ["Completati oggi", humanDate(today(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
         "no-time": ["Task senza orario", "Attività da pianificare"],
         recurring: ["Task ricorrenti", "Prossime occorrenze delle serie attive"],
-        waiting: ["Attesa", "Task in attesa, sospesi o da seguire"]
+        waiting: [WAITING_LABEL, "Task sospesi o da seguire più avanti"]
       };
       return labels[state.view] || labels.day;
     }
@@ -1982,7 +2016,7 @@
     }
 
     function renderCategories() {
-      const categories = Object.keys(state.categories).sort((a, b) => a.localeCompare(b, "it"));
+      const categories = Object.keys(state.categories).filter((category) => category !== WAITING_CATEGORY).sort((a, b) => a.localeCompare(b, "it"));
       const categoryOptions = categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
       const allOptions = `<option value="all">Tutte le categorie</option>${categoryOptions}`;
 
@@ -2045,15 +2079,16 @@
       const tomorrow = addDays(now, 1);
       const weekEnd = addDays(now, 6);
       const active = state.entries.filter((task) => task.status === "active");
+      const activeWork = active.filter((task) => !isWaitingTask(task));
 
-      $("count-day").textContent = active.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length;
-      $("count-overdue").textContent = active.filter((task) => task.repeat === "none" && task.date < now && !completedOn(task, task.date)).length;
-      $("count-tomorrow").textContent = active.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length;
-      $("count-week").textContent = active.reduce((sum, task) => sum + occurrencesBetween(task, now, weekEnd).filter((date) => !completedOn(task, date)).length, 0);
-      $("count-high").textContent = active.filter((task) => task.priority === "high").length;
-      $("count-completed").textContent = active.filter((task) => scheduledOn(task, now) && completedOn(task, now)).length;
-      $("count-no-time").textContent = active.filter((task) => !task.time).length;
-      $("count-recurring").textContent = active.filter(isRecurring).length;
+      $("count-day").textContent = activeWork.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length;
+      $("count-overdue").textContent = activeWork.filter((task) => task.repeat === "none" && task.date < now && !completedOn(task, task.date)).length;
+      $("count-tomorrow").textContent = activeWork.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length;
+      $("count-week").textContent = activeWork.reduce((sum, task) => sum + occurrencesBetween(task, now, weekEnd).filter((date) => !completedOn(task, date)).length, 0);
+      $("count-high").textContent = activeWork.filter((task) => task.priority === "high").length;
+      $("count-completed").textContent = activeWork.filter((task) => scheduledOn(task, now) && completedOn(task, now)).length;
+      $("count-no-time").textContent = activeWork.filter((task) => !task.time).length;
+      $("count-recurring").textContent = activeWork.filter(isRecurring).length;
       $("count-waiting").textContent = active.filter((task) => {
         if (!isWaitingTask(task)) return false;
         const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
@@ -2084,7 +2119,8 @@
 
     function taskCard({ task, date }) {
       const done = completedOn(task, date);
-      const overdue = date < today() && !done;
+      const waiting = isWaitingTask(task);
+      const overdue = date < today() && !done && !waiting;
       const subtasksDone = safeArray(task.subtaskDone?.[date]);
       const priorityBadge = task.priority === "high" ? "badge-danger" : task.priority === "med" ? "badge-primary" : "badge-success";
       const repeatText = isRecurring(task) ? `<span class="badge">🔁 ${repeatLabel(task.repeat)}</span>` : "";
@@ -2098,7 +2134,7 @@
         </div>` : "";
 
       return `
-        <article class="task-card ${done ? "is-complete" : ""} ${overdue ? "is-overdue" : ""}" draggable="true" data-task-id="${escapeHtml(task.id)}" data-date="${escapeHtml(date)}" style="--task-color:${escapeHtml(cleanColor(task.color, categoryColor(task.cat)))}">
+        <article class="task-card ${done ? "is-complete" : ""} ${overdue ? "is-overdue" : ""} ${waiting ? "is-waiting" : ""}" draggable="true" data-task-id="${escapeHtml(task.id)}" data-date="${escapeHtml(date)}" style="--task-color:${escapeHtml(cleanColor(task.color, categoryColor(task.cat)))}">
           <div class="task-timebox">
             <strong>${escapeHtml(task.time || "—")}</strong>
             <span>${humanDate(date, { day: "2-digit", month: "short" })}</span>
@@ -2109,6 +2145,7 @@
               <span class="category-pill" style="${categoryPillStyle(task.cat)}"><span>${escapeHtml(task.cat)}</span>${task.sub ? `<span class="category-sub">· ${escapeHtml(task.sub)}</span>` : ""}</span>
               <span class="badge ${priorityBadge}">${task.priority === "high" ? "🔴" : task.priority === "med" ? "🟡" : "🟢"} ${priorityLabel(task.priority)}</span>
               ${repeatText}
+              ${waiting ? `<span class="badge badge-warning">⏳ ${WAITING_LABEL}</span>` : ""}
               ${overdue ? `<span class="badge badge-danger">Scaduto</span>` : ""}
               ${state.permanentIds.includes(task.id) ? `<span class="badge">📌 fisso</span>` : ""}
             </div>
@@ -2121,6 +2158,7 @@
             <button class="btn ${done ? "btn-ghost" : "btn-success"} btn-icon" type="button" data-action="toggle" title="${done ? "Riapri" : "Completa"}">${done ? "↩" : "✓"}</button>
             <button class="btn btn-ghost btn-icon" type="button" data-action="edit" title="Modifica">✎</button>
             <button class="btn btn-ghost btn-icon" type="button" data-action="move-next" title="Sposta al giorno dopo">→</button>
+            <button class="btn ${waiting ? "btn-soft" : "btn-ghost"} btn-icon" type="button" data-action="waiting" title="${waiting ? "Riattiva task" : "Metti in attesa"}">${waiting ? "▶" : "⏳"}</button>
             <button class="btn btn-ghost btn-icon" type="button" data-action="permanent" title="Fissa/Sblocca">${state.permanentIds.includes(task.id) ? "📍" : "📌"}</button>
             <button class="btn btn-ghost btn-icon" type="button" data-action="archive" title="Archivia">🗂</button>
             <button class="btn btn-danger btn-icon" type="button" data-action="delete" title="Elimina">🗑</button>
@@ -2133,14 +2171,16 @@
       const weekStart = addDays(now, -((parseDate(now).getDay() + 6) % 7));
       const weekEnd = addDays(weekStart, 6);
       const active = state.entries.filter((task) => task.status === "active");
-      const todayOccurrences = active.filter((task) => scheduledOn(task, now));
+      const activeWork = active.filter((task) => !isWaitingTask(task));
+      const todayOccurrences = activeWork.filter((task) => scheduledOn(task, now));
       const todayDone = todayOccurrences.filter((task) => completedOn(task, now)).length;
-      const weekDone = active.reduce((sum, task) => sum + safeArray(task.completedDates).filter((date) => date >= weekStart && date <= weekEnd).length, 0);
+      const weekDone = activeWork.reduce((sum, task) => sum + safeArray(task.completedDates).filter((date) => date >= weekStart && date <= weekEnd).length, 0);
       const archivedDone = Object.values(state.completionArchive).reduce((sum, value) => sum + Number(value || 0), 0);
-      const allDone = active.reduce((sum, task) => sum + safeArray(task.completedDates).length, 0) + archivedDone;
+      const allDone = activeWork.reduce((sum, task) => sum + safeArray(task.completedDates).length, 0) + archivedDone;
       const score = todayOccurrences.length ? Math.round((todayDone / todayOccurrences.length) * 100) : 0;
 
-      $("stat-active").textContent = active.length;
+      $("stat-active").textContent = activeWork.length;
+      $("stat-waiting").textContent = active.filter(isWaitingTask).length;
       $("stat-today").textContent = todayDone;
       $("stat-week").textContent = weekDone;
       $("stat-all").textContent = allDone;
@@ -2186,17 +2226,14 @@
     function formData() {
       const text = cleanText($("task-text").value);
       const notes = cleanText($("task-notes").value);
-      let cat = $("task-category").value;
-      let sub = $("task-subcategory").value;
-      const autoWaiting = cat !== WAITING_CATEGORY && WAITING_PATTERN.test([text, notes, sub].join(" "));
-      if (autoWaiting) {
-        cat = WAITING_CATEGORY;
-        sub = "Da seguire";
-      }
+      const cat = $("task-category").value;
+      const sub = $("task-subcategory").value;
+      const waiting = $("task-waiting").checked || WAITING_PATTERN.test([text, notes, sub].join(" "));
       return {
         text,
         cat,
         sub,
+        waiting,
         date: cleanDate($("task-date").value, state.selectedDate),
         time: validTime($("task-time").value) ? $("task-time").value : "",
         priority: $("task-priority").value,
@@ -2373,6 +2410,7 @@
       renderSubcategories();
       $("task-subcategory").value = task.sub;
       $("task-priority").value = task.priority;
+      $("task-waiting").checked = isWaitingTask(task);
       $("task-repeat").value = task.repeat;
       $("task-reminder").value = String(task.reminderMinutes || 0);
       $("task-link").value = task.link;
@@ -2411,6 +2449,7 @@
       $("task-date").value = state.selectedDate;
       $("task-time").value = "";
       $("task-priority").value = "low";
+      $("task-waiting").checked = false;
       $("task-repeat").value = "none";
       $("task-reminder").value = "0";
       $("task-link").value = "";
@@ -2463,6 +2502,13 @@
       });
     }
 
+    async function toggleWaiting(task) {
+      await mutate(isWaitingTask(task) ? "Task riattivato" : "Task messo in attesa", async () => {
+        task.waiting = !isWaitingTask(task);
+        task.updatedAt = today();
+      });
+    }
+
     async function archiveTask(task) {
       await mutate("Task archiviato", async () => {
         task.status = "archived";
@@ -2510,7 +2556,7 @@
     async function moveAllPending() {
       const selected = state.selectedDate;
       const next = addDays(selected, 1);
-      const pending = state.entries.filter((task) => task.status === "active" && scheduledOn(task, selected) && !completedOn(task, selected));
+      const pending = state.entries.filter((task) => task.status === "active" && !isWaitingTask(task) && scheduledOn(task, selected) && !completedOn(task, selected));
       if (!pending.length) return showToast("Non ci sono task pendenti da spostare.");
 
       await mutate(`${pending.length} task spostati al ${humanDate(next)}`, async () => {
@@ -2529,18 +2575,23 @@
       let text = raw;
       let date = state.selectedDate;
       let time = "";
-      let cat = Object.keys(state.categories)[0] || "Lavoro";
+      let cat = Object.keys(state.categories).find((category) => category !== WAITING_CATEGORY) || DEFAULT_TASK_CATEGORY;
       let priority = "low";
       let repeat = "none";
+      let waiting = false;
 
       const categoryMatch = text.match(/#([\p{L}\p{N}_.-]+)/u);
       if (categoryMatch) {
         const wanted = categoryMatch[1];
-        const found = Object.keys(state.categories).find((category) => category.toLowerCase() === wanted.toLowerCase());
-        if (found) cat = found;
-        else {
-          state.categories[wanted] = { subs: [], color: PALETTE[Object.keys(state.categories).length % PALETTE.length] };
-          cat = wanted;
+        if (wanted.toLowerCase() === WAITING_CATEGORY.toLowerCase()) {
+          waiting = true;
+        } else {
+          const found = Object.keys(state.categories).find((category) => category.toLowerCase() === wanted.toLowerCase());
+          if (found) cat = found;
+          else {
+            state.categories[wanted] = { subs: [], color: PALETTE[Object.keys(state.categories).length % PALETTE.length] };
+            cat = wanted;
+          }
         }
         text = text.replace(categoryMatch[0], "");
       }
@@ -2563,7 +2614,7 @@
       if (/ogni\s+anno/i.test(text)) { repeat = "yearly"; text = text.replace(/ogni\s+anno/ig, ""); }
 
       text = cleanText(text.replace(/\s+/g, " "));
-      if (WAITING_PATTERN.test(text)) cat = WAITING_CATEGORY;
+      if (WAITING_PATTERN.test(text)) waiting = true;
       if (!text) return showToast("Scrivi il titolo del task.", true);
 
       await mutate("Task aggiunto rapidamente", async () => {
@@ -2576,6 +2627,7 @@
           time,
           priority,
           repeat,
+          waiting,
           reminderMinutes: 0,
           link: "",
           notes: "",
@@ -2604,6 +2656,7 @@
     async function addCategory() {
       const name = cleanText($("new-category-name").value);
       if (!name) return showToast("Inserisci il nome della categoria.", true);
+      if (name.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return showToast("“In attesa” è uno stato protetto, non una categoria eliminabile.", true);
       if (state.categories[name]) return showToast("Categoria già presente.", true);
 
       await mutate("Categoria aggiunta", async () => {
@@ -2628,7 +2681,7 @@
     }
 
     function exportCsv() {
-      const headers = ["ID", "Titolo", "Categoria", "Sottocategoria", "Data", "Ora", "Priorità", "Ricorrenza", "Stato", "Completamenti", "Note", "Link"];
+      const headers = ["ID", "Titolo", "Categoria", "Sottocategoria", "Data", "Ora", "Priorità", "Ricorrenza", "In attesa", "Stato", "Completamenti", "Note", "Link"];
       const rows = state.entries.map((task) => [
         task.id,
         task.text,
@@ -2638,6 +2691,7 @@
         task.time,
         task.priority,
         task.repeat,
+        task.waiting ? "sì" : "no",
         task.status,
         task.completedDates.join(";"),
         task.notes,
@@ -3012,6 +3066,7 @@
         if (action === "edit") await editTask(task.id, date);
         if (action === "toggle") await toggleComplete(task, date);
         if (action === "move-next") await moveOccurrence(task, date);
+        if (action === "waiting") await toggleWaiting(task);
         if (action === "permanent") await togglePermanent(task);
         if (action === "archive") await archiveTask(task);
         if (action === "delete") openDelete(task, date);
@@ -3088,6 +3143,7 @@
       $("category-manager").addEventListener("click", async (event) => {
         const category = event.target.dataset.removeCategory;
         if (!category) return;
+        if (category === WAITING_CATEGORY) return showToast("“In attesa” è uno stato protetto, non una categoria eliminabile.", true);
         if (state.entries.some((task) => task.cat === category)) return showToast("Categoria usata da alcuni task: prima cambia categoria a quei task.", true);
         await mutate("Categoria eliminata", async () => { delete state.categories[category]; });
       });
