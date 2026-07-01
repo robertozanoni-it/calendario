@@ -492,6 +492,40 @@
     }
     .view-btn.active .view-count { background: var(--primary-strong); color: #fff; }
 
+    .recurring-category-filter {
+      display: grid;
+      gap: 5px;
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+      border-radius: var(--radius-md);
+      background: var(--surface);
+    }
+
+    .legend-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 850;
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 13%, transparent);
+      flex: 0 0 auto;
+    }
+
     .toolbar {
       display: flex;
       align-items: center;
@@ -872,14 +906,14 @@
         <p class="section-title">Viste rapide</p>
         <div id="view-buttons" class="stack">
           <button class="view-btn active" type="button" data-view="day"><span>📅 Giorno selezionato</span><span class="view-count" id="count-day">0</span></button>
-          <button class="view-btn" type="button" data-view="overdue"><span>⚠️ Scaduti</span><span class="view-count" id="count-overdue">0</span></button>
           <button class="view-btn" type="button" data-view="tomorrow"><span>➡️ Domani</span><span class="view-count" id="count-tomorrow">0</span></button>
-          <button class="view-btn" type="button" data-view="week"><span>🗓️ Prossimi 7 giorni</span><span class="view-count" id="count-week">0</span></button>
           <button class="view-btn" type="button" data-view="high"><span>🔴 Priorità alta</span><span class="view-count" id="count-high">0</span></button>
           <button class="view-btn" type="button" data-view="waiting"><span>⏳ In attesa</span><span class="view-count" id="count-waiting">0</span></button>
-          <button class="view-btn" type="button" data-view="completed"><span>✅ Completati oggi</span><span class="view-count" id="count-completed">0</span></button>
-          <button class="view-btn" type="button" data-view="no-time"><span>🕒 Senza orario</span><span class="view-count" id="count-no-time">0</span></button>
           <button class="view-btn" type="button" data-view="recurring"><span>🔁 Ricorrenti</span><span class="view-count" id="count-recurring">0</span></button>
+          <div class="recurring-category-filter" id="recurring-category-row" hidden>
+            <label class="field-label" for="recurring-category-filter">Categoria ricorrenti</label>
+            <select class="select" id="recurring-category-filter"></select>
+          </div>
         </div>
       </section>
 
@@ -917,15 +951,17 @@
         <button class="btn btn-ghost btn-block" type="button" id="reset-filters">Azzera filtri</button>
       </section>
 
-      <section class="filter-card stack" aria-label="Legenda stati" style="margin-top: 12px;">
-        <p class="section-title">Legenda</p>
-        <div class="row-wrap">
-          <span class="badge badge-danger">Scaduto</span>
-          <span class="badge badge-warning">In attesa</span>
-          <span class="badge badge-success">Completato</span>
-          <span class="badge badge-primary">Programmato</span>
+      <details class="clean-details" style="margin-top: 12px;">
+        <summary>🎨 Legenda</summary>
+        <div class="details-body">
+          <div class="legend-list" aria-label="Legenda stati">
+            <div class="legend-item"><span class="legend-dot" style="background: var(--danger); color: var(--danger);"></span><span>Scaduto</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background: var(--warning); color: var(--warning);"></span><span>In attesa</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background: var(--success); color: var(--success);"></span><span>Completato</span></div>
+            <div class="legend-item"><span class="legend-dot" style="background: var(--primary); color: var(--primary);"></span><span>Programmato</span></div>
+          </div>
         </div>
-      </section>
+      </details>
 
       <section class="tools-card stack" aria-label="Strumenti" style="margin-top: 12px;">
         <p class="section-title">Strumenti</p>
@@ -1164,7 +1200,7 @@
     const WAITING_LABEL = "In attesa";
     const DEFAULT_TASK_CATEGORY = "Lavoro";
     const WAITING_PATTERN = /(^|[^\p{L}\p{N}])(attesa|in attesa|attendo|attendere|aspettando|aspetto|sospeso|sospesa|follow[- ]?up)(?=$|[^\p{L}\p{N}])/iu;
-    const VALID_VIEWS = ["day", "overdue", "tomorrow", "week", "high", "completed", "no-time", "recurring", "waiting"];
+    const VALID_VIEWS = ["day", "tomorrow", "high", "waiting", "recurring"];
 
     const DEFAULT_CATEGORIES = {
       "App.ti": { subs: ["Visita", "Call"], color: "#6366f1" },
@@ -1190,6 +1226,7 @@
       selectedDate: "",
       view: "day",
       categoryFilter: "all",
+      recurringCategoryFilter: "all",
       sort: "smart",
       theme: "light",
       navWidth: 292,
@@ -1658,6 +1695,7 @@
         selectedDate: cleanDate(data.selectedDate || data.selectedFocusDate),
         view: VALID_VIEWS.includes(data.view) ? data.view : "day",
         categoryFilter: cleanText(data.categoryFilter || data.focusCatFilter, "all") === WAITING_CATEGORY ? "all" : cleanText(data.categoryFilter || data.focusCatFilter, "all"),
+        recurringCategoryFilter: cleanText(data.recurringCategoryFilter, "all") === WAITING_CATEGORY ? "all" : cleanText(data.recurringCategoryFilter, "all"),
         sort: ["smart", "time", "priority", "category", "manual"].includes(data.sort) ? data.sort : "smart",
         theme: data.theme === "dark" ? "dark" : "light",
         navWidth: clampNumber(data.navWidth || data.sideWidth, 230, 560, 292),
@@ -1906,10 +1944,13 @@
             if (date) list.push({ task, date });
           });
         } else if (state.view === "recurring") {
-          activeWork.filter(isRecurring).forEach((task) => {
-            const date = nextOccurrence(task, now);
-            if (date) list.push({ task, date });
-          });
+          activeWork
+            .filter(isRecurring)
+            .filter((task) => state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)
+            .forEach((task) => {
+              const date = nextOccurrence(task, now);
+              if (date) list.push({ task, date });
+            });
         } else if (state.view === "waiting") {
           active.filter(isWaitingTask).forEach((task) => {
             const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
@@ -2011,6 +2052,7 @@
       $("main-subtitle").textContent = labels[1];
       $("date-pill").textContent = state.view === "day" ? humanDate(state.selectedDate) : labels[0];
       $("move-all").hidden = state.view !== "day";
+      $("recurring-category-row").hidden = state.view !== "recurring";
       document.querySelectorAll("[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === state.view));
       $("sort-select").value = state.sort;
     }
@@ -2028,6 +2070,10 @@
       const categoryFilter = $("category-filter");
       categoryFilter.innerHTML = allOptions;
       categoryFilter.value = ["all", ...categories].includes(state.categoryFilter) ? state.categoryFilter : "all";
+
+      const recurringCategoryFilter = $("recurring-category-filter");
+      recurringCategoryFilter.innerHTML = `<option value="all">Tutte le categorie ricorrenti</option>${categoryOptions}`;
+      recurringCategoryFilter.value = ["all", ...categories].includes(state.recurringCategoryFilter) ? state.recurringCategoryFilter : "all";
 
       renderSubcategories();
 
@@ -2077,23 +2123,22 @@
     function renderCounts() {
       const now = today();
       const tomorrow = addDays(now, 1);
-      const weekEnd = addDays(now, 6);
       const active = state.entries.filter((task) => task.status === "active");
       const activeWork = active.filter((task) => !isWaitingTask(task));
+      const setCount = (id, value) => {
+        const element = $(id);
+        if (element) element.textContent = value;
+      };
 
-      $("count-day").textContent = activeWork.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length;
-      $("count-overdue").textContent = activeWork.filter((task) => task.repeat === "none" && task.date < now && !completedOn(task, task.date)).length;
-      $("count-tomorrow").textContent = activeWork.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length;
-      $("count-week").textContent = activeWork.reduce((sum, task) => sum + occurrencesBetween(task, now, weekEnd).filter((date) => !completedOn(task, date)).length, 0);
-      $("count-high").textContent = activeWork.filter((task) => task.priority === "high").length;
-      $("count-completed").textContent = activeWork.filter((task) => scheduledOn(task, now) && completedOn(task, now)).length;
-      $("count-no-time").textContent = activeWork.filter((task) => !task.time).length;
-      $("count-recurring").textContent = activeWork.filter(isRecurring).length;
-      $("count-waiting").textContent = active.filter((task) => {
+      setCount("count-day", activeWork.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length);
+      setCount("count-tomorrow", activeWork.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length);
+      setCount("count-high", activeWork.filter((task) => task.priority === "high").length);
+      setCount("count-recurring", activeWork.filter((task) => isRecurring(task) && (state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)).length);
+      setCount("count-waiting", active.filter((task) => {
         if (!isWaitingTask(task)) return false;
         const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
         return date && !completedOn(task, date);
-      }).length;
+      }).length);
     }
 
     function renderTaskList() {
@@ -3016,6 +3061,12 @@
         await persistState();
         await renderAll();
       });
+      $("recurring-category-filter").addEventListener("change", async (event) => {
+        state.recurringCategoryFilter = event.target.value;
+        state.view = "recurring";
+        await persistState();
+        await renderAll();
+      });
       $("sort-select").addEventListener("change", async (event) => {
         state.sort = event.target.value;
         await persistState();
@@ -3026,6 +3077,7 @@
         $("priority-filter").value = "all";
         $("status-filter").value = "active";
         state.categoryFilter = "all";
+        state.recurringCategoryFilter = "all";
         await persistState();
         await renderAll();
       });
