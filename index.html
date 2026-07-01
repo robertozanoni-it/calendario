@@ -526,6 +526,88 @@
       flex: 0 0 auto;
     }
 
+
+
+    .day-task-count {
+      position: absolute;
+      right: 3px;
+      bottom: 3px;
+      min-width: 15px;
+      height: 15px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: var(--primary-strong);
+      color: #fff;
+      font-size: .58rem;
+      line-height: 15px;
+      font-weight: 950;
+      box-shadow: 0 0 0 2px var(--surface-soft);
+    }
+    .day-btn.is-active .day-task-count { background: #fff; color: var(--primary-strong); box-shadow: none; }
+    .day-btn.has-overdue { border-color: color-mix(in srgb, var(--danger) 58%, var(--border)); }
+    .day-btn.has-waiting { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--warning) 38%, transparent); }
+
+    .daily-summary {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .task-actions-main {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .task-more {
+      position: relative;
+    }
+    .task-more summary {
+      list-style: none;
+      min-height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: .45rem .65rem;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-weight: 950;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .task-more summary::-webkit-details-marker { display: none; }
+    .task-more[open] summary { background: var(--primary-soft); color: var(--primary); border-color: color-mix(in srgb, var(--primary) 32%, var(--border)); }
+    .task-more-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 70;
+      width: 210px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      box-shadow: var(--card-shadow);
+      display: grid;
+      gap: 6px;
+    }
+    .task-more-menu .btn {
+      width: 100%;
+      justify-content: flex-start;
+      min-height: 36px;
+    }
+
+    .waiting-extra {
+      display: grid;
+      gap: 9px;
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--warning) 24%, var(--border));
+      border-radius: var(--radius-md);
+      background: color-mix(in srgb, var(--warning) 5%, var(--surface-soft));
+    }
+
     .toolbar {
       display: flex;
       align-items: center;
@@ -801,6 +883,12 @@
     mark { padding: 0 .12rem; border-radius: 4px; background: #fef08a; color: #1f2937; }
     .confetti { position: fixed; z-index: 600; width: 9px; height: 9px; pointer-events: none; }
 
+
+
+    .mobile-quick-nav {
+      display: none;
+    }
+
     /* =========================================================
        8) RESPONSIVE
        ========================================================= */
@@ -827,8 +915,37 @@
       .task-card { grid-template-columns: 1fr; }
       .task-timebox { display: flex; align-items: center; justify-content: space-between; gap: 10px; text-align: left; }
       .task-actions { justify-content: flex-start; min-width: 0; }
+      .task-actions-main { justify-content: flex-start; }
+      .task-more-menu { right: auto; left: 0; }
       .stats-strip { grid-template-columns: 1fr 1fr; }
       .field-grid-2, .field-grid-3, .field-grid-category { grid-template-columns: 1fr; }
+      body { padding-bottom: 72px; }
+      .mobile-quick-nav {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        z-index: 180;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        box-shadow: var(--card-shadow);
+        backdrop-filter: blur(10px);
+      }
+      .mobile-quick-nav button {
+        min-height: 42px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface-soft);
+        color: var(--text);
+        font-size: .72rem;
+        font-weight: 950;
+      }
+
     }
   </style>
 </head>
@@ -906,6 +1023,7 @@
         <p class="section-title">Viste rapide</p>
         <div id="view-buttons" class="stack">
           <button class="view-btn active" type="button" data-view="day"><span>📅 Giorno selezionato</span><span class="view-count" id="count-day">0</span></button>
+          <button class="view-btn" type="button" data-view="today"><span>🔥 Oggi</span><span class="view-count" id="count-today-view">0</span></button>
           <button class="view-btn" type="button" data-view="tomorrow"><span>➡️ Domani</span><span class="view-count" id="count-tomorrow">0</span></button>
           <button class="view-btn" type="button" data-view="high"><span>🔴 Priorità alta</span><span class="view-count" id="count-high">0</span></button>
           <button class="view-btn" type="button" data-view="waiting"><span>⏳ In attesa</span><span class="view-count" id="count-waiting">0</span></button>
@@ -918,8 +1036,9 @@
       </section>
 
 
-      <section class="filter-card stack" aria-label="Ricerca e filtri" style="margin-top: 12px;">
-        <p class="section-title">Ricerca</p>
+      <details class="clean-details" style="margin-top: 12px;">
+        <summary>🔎 Ricerca e filtri</summary>
+        <div class="details-body stack">
         <div>
           <label class="sr-only" for="search-input">Cerca task</label>
           <input class="field" id="search-input" type="search" placeholder="Cerca titolo, note, link…" />
@@ -948,8 +1067,17 @@
             </select>
           </div>
         </div>
+        <div>
+          <label class="field-label" for="content-filter">Contenuto</label>
+          <select class="select" id="content-filter">
+            <option value="all">Tutti</option>
+            <option value="has-link">Solo con link</option>
+            <option value="has-subtasks">Solo con sottotask</option>
+          </select>
+        </div>
         <button class="btn btn-ghost btn-block" type="button" id="reset-filters">Azzera filtri</button>
-      </section>
+        </div>
+      </details>
 
       <details class="clean-details" style="margin-top: 12px;">
         <summary>🎨 Legenda</summary>
@@ -963,15 +1091,18 @@
         </div>
       </details>
 
-      <section class="tools-card stack" aria-label="Strumenti" style="margin-top: 12px;">
-        <p class="section-title">Strumenti</p>
+      <details class="clean-details" style="margin-top: 12px;">
+        <summary>🧰 Strumenti</summary>
+        <div class="details-body stack">
         <button class="btn btn-soft btn-block" type="button" id="toggle-theme">🌓 Cambia tema</button>
         <button class="btn btn-ghost btn-block" type="button" id="enable-notifications">🔔 Attiva notifiche</button>
         <button class="btn btn-ghost btn-block" type="button" id="export-json">💾 Backup JSON</button>
         <button class="btn btn-ghost btn-block" type="button" id="export-csv">📊 Esporta CSV</button>
+        <button class="btn btn-ghost btn-block" type="button" id="export-current-csv">📋 Esporta vista corrente</button>
         <button class="btn btn-ghost btn-block" type="button" id="open-import">📂 Importa JSON</button>
         <input id="import-file" type="file" accept=".json,application/json" hidden />
-      </section>
+        </div>
+      </details>
 
       <details class="clean-details" style="margin-top: 12px;">
         <summary>🏷️ Categorie</summary>
@@ -1004,6 +1135,7 @@
         <div>
           <h2 class="page-title" id="main-title">Focus giornaliero</h2>
           <p class="page-subtitle" id="main-subtitle"></p>
+          <div class="daily-summary" id="daily-summary"></div>
         </div>
         <div class="counter-card" aria-label="Task aperti nella vista corrente">
           <strong id="open-count">0</strong>
@@ -1018,6 +1150,14 @@
           <button class="btn btn-primary" type="button" id="quick-add-button">Aggiungi</button>
         </div>
         <p class="quick-help">Comandi: <strong>#categoria</strong>, <strong>!alta</strong>, <strong>@15:30</strong>, “domani”, “in attesa”, “ogni giorno/settimana/mese/anno”.</p>
+        <details class="clean-details" style="margin-top: 10px;">
+          <summary>Mostra esempi</summary>
+          <div class="details-body small muted">
+            <p><strong>Chiamare cliente domani @10:30 #Clienti !alta</strong></p>
+            <p><strong>Pagare F24 ogni mese #Tasse</strong></p>
+            <p><strong>Controllare preventivo in attesa #Lavoro</strong></p>
+          </div>
+        </details>
       </section>
 
       <section class="task-list-wrap">
@@ -1068,7 +1208,7 @@
           <input class="field" id="task-text" maxlength="180" placeholder="Cosa devi fare?" required />
         </div>
 
-        <div class="field-grid-2">
+        <div class="field-grid-3">
           <div>
             <label class="field-label" for="task-date">Data</label>
             <input class="field" id="task-date" type="date" required />
@@ -1076,6 +1216,18 @@
           <div>
             <label class="field-label" for="task-time">Ora</label>
             <input class="field" id="task-time" type="time" />
+          </div>
+          <div>
+            <label class="field-label" for="task-duration">Durata</label>
+            <select class="select" id="task-duration">
+              <option value="0">Non indicata</option>
+              <option value="15">15 min</option>
+              <option value="30">30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">1 ora</option>
+              <option value="90">1h 30</option>
+              <option value="120">2 ore</option>
+            </select>
           </div>
         </div>
 
@@ -1094,6 +1246,16 @@
           <input id="task-waiting" type="checkbox" />
           <span><strong>Metti in attesa</strong><span class="tiny muted">Il task resta nella sua categoria, ma compare anche nella vista “In attesa”.</span></span>
         </label>
+        <div class="waiting-extra" id="waiting-extra" hidden>
+          <div>
+            <label class="field-label" for="task-waiting-reason">Motivo attesa</label>
+            <input class="field" id="task-waiting-reason" placeholder="Esempio: aspetto risposta cliente" />
+          </div>
+          <div>
+            <label class="field-label" for="task-followup-date">Data follow-up</label>
+            <input class="field" id="task-followup-date" type="date" />
+          </div>
+        </div>
 
         <div class="field-grid-3">
           <div>
@@ -1126,7 +1288,7 @@
           </div>
         </div>
 
-        <details class="clean-details" open>
+        <details class="clean-details">
           <summary>Dettagli, note e link</summary>
           <div class="details-body stack">
             <div>
@@ -1145,7 +1307,7 @@
         </details>
 
         <details class="clean-details">
-          <summary>Aspetto e allegato</summary>
+          <summary>Avanzate: aspetto e allegato</summary>
           <div class="details-body stack">
             <div>
               <label class="field-label" for="task-color">Colore identificativo</label>
@@ -1169,6 +1331,15 @@
       </form>
     </aside>
   </div>
+
+  <nav class="mobile-quick-nav" aria-label="Navigazione rapida mobile">
+    <button type="button" data-view="today">Oggi</button>
+    <button type="button" data-mobile-action="calendar">Calendario</button>
+    <button type="button" data-mobile-action="add">Aggiungi</button>
+    <button type="button" data-mobile-action="search">Cerca</button>
+    <button type="button" data-mobile-action="menu">Menu</button>
+  </nav>
+
 
   <script>
     "use strict";
@@ -1200,7 +1371,7 @@
     const WAITING_LABEL = "In attesa";
     const DEFAULT_TASK_CATEGORY = "Lavoro";
     const WAITING_PATTERN = /(^|[^\p{L}\p{N}])(attesa|in attesa|attendo|attendere|aspettando|aspetto|sospeso|sospesa|follow[- ]?up)(?=$|[^\p{L}\p{N}])/iu;
-    const VALID_VIEWS = ["day", "tomorrow", "high", "waiting", "recurring"];
+    const VALID_VIEWS = ["day", "today", "tomorrow", "high", "waiting", "recurring"];
 
     const DEFAULT_CATEGORIES = {
       "App.ti": { subs: ["Visita", "Call"], color: "#6366f1" },
@@ -1645,6 +1816,9 @@
         reminderMinutes: Number.isFinite(Number(item.reminderMinutes)) ? Math.max(0, Math.min(1440, Number(item.reminderMinutes))) : 0,
         snoozed: safeObject(item.snoozed),
         waiting,
+        waitingReason: cleanText(item.waitingReason || item.waiting_note || item.waitingNote),
+        followUpDate: validDate(item.followUpDate || item.followupDate) ? (item.followUpDate || item.followupDate) : "",
+        durationMinutes: Number.isFinite(Number(item.durationMinutes || item.duration)) ? Math.max(0, Math.min(1440, Number(item.durationMinutes || item.duration))) : 0,
         status,
         archivedAt: validDate(item.archivedAt) ? item.archivedAt : "",
         deletedAt: validDate(item.deletedAt) ? item.deletedAt : "",
@@ -1925,6 +2099,8 @@
 
         if (state.view === "day") {
           activeWork.forEach((task) => { if (scheduledOn(task, selected)) list.push({ task, date: selected }); });
+        } else if (state.view === "today") {
+          activeWork.forEach((task) => { if (scheduledOn(task, now)) list.push({ task, date: now }); });
         } else if (state.view === "tomorrow") {
           activeWork.forEach((task) => { if (scheduledOn(task, tomorrow)) list.push({ task, date: tomorrow }); });
         } else if (state.view === "week") {
@@ -1962,12 +2138,14 @@
       const query = cleanText($("search-input").value).toLowerCase();
       const category = state.categoryFilter;
       const priority = $("priority-filter").value;
+      const contentFilter = $("content-filter")?.value || "all";
 
       const filtered = list.filter(({ task, date }) => {
-        const haystack = [task.text, task.cat, task.sub, task.link, task.notes, ...task.subtasks.map((subtask) => subtask.text)].join(" ").toLowerCase();
+        const haystack = [task.text, task.cat, task.sub, task.link, task.notes, task.waitingReason, date, humanDate(date), task.followUpDate, ...task.subtasks.map((subtask) => subtask.text)].join(" ").toLowerCase();
         return (!query || haystack.includes(query))
           && (category === "all" || task.cat === category)
           && (priority === "all" || task.priority === priority)
+          && (contentFilter === "all" || (contentFilter === "has-link" && !!task.link) || (contentFilter === "has-subtasks" && task.subtasks.length > 0))
           && validDate(date);
       });
 
@@ -2009,13 +2187,14 @@
       const selectedFull = humanDate(state.selectedDate, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const labels = {
         day: ["Focus giornaliero", selectedFull],
+        today: ["Oggi", humanDate(today(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
         overdue: ["Task scaduti", "Attività non ricorrenti ancora aperte"],
         tomorrow: ["Domani", humanDate(addDays(today(), 1), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
         week: ["Prossimi 7 giorni", `${humanDate(today())} – ${humanDate(addDays(today(), 6))}`],
         high: ["Priorità alta", "Prossime attività urgenti"],
         completed: ["Completati oggi", humanDate(today(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
         "no-time": ["Task senza orario", "Attività da pianificare"],
-        recurring: ["Task ricorrenti", "Prossime occorrenze delle serie attive"],
+        recurring: ["Task ricorrenti", state.recurringCategoryFilter === "all" ? "Prossime occorrenze delle serie attive" : `Categoria: ${state.recurringCategoryFilter}`],
         waiting: [WAITING_LABEL, "Task sospesi o da seguire più avanti"]
       };
       return labels[state.view] || labels.day;
@@ -2055,6 +2234,22 @@
       $("recurring-category-row").hidden = state.view !== "recurring";
       document.querySelectorAll("[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === state.view));
       $("sort-select").value = state.sort;
+      renderDailySummary();
+    }
+
+    function renderDailySummary() {
+      const activeWork = state.entries.filter((task) => task.status === "active" && !isWaitingTask(task));
+      const todayTasks = activeWork.filter((task) => scheduledOn(task, today()));
+      const openToday = todayTasks.filter((task) => !completedOn(task, today())).length;
+      const urgentToday = todayTasks.filter((task) => task.priority === "high" && !completedOn(task, today())).length;
+      const waitingCount = state.entries.filter((task) => task.status === "active" && isWaitingTask(task)).length;
+      const summary = $("daily-summary");
+      if (!summary) return;
+      summary.innerHTML = `
+        <span class="badge badge-primary">Oggi: ${openToday} aperti</span>
+        <span class="badge badge-danger">Urgenti: ${urgentToday}</span>
+        <span class="badge badge-warning">In attesa: ${waitingCount}</span>
+      `;
     }
 
     function renderCategories() {
@@ -2113,8 +2308,13 @@
 
       for (let day = 1; day <= totalDays; day++) {
         const date = ymd(new Date(year, month, day));
-        const hasTask = state.entries.some((task) => scheduledOn(task, date));
-        html += `<button class="day-btn ${date === today() ? "is-today" : ""} ${date === state.selectedDate ? "is-active" : ""} ${hasTask ? "has-task" : ""}" type="button" data-calendar-date="${date}">${day}</button>`;
+        const dayTasks = state.entries.filter((task) => task.status === "active" && scheduledOn(task, date));
+        const hasTask = dayTasks.length > 0;
+        const hasOverdue = dayTasks.some((task) => task.repeat === "none" && date < today() && !completedOn(task, date) && !isWaitingTask(task));
+        const hasWaiting = dayTasks.some(isWaitingTask);
+        const countLabel = hasTask ? `<span class="day-task-count">${dayTasks.length > 9 ? "9+" : dayTasks.length}</span>` : "";
+        const title = hasTask ? `${dayTasks.length} task` : "Nessun task";
+        html += `<button class="day-btn ${date === today() ? "is-today" : ""} ${date === state.selectedDate ? "is-active" : ""} ${hasTask ? "has-task" : ""} ${hasOverdue ? "has-overdue" : ""} ${hasWaiting ? "has-waiting" : ""}" type="button" data-calendar-date="${date}" title="${title}">${day}${countLabel}</button>`;
       }
 
       $("calendar-grid").innerHTML = html;
@@ -2131,6 +2331,7 @@
       };
 
       setCount("count-day", activeWork.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length);
+      setCount("count-today-view", activeWork.filter((task) => scheduledOn(task, now) && !completedOn(task, now)).length);
       setCount("count-tomorrow", activeWork.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length);
       setCount("count-high", activeWork.filter((task) => task.priority === "high").length);
       setCount("count-recurring", activeWork.filter((task) => isRecurring(task) && (state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)).length);
@@ -2169,6 +2370,8 @@
       const subtasksDone = safeArray(task.subtaskDone?.[date]);
       const priorityBadge = task.priority === "high" ? "badge-danger" : task.priority === "med" ? "badge-primary" : "badge-success";
       const repeatText = isRecurring(task) ? `<span class="badge">🔁 ${repeatLabel(task.repeat)}</span>` : "";
+      const durationText = task.durationMinutes ? `<span class="badge">⏱ ${task.durationMinutes} min</span>` : "";
+      const followUpText = waiting && task.followUpDate ? `<span class="badge badge-warning">↪ follow-up ${humanDate(task.followUpDate)}</span>` : "";
       const image = task.imageId ? `<img class="task-image" data-image-id="${escapeHtml(task.imageId)}" alt="Immagine allegata a ${escapeHtml(task.text)}" loading="lazy">` : "";
       const subtasks = task.subtasks.length ? `
         <div class="subtask-list">
@@ -2190,23 +2393,34 @@
               <span class="category-pill" style="${categoryPillStyle(task.cat)}"><span>${escapeHtml(task.cat)}</span>${task.sub ? `<span class="category-sub">· ${escapeHtml(task.sub)}</span>` : ""}</span>
               <span class="badge ${priorityBadge}">${task.priority === "high" ? "🔴" : task.priority === "med" ? "🟡" : "🟢"} ${priorityLabel(task.priority)}</span>
               ${repeatText}
+              ${durationText}
               ${waiting ? `<span class="badge badge-warning">⏳ ${WAITING_LABEL}</span>` : ""}
+              ${followUpText}
               ${overdue ? `<span class="badge badge-danger">Scaduto</span>` : ""}
               ${state.permanentIds.includes(task.id) ? `<span class="badge">📌 fisso</span>` : ""}
             </div>
+            ${waiting && task.waitingReason ? `<p class="task-notes"><strong>Motivo attesa:</strong> ${highlight(task.waitingReason)}</p>` : ""}
             ${task.notes ? `<p class="task-notes">${highlight(task.notes)}</p>` : ""}
             ${task.link ? `<a class="task-link" href="${escapeHtml(task.link)}" target="_blank" rel="noopener noreferrer">Apri collegamento</a>` : ""}
             ${subtasks}
             ${image}
           </div>
           <div class="task-actions">
-            <button class="btn ${done ? "btn-ghost" : "btn-success"} btn-icon" type="button" data-action="toggle" title="${done ? "Riapri" : "Completa"}">${done ? "↩" : "✓"}</button>
-            <button class="btn btn-ghost btn-icon" type="button" data-action="edit" title="Modifica">✎</button>
-            <button class="btn btn-ghost btn-icon" type="button" data-action="move-next" title="Sposta al giorno dopo">→</button>
-            <button class="btn ${waiting ? "btn-soft" : "btn-ghost"} btn-icon" type="button" data-action="waiting" title="${waiting ? "Riattiva task" : "Metti in attesa"}">${waiting ? "▶" : "⏳"}</button>
-            <button class="btn btn-ghost btn-icon" type="button" data-action="permanent" title="Fissa/Sblocca">${state.permanentIds.includes(task.id) ? "📍" : "📌"}</button>
-            <button class="btn btn-ghost btn-icon" type="button" data-action="archive" title="Archivia">🗂</button>
-            <button class="btn btn-danger btn-icon" type="button" data-action="delete" title="Elimina">🗑</button>
+            <div class="task-actions-main">
+              <button class="btn ${done ? "btn-ghost" : "btn-success"} btn-icon" type="button" data-action="toggle" title="${done ? "Riapri" : "Completa"}">${done ? "↩" : "✓"}</button>
+              <button class="btn btn-ghost btn-icon" type="button" data-action="edit" title="Modifica">✎</button>
+              <button class="btn btn-ghost btn-icon" type="button" data-action="move-next" title="Sposta al giorno dopo">→</button>
+              <details class="task-more">
+                <summary aria-label="Altre azioni">Altro</summary>
+                <div class="task-more-menu">
+                  <button class="btn ${waiting ? "btn-soft" : "btn-ghost"}" type="button" data-action="waiting">${waiting ? "▶ Riattiva" : "⏳ Metti in attesa"}</button>
+                  <button class="btn btn-ghost" type="button" data-action="duplicate">⧉ Duplica task</button>
+                  <button class="btn btn-ghost" type="button" data-action="permanent">${state.permanentIds.includes(task.id) ? "📍 Sblocca" : "📌 Fissa"}</button>
+                  <button class="btn btn-ghost" type="button" data-action="archive">🗂 Archivia</button>
+                  <button class="btn btn-danger" type="button" data-action="delete">🗑 Elimina</button>
+                </div>
+              </details>
+            </div>
           </div>
         </article>`;
     }
@@ -2268,6 +2482,11 @@
     /* =========================================================
        7) FORM E CRUD TASK
        ========================================================= */
+    function toggleWaitingExtra() {
+      const box = $("waiting-extra");
+      if (box) box.hidden = !$("task-waiting").checked;
+    }
+
     function formData() {
       const text = cleanText($("task-text").value);
       const notes = cleanText($("task-notes").value);
@@ -2284,6 +2503,9 @@
         priority: $("task-priority").value,
         repeat: $("task-repeat").value,
         reminderMinutes: Number($("task-reminder").value) || 0,
+        durationMinutes: Number($("task-duration")?.value) || 0,
+        waitingReason: cleanText($("task-waiting-reason")?.value),
+        followUpDate: validDate($("task-followup-date")?.value) ? $("task-followup-date").value : "",
         link: normalizeUrl($("task-link").value),
         notes,
         subtasks: $("task-subtasks").value.split("\n").map((line) => cleanText(line)).filter(Boolean),
@@ -2458,6 +2680,10 @@
       $("task-waiting").checked = isWaitingTask(task);
       $("task-repeat").value = task.repeat;
       $("task-reminder").value = String(task.reminderMinutes || 0);
+      $("task-duration").value = String(task.durationMinutes || 0);
+      $("task-waiting-reason").value = task.waitingReason || "";
+      $("task-followup-date").value = task.followUpDate || "";
+      toggleWaitingExtra();
       $("task-link").value = task.link;
       $("task-notes").value = task.notes;
       $("task-subtasks").value = task.subtasks.map((subtask) => subtask.text).join("\n");
@@ -2497,6 +2723,10 @@
       $("task-waiting").checked = false;
       $("task-repeat").value = "none";
       $("task-reminder").value = "0";
+      $("task-duration").value = "0";
+      $("task-waiting-reason").value = "";
+      $("task-followup-date").value = "";
+      toggleWaitingExtra();
       $("task-link").value = "";
       $("task-notes").value = "";
       $("task-subtasks").value = "";
@@ -2551,6 +2781,29 @@
       await mutate(isWaitingTask(task) ? "Task riattivato" : "Task messo in attesa", async () => {
         task.waiting = !isWaitingTask(task);
         task.updatedAt = today();
+      });
+    }
+
+    async function duplicateTask(task, date) {
+      await mutate("Task duplicato", async () => {
+        const copy = clone(task);
+        copy.id = uid();
+        copy.text = `${task.text} copia`;
+        copy.date = cleanDate(date, task.date);
+        copy.repeat = "none";
+        copy.untilDate = "";
+        copy.completedDates = [];
+        copy.excludedDates = [];
+        copy.subtaskDone = {};
+        copy.status = "active";
+        copy.archivedAt = "";
+        copy.deletedAt = "";
+        copy.originSeriesId = task.id;
+        copy.originalDate = cleanDate(date, task.date);
+        copy.createdAt = today();
+        copy.updatedAt = today();
+        copy.order = Date.now();
+        state.entries.push(copy);
       });
     }
 
@@ -2674,6 +2927,9 @@
           repeat,
           waiting,
           reminderMinutes: 0,
+          durationMinutes: 0,
+          waitingReason: "",
+          followUpDate: "",
           link: "",
           notes: "",
           subtasks: [],
@@ -2723,6 +2979,24 @@
 
       downloadBlob(new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" }), `calendario_task_pro_${today()}.json`);
       showToast("Backup JSON scaricato.");
+    }
+
+    function csvDownloadFromEntries(rows, filename) {
+      const headers = ["ID", "Titolo", "Categoria", "Sottocategoria", "Data", "Ora", "Durata", "Priorità", "Ricorrenza", "In attesa", "Stato", "Completamenti", "Note", "Link"];
+      const csvRows = rows.map((row) => {
+        const task = row.task || row;
+        const date = row.date || task.date;
+        return [task.id, task.text, task.cat, task.sub, date, task.time, task.durationMinutes || "", task.priority, task.repeat, task.waiting ? "sì" : "no", task.status, task.completedDates.join(";"), task.notes, task.link]
+          .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",");
+      });
+      downloadBlob(new Blob(["﻿" + [headers.join(","), ...csvRows].join("\r\n")], { type: "text/csv;charset=utf-8" }), filename);
+    }
+
+    function exportCurrentCsv() {
+      const rows = visibleOccurrences();
+      if (!rows.length) return showToast("La vista corrente non contiene task da esportare.", true);
+      csvDownloadFromEntries(rows, `calendario_task_vista_${today()}.csv`);
+      showToast("Vista corrente esportata.");
     }
 
     function exportCsv() {
@@ -3004,6 +3278,7 @@
       $("task-form").addEventListener("submit", saveTask);
       $("cancel-edit").addEventListener("click", resetForm);
       $("task-category").addEventListener("change", renderSubcategories);
+      $("task-waiting").addEventListener("change", toggleWaitingExtra);
 
       $("task-image").addEventListener("change", async (event) => {
         const file = event.target.files?.[0];
@@ -3049,13 +3324,28 @@
         const button = event.target.closest("[data-view]");
         if (!button || !VALID_VIEWS.includes(button.dataset.view)) return;
         state.view = button.dataset.view;
+        if (state.view === "today") selectDate(today(), "today");
         await persistState();
         await renderAll();
+      });
+
+
+      document.addEventListener("click", (event) => {
+        const action = event.target.closest("[data-mobile-action]")?.dataset.mobileAction;
+        if (!action) return;
+        if (action === "add") $("task-text").focus();
+        if (action === "search") {
+          document.querySelector('summary')?.focus?.();
+          $("search-input").focus();
+        }
+        if (action === "calendar") document.querySelector(".calendar-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (action === "menu") document.querySelector(".nav-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
 
       $("search-input").addEventListener("input", debounceRender);
       $("priority-filter").addEventListener("change", renderAll);
       $("status-filter").addEventListener("change", renderAll);
+      $("content-filter").addEventListener("change", renderAll);
       $("category-filter").addEventListener("change", async (event) => {
         state.categoryFilter = event.target.value;
         await persistState();
@@ -3076,6 +3366,7 @@
         $("search-input").value = "";
         $("priority-filter").value = "all";
         $("status-filter").value = "active";
+        $("content-filter").value = "all";
         state.categoryFilter = "all";
         state.recurringCategoryFilter = "all";
         await persistState();
@@ -3119,6 +3410,7 @@
         if (action === "toggle") await toggleComplete(task, date);
         if (action === "move-next") await moveOccurrence(task, date);
         if (action === "waiting") await toggleWaiting(task);
+        if (action === "duplicate") await duplicateTask(task, date);
         if (action === "permanent") await togglePermanent(task);
         if (action === "archive") await archiveTask(task);
         if (action === "delete") openDelete(task, date);
@@ -3166,6 +3458,7 @@
       $("enable-notifications").addEventListener("click", enableNotifications);
       $("export-json").addEventListener("click", exportJson);
       $("export-csv").addEventListener("click", exportCsv);
+      $("export-current-csv").addEventListener("click", exportCurrentCsv);
       $("open-import").addEventListener("click", openImport);
       $("import-file").addEventListener("change", (event) => {
         const file = event.target.files?.[0];
@@ -3226,6 +3519,7 @@
       $("empty-trash").addEventListener("click", async () => {
         const trash = state.entries.filter((task) => task.status === "trash");
         if (!trash.length) return showToast("Il cestino è già vuoto.");
+        if (!confirm(`Eliminare definitivamente ${trash.length} task dal cestino?`)) return;
         await mutate("Cestino svuotato", async () => {
           state.entries = state.entries.filter((task) => task.status !== "trash");
           state.permanentIds = state.permanentIds.filter((id) => state.entries.some((task) => task.id === id));
