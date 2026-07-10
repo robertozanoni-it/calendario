@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#4f46e5" />
   <meta name="description" content="Calendario task locale con viste rapide, ricorrenze, sottotask, archivio, backup e ricerca." />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <title>Calendario Task Pro</title>
+  <title>Calendario Task Pro 34</title>
 
   <style>
     /* =========================================================
@@ -176,6 +175,8 @@
     }
 
     body.is-resizing * { cursor: col-resize !important; }
+    body.mobile-drawer-open { overflow: hidden; }
+    body.mobile-drawer-open .mobile-quick-nav { display: none; }
 
     .workspace-head,
     .quick-add,
@@ -463,6 +464,7 @@
       background: var(--primary);
     }
     .day-btn.is-active.has-task::after { background: #fff; }
+    .day-btn.has-task::after { display: none; }
 
     .view-btn {
       width: 100%;
@@ -896,12 +898,6 @@
       .stats-strip { grid-template-columns: repeat(3, 1fr); }
     }
 
-    @media (max-width: 1120px) {
-      .app-shell { grid-template-columns: var(--nav-width) var(--resize-width) minmax(0, 1fr); }
-      .editor-resizer { display: none; }
-      .editor-panel { position: static; max-height: none; grid-column: 1 / -1; margin-left: 0; margin-top: var(--gap); }
-    }
-
     @media (max-width: 820px) {
       :root { --gap: 10px; }
       .app-shell { grid-template-columns: 1fr; padding: 10px; }
@@ -947,6 +943,239 @@
       }
 
     }
+
+
+    /* =========================================================
+       9) REVISIONE UI V34
+       Gerarchia più pulita, target touch accessibili e drawer mobile.
+       ========================================================= */
+    .panel,
+    .workspace-head,
+    .quick-add,
+    .task-list-wrap,
+    .stats-strip {
+      box-shadow: 0 8px 24px rgba(15, 23, 42, .055);
+    }
+
+    .btn,
+    .field,
+    .select,
+    .color-input {
+      min-height: 44px;
+    }
+
+    .btn-icon {
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
+    }
+
+    .tiny { font-size: .78rem; }
+    .small { font-size: .86rem; }
+    .badge { font-size: .78rem; }
+    .day-name { font-size: .72rem; }
+    .day-btn { min-height: 40px; }
+
+    .category-pill {
+      padding: .34rem .58rem;
+      box-shadow: none;
+      font-size: .72rem;
+      letter-spacing: .01em;
+      text-transform: none;
+      text-shadow: none;
+    }
+
+    details.clean-details summary {
+      position: relative;
+      padding-right: 2.35rem;
+    }
+    details.clean-details summary::after {
+      content: "⌄";
+      position: absolute;
+      right: .85rem;
+      top: 50%;
+      transform: translateY(-52%);
+      color: var(--muted);
+      transition: transform .18s ease;
+    }
+    details.clean-details[open] summary::after {
+      transform: translateY(-45%) rotate(180deg);
+    }
+
+    .header-side {
+      display: grid;
+      gap: 8px;
+      justify-items: end;
+    }
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+
+    .mobile-only { display: none; }
+
+    .active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      width: 100%;
+    }
+    .filter-chip {
+      min-height: 34px;
+      border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+      border-radius: 999px;
+      padding: .35rem .65rem;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: .78rem;
+      font-weight: 850;
+    }
+
+    .category-tools {
+      display: grid;
+      gap: 8px;
+      margin-top: 9px;
+      padding-top: 9px;
+      border-top: 1px solid var(--border);
+    }
+    .category-edit-row,
+    .subcategory-add-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 7px;
+    }
+    .subcategory-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .subcategory-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-soft);
+      padding: .28rem .42rem .28rem .58rem;
+      color: var(--muted);
+      font-size: .76rem;
+      font-weight: 800;
+    }
+    .subcategory-chip button {
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--danger) 10%, transparent);
+      color: var(--danger);
+      font-weight: 950;
+    }
+
+    .drag-handle {
+      display: inline-block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-weight: 950;
+      letter-spacing: -2px;
+      cursor: grab;
+    }
+    .task-card[draggable="true"] { cursor: grab; }
+    .task-card[draggable="true"]:active { cursor: grabbing; }
+
+    .task-state-label {
+      display: inline-flex;
+      margin-top: 7px;
+    }
+
+    .archive-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .archive-summary .stat-box { padding: 10px; }
+
+    .mobile-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 165;
+      display: none;
+      border: 0;
+      background: rgba(2, 6, 23, .66);
+    }
+    .mobile-drawer-backdrop.open { display: block; }
+
+    .workspace.is-system-view .quick-add { display: none; }
+
+    @media (max-width: 1320px) {
+      .app-shell { grid-template-columns: var(--nav-width) var(--resize-width) minmax(0, 1fr); }
+      .editor-resizer { display: none; }
+      .editor-panel {
+        position: static;
+        max-height: none;
+        grid-column: 1 / -1;
+        margin-left: 0;
+        margin-top: var(--gap);
+      }
+    }
+
+    @media (max-width: 820px) {
+      .workspace { grid-row: 1; }
+      .nav-panel,
+      .editor-panel {
+        position: fixed;
+        inset: 10px;
+        z-index: 170;
+        display: none;
+        max-height: calc(100dvh - 20px);
+        overflow: auto;
+        margin: 0;
+        border-radius: 20px;
+      }
+      .nav-panel.mobile-open,
+      .editor-panel.mobile-open { display: block; }
+      .editor-panel.mobile-open { display: grid; }
+      .mobile-only { display: inline-flex; }
+      .brand-block,
+      .editor-head { position: relative; }
+      .drawer-close {
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+      .header-side { justify-items: stretch; }
+      .header-actions { justify-content: stretch; }
+      .header-actions .btn { flex: 1 1 140px; }
+      .counter-card { width: auto; min-width: 0; }
+      .toolbar {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        align-items: stretch;
+      }
+      .toolbar .select,
+      .toolbar .btn { width: 100%; }
+      .toolbar > .badge,
+      .toolbar > .select,
+      .toolbar > #move-all,
+      .toolbar > .active-filters { grid-column: 1 / -1; }
+      .task-actions-main > .btn-icon { flex: 1 1 44px; }
+      .task-more { flex: 1 1 100%; }
+      .task-more summary { width: 100%; min-height: 44px; }
+      .task-more-menu { position: static; width: 100%; margin-top: 6px; }
+      .stats-strip { grid-template-columns: 1fr 1fr; }
+      .mobile-quick-nav button { min-height: 48px; font-size: .76rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+
   </style>
 </head>
 
@@ -1002,12 +1231,27 @@
     </div>
   </div>
 
+  <!-- Modale conferma generica -->
+  <div id="modal-confirm" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h3 id="confirm-title">Conferma operazione</h3>
+      <p id="confirm-message" class="muted small"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" type="button" data-close-modal="modal-confirm">Annulla</button>
+        <button class="btn btn-danger" type="button" id="confirm-generic-action">Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="mobile-drawer-backdrop" class="mobile-drawer-backdrop" type="button" aria-label="Chiudi pannello" aria-hidden="true"></button>
+
   <div class="app-shell">
     <!-- NAVIGAZIONE -->
     <aside class="nav-panel panel" aria-label="Navigazione e strumenti">
       <div class="brand-block">
         <h1 class="brand">Calendario Task Pro</h1>
         <div class="today-label" id="today-label"></div>
+        <button class="btn btn-ghost btn-icon mobile-only drawer-close" type="button" id="close-nav-mobile" aria-label="Chiudi menu">×</button>
       </div>
 
       <section class="calendar-card stack" aria-label="Calendario">
@@ -1025,6 +1269,8 @@
           <button class="view-btn active" type="button" data-view="day"><span>📅 Giorno selezionato</span><span class="view-count" id="count-day">0</span></button>
           <button class="view-btn" type="button" data-view="today"><span>🔥 Oggi</span><span class="view-count" id="count-today-view">0</span></button>
           <button class="view-btn" type="button" data-view="tomorrow"><span>➡️ Domani</span><span class="view-count" id="count-tomorrow">0</span></button>
+          <button class="view-btn" type="button" data-view="week"><span>🗓️ Prossimi 7 giorni</span><span class="view-count" id="count-week">0</span></button>
+          <button class="view-btn" type="button" data-view="overdue"><span>⚠️ Scaduti</span><span class="view-count" id="count-overdue">0</span></button>
           <button class="view-btn" type="button" data-view="high"><span>🔴 Priorità alta</span><span class="view-count" id="count-high">0</span></button>
           <button class="view-btn" type="button" data-view="waiting"><span>⏳ In attesa</span><span class="view-count" id="count-waiting">0</span></button>
           <button class="view-btn" type="button" data-view="recurring"><span>🔁 Ricorrenti</span><span class="view-count" id="count-recurring">0</span></button>
@@ -1032,31 +1278,30 @@
             <label class="field-label" for="recurring-category-filter">Categoria ricorrenti</label>
             <select class="select" id="recurring-category-filter"></select>
           </div>
+          <details class="clean-details" id="more-views-details">
+            <summary>Altre viste</summary>
+            <div class="details-body stack">
+              <button class="view-btn" type="button" data-view="completed"><span>✅ Completati oggi</span><span class="view-count" id="count-completed">0</span></button>
+              <button class="view-btn" type="button" data-view="no-time"><span>🕒 Senza orario</span><span class="view-count" id="count-no-time">0</span></button>
+              <button class="view-btn" type="button" data-view="archive"><span>🗂️ Archivio</span><span class="view-count" id="count-archive">0</span></button>
+              <button class="view-btn" type="button" data-view="trash"><span>🗑️ Cestino</span><span class="view-count" id="count-trash">0</span></button>
+            </div>
+          </details>
         </div>
       </section>
 
-
-      <details class="clean-details" style="margin-top: 12px;">
+      <details class="clean-details" id="search-details" style="margin-top: 12px;">
         <summary>🔎 Ricerca e filtri</summary>
         <div class="details-body stack">
-        <div>
-          <label class="sr-only" for="search-input">Cerca task</label>
-          <input class="field" id="search-input" type="search" placeholder="Cerca titolo, note, link…" />
-        </div>
-        <div>
-          <label class="field-label" for="category-filter">Categoria</label>
-          <select class="select" id="category-filter"></select>
-        </div>
-        <div class="field-grid-2">
           <div>
-            <label class="field-label" for="status-filter">Stato</label>
-            <select class="select" id="status-filter">
-              <option value="active">Attivi</option>
-              <option value="archived">Archivio</option>
-              <option value="trash">Cestino</option>
-              <option value="all">Tutti</option>
-            </select>
+            <label class="sr-only" for="search-input">Cerca task</label>
+            <input class="field" id="search-input" type="search" placeholder="Cerca titolo, note, link…" />
           </div>
+          <div>
+            <label class="field-label" for="category-filter">Categoria</label>
+            <select class="select" id="category-filter"></select>
+          </div>
+          <input id="status-filter" type="hidden" value="active" />
           <div>
             <label class="field-label" for="priority-filter">Priorità</label>
             <select class="select" id="priority-filter">
@@ -1066,16 +1311,15 @@
               <option value="low">Bassa</option>
             </select>
           </div>
-        </div>
-        <div>
-          <label class="field-label" for="content-filter">Contenuto</label>
-          <select class="select" id="content-filter">
-            <option value="all">Tutti</option>
-            <option value="has-link">Solo con link</option>
-            <option value="has-subtasks">Solo con sottotask</option>
-          </select>
-        </div>
-        <button class="btn btn-ghost btn-block" type="button" id="reset-filters">Azzera filtri</button>
+          <div>
+            <label class="field-label" for="content-filter">Contenuto</label>
+            <select class="select" id="content-filter">
+              <option value="all">Tutti</option>
+              <option value="has-link">Solo con link</option>
+              <option value="has-subtasks">Solo con sottotask</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-block" type="button" id="reset-filters">Azzera filtri</button>
         </div>
       </details>
 
@@ -1091,11 +1335,11 @@
         </div>
       </details>
 
-      <details class="clean-details" style="margin-top: 12px;">
+      <details class="clean-details" id="tools-details" style="margin-top: 12px;">
         <summary>🧰 Strumenti</summary>
         <div class="details-body stack">
         <button class="btn btn-soft btn-block" type="button" id="toggle-theme">🌓 Cambia tema</button>
-        <button class="btn btn-ghost btn-block" type="button" id="enable-notifications">🔔 Attiva notifiche</button>
+        <button class="btn btn-ghost btn-block" type="button" id="enable-notifications">🔔 Attiva notifiche mentre l’app è aperta</button>
         <button class="btn btn-ghost btn-block" type="button" id="export-json">💾 Backup JSON</button>
         <button class="btn btn-ghost btn-block" type="button" id="export-csv">📊 Esporta CSV</button>
         <button class="btn btn-ghost btn-block" type="button" id="export-current-csv">📋 Esporta vista corrente</button>
@@ -1108,7 +1352,7 @@
         <summary>🏷️ Categorie</summary>
         <div class="details-body stack">
           <div class="field-grid-2">
-            <input class="field" id="new-category-name" placeholder="Nuova categoria" />
+            <input class="field" id="new-category-name" maxlength="60" placeholder="Nuova categoria" />
             <button class="btn btn-primary" type="button" id="add-category">Aggiungi</button>
           </div>
           <div id="category-manager" class="stack"></div>
@@ -1116,12 +1360,13 @@
       </details>
 
       <details class="clean-details" style="margin-top: 12px;">
-        <summary>🗂️ Archivio e cestino</summary>
+        <summary>🧹 Manutenzione dati</summary>
         <div class="details-body stack">
-          <p class="section-title">Archivio</p>
-          <div id="archive-list" class="mini-list"></div>
-          <p class="section-title" style="margin-top: 8px;">Cestino</p>
-          <div id="trash-list" class="mini-list"></div>
+          <div class="archive-summary">
+            <div class="stat-box"><span>Archivio</span><strong id="archive-total">0</strong></div>
+            <div class="stat-box"><span>Cestino</span><strong id="trash-total">0</strong></div>
+          </div>
+          <p class="tiny muted">Apri le viste Archivio o Cestino per ripristinare i task.</p>
           <button class="btn btn-danger btn-block" type="button" id="empty-trash">Svuota cestino</button>
         </div>
       </details>
@@ -1137,9 +1382,15 @@
           <p class="page-subtitle" id="main-subtitle"></p>
           <div class="daily-summary" id="daily-summary"></div>
         </div>
-        <div class="counter-card" aria-label="Task aperti nella vista corrente">
-          <strong id="open-count">0</strong>
-          <span>Aperti</span>
+        <div class="header-side">
+          <div class="header-actions">
+            <button class="btn btn-primary" type="button" id="open-editor">＋ Nuovo task</button>
+            <button class="btn btn-ghost" type="button" id="focus-search">Cerca</button>
+          </div>
+          <div class="counter-card" id="counter-card" aria-live="polite">
+            <strong id="open-count">0</strong>
+            <span id="open-count-label">Aperti</span>
+          </div>
         </div>
       </header>
 
@@ -1165,7 +1416,7 @@
           <span class="badge badge-primary" id="date-pill"></span>
           <button class="btn btn-ghost" type="button" id="prev-day">← Giorno prima</button>
           <button class="btn btn-soft" type="button" id="go-today">Oggi</button>
-          <button class="btn btn-ghost" type="button" id="next-day">Vai al giorno dopo →</button>
+          <button class="btn btn-ghost" type="button" id="next-day">Giorno dopo →</button>
           <span class="spacer"></span>
           <select class="select" id="sort-select" aria-label="Ordina task">
             <option value="smart">Ordine intelligente</option>
@@ -1175,6 +1426,7 @@
             <option value="manual">Manuale</option>
           </select>
           <button class="btn btn-ghost" type="button" id="move-all">Sposta task aperti a domani</button>
+          <div class="active-filters" id="active-filters" aria-label="Filtri attivi"></div>
         </div>
         <div class="task-list" id="task-list"></div>
       </section>
@@ -1196,6 +1448,7 @@
       <div class="editor-head">
         <h2 id="editor-title">Nuovo task</h2>
         <p id="editor-help">Compila i campi principali. Le opzioni avanzate sono già ordinate per sezione.</p>
+        <button class="btn btn-ghost btn-icon mobile-only drawer-close" type="button" id="close-editor-mobile" aria-label="Chiudi editor">×</button>
       </div>
 
       <form id="task-form" class="stack" autocomplete="off">
@@ -1288,6 +1541,11 @@
           </div>
         </div>
 
+        <div id="repeat-until-row" hidden>
+          <label class="field-label" for="task-repeat-until">Termina ricorrenza il</label>
+          <input class="field" id="task-repeat-until" type="date" />
+        </div>
+
         <details class="clean-details">
           <summary>Dettagli, note e link</summary>
           <div class="details-body stack">
@@ -1347,7 +1605,7 @@
     /* =========================================================
        1) CONFIGURAZIONE E STATO
        ========================================================= */
-    const APP_VERSION = 33;
+    const APP_VERSION = 34;
     const DB_NAME = "calendario_task_pro_db";
     const DB_VERSION = 1;
     const STORE_STATE = "state";
@@ -1371,7 +1629,7 @@
     const WAITING_LABEL = "In attesa";
     const DEFAULT_TASK_CATEGORY = "Lavoro";
     const WAITING_PATTERN = /(^|[^\p{L}\p{N}])(attesa|in attesa|attendo|attendere|aspettando|aspetto|sospeso|sospesa|follow[- ]?up)(?=$|[^\p{L}\p{N}])/iu;
-    const VALID_VIEWS = ["day", "today", "tomorrow", "high", "waiting", "recurring"];
+    const VALID_VIEWS = ["day", "today", "tomorrow", "week", "overdue", "high", "completed", "no-time", "waiting", "recurring", "archive", "trash"];
 
     const DEFAULT_CATEGORIES = {
       "App.ti": { subs: ["Visita", "Call"], color: "#6366f1" },
@@ -1423,6 +1681,7 @@
     let alarmTimer = null;
     let notified = new Set();
     let lastFocused = null;
+    let pendingGenericConfirm = null;
 
     const $ = (id) => document.getElementById(id);
 
@@ -1454,7 +1713,10 @@
     }
 
     function validDate(dateString) {
-      return /^\d{4}-\d{2}-\d{2}$/.test(String(dateString || "")) && !Number.isNaN(parseDate(dateString).getTime());
+      const value = String(dateString || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+      const date = parseDate(value);
+      return !Number.isNaN(date.getTime()) && ymd(date) === value;
     }
 
     function cleanDate(dateString, fallback = today()) {
@@ -1551,6 +1813,12 @@
       if (!query) return safe;
       const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return safe.replace(new RegExp(`(${escapedQuery})`, "ig"), "<mark>$1</mark>");
+    }
+
+    function csvCell(value) {
+      let text = String(value ?? "");
+      if (/^[=+\-@]/.test(text)) text = `'${text}`;
+      return `"${text.replaceAll('"', '""')}"`;
     }
 
     function downloadBlob(blob, filename) {
@@ -1715,20 +1983,47 @@
       if (!file || !file.type.startsWith("image/")) throw new Error("Formato immagine non valido.");
       if (file.size > 12 * 1024 * 1024) throw new Error("Immagine troppo grande: massimo 12 MB.");
 
-      const bitmap = await createImageBitmap(file);
-      const maxSide = 1400;
-      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-      const width = Math.max(1, Math.round(bitmap.width * scale));
-      const height = Math.max(1, Math.round(bitmap.height * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext("2d").drawImage(bitmap, 0, 0, width, height);
-      bitmap.close();
+      let source;
+      let width;
+      let height;
+      let cleanup = () => {};
 
-      return await new Promise((resolve, reject) => {
-        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Compressione immagine non riuscita.")), "image/jpeg", .78);
-      });
+      if (typeof createImageBitmap === "function") {
+        source = await createImageBitmap(file);
+        width = source.width;
+        height = source.height;
+        cleanup = () => source.close?.();
+      } else {
+        const url = URL.createObjectURL(file);
+        source = await new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error("Immagine non leggibile."));
+          image.src = url;
+        });
+        width = source.naturalWidth;
+        height = source.naturalHeight;
+        cleanup = () => URL.revokeObjectURL(url);
+      }
+
+      try {
+        const maxSide = 1400;
+        const scale = Math.min(1, maxSide / Math.max(width, height));
+        const outputWidth = Math.max(1, Math.round(width * scale));
+        const outputHeight = Math.max(1, Math.round(height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = outputWidth;
+        canvas.height = outputHeight;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Compressione immagine non supportata dal browser.");
+        context.drawImage(source, 0, 0, outputWidth, outputHeight);
+
+        return await new Promise((resolve, reject) => {
+          canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Compressione immagine non riuscita.")), "image/jpeg", .78);
+        });
+      } finally {
+        cleanup();
+      }
     }
 
     /* =========================================================
@@ -1737,37 +2032,45 @@
     function normalizeCategories(raw) {
       const data = safeObject(raw);
       const out = {};
+      const hasStoredCategories = Object.prototype.hasOwnProperty.call(data, "categories");
+      const customCats = safeObject(data.customCats);
+      const colors = safeObject(data.catColors);
 
-      if (data.categories) {
+      if (hasStoredCategories) {
         Object.entries(safeObject(data.categories)).forEach(([name, value], index) => {
           const category = cleanText(name);
-          if (!category) return;
-          out[category] = {
-            subs: safeArray(value.subs).map((item) => cleanText(item)).filter(Boolean),
-            color: cleanColor(value.color, PALETTE[index % PALETTE.length])
-          };
+          if (!category || category.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return;
+          const item = safeObject(value);
+          const existingName = Object.keys(out).find((name) => name.localeCompare(category, "it", { sensitivity: "accent" }) === 0);
+          const normalizedSubs = safeArray(item.subs).map((sub) => cleanText(sub)).filter(Boolean);
+          if (existingName) {
+            out[existingName].subs = [...new Set([...out[existingName].subs, ...normalizedSubs])];
+          } else {
+            out[category] = {
+              subs: [...new Set(normalizedSubs)],
+              color: cleanColor(item.color, PALETTE[index % PALETTE.length])
+            };
+          }
         });
-      } else {
-        const customCats = safeObject(data.customCats);
-        const colors = safeObject(data.catColors);
+      } else if (Object.keys(customCats).length) {
+        Object.assign(out, clone(DEFAULT_CATEGORIES));
         Object.entries(customCats).forEach(([name, subs], index) => {
           const category = cleanText(name);
-          if (!category) return;
-          out[category] = {
-            subs: safeArray(subs).map((item) => cleanText(item)).filter(Boolean),
-            color: cleanColor(colors[category], PALETTE[index % PALETTE.length])
-          };
+          if (!category || category.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return;
+          const existingName = Object.keys(out).find((name) => name.localeCompare(category, "it", { sensitivity: "accent" }) === 0);
+          const normalizedSubs = safeArray(subs).map((sub) => cleanText(sub)).filter(Boolean);
+          if (existingName) {
+            out[existingName].subs = [...new Set([...out[existingName].subs, ...normalizedSubs])];
+          } else {
+            out[category] = {
+              subs: [...new Set(normalizedSubs)],
+              color: cleanColor(colors[category], PALETTE[index % PALETTE.length])
+            };
+          }
         });
       }
 
-      const merged = clone(DEFAULT_CATEGORIES);
-      Object.entries(out).forEach(([name, value]) => {
-        merged[name] = {
-          subs: [...new Set([...(merged[name]?.subs || []), ...safeArray(value.subs)])],
-          color: cleanColor(value.color, merged[name]?.color || PALETTE[Object.keys(merged).length % PALETTE.length])
-        };
-      });
-      return merged;
+      return Object.keys(out).length ? out : clone(DEFAULT_CATEGORIES);
     }
 
     function normalizeTask(raw) {
@@ -1792,7 +2095,10 @@
       const priority = ["low", "med", "high"].includes(item.priority || item.pri) ? (item.priority || item.pri) : "low";
       const category = cleanText(item.cat || item.category, DEFAULT_TASK_CATEGORY);
       const legacyWaiting = rawStatus === "waiting" || cleanText(item.cat || item.category).toLowerCase() === WAITING_CATEGORY.toLowerCase() || cleanText(item.sub || item.subcategory).toLowerCase() === WAITING_CATEGORY.toLowerCase();
-      const waiting = !!item.waiting || !!item.isWaiting || legacyWaiting || WAITING_PATTERN.test([item.text || item.title, item.notes || item.note].join(" "));
+      const hasExplicitWaiting = Object.prototype.hasOwnProperty.call(item, "waiting") || Object.prototype.hasOwnProperty.call(item, "isWaiting");
+      const waiting = hasExplicitWaiting
+        ? !!(item.waiting || item.isWaiting)
+        : legacyWaiting || WAITING_PATTERN.test([item.text || item.title, item.notes || item.note].join(" "));
 
       return {
         id: String(item.id || uid()),
@@ -1803,7 +2109,7 @@
         time: validTime(item.time) ? item.time : "",
         priority,
         repeat,
-        untilDate: validDate(item.untilDate) ? item.untilDate : "",
+        untilDate: validDate(item.untilDate) && item.untilDate >= date ? item.untilDate : "",
         link: normalizeUrl(item.link || item.url),
         notes: cleanText(item.notes || item.note),
         subtasks,
@@ -1834,26 +2140,33 @@
       const data = Array.isArray(raw) ? { entries: raw } : safeObject(raw);
       const entries = safeArray(data.entries || data.tasks || data.data).map(normalizeTask);
       const categories = normalizeCategories(data);
-      delete categories[WAITING_CATEGORY];
+      Object.keys(categories).forEach((name) => {
+        if (name.toLowerCase() === WAITING_CATEGORY.toLowerCase()) delete categories[name];
+      });
       if (!Object.keys(categories).length) Object.assign(categories, clone(DEFAULT_CATEGORIES));
-      if (!categories[DEFAULT_TASK_CATEGORY]) categories[DEFAULT_TASK_CATEGORY] = clone(DEFAULT_CATEGORIES[DEFAULT_TASK_CATEGORY] || { subs: [], color: "#3b82f6" });
+      const fallbackCategory = Object.keys(categories)[0] || DEFAULT_TASK_CATEGORY;
 
       entries.forEach((task) => {
         const wasWaitingCategory = cleanText(task.cat).toLowerCase() === WAITING_CATEGORY.toLowerCase();
         if (wasWaitingCategory) {
           task.waiting = true;
-          task.cat = DEFAULT_TASK_CATEGORY;
+          task.cat = fallbackCategory;
           if (["da seguire", "in sospeso", "follow-up", "attesa"].includes(cleanText(task.sub).toLowerCase())) task.sub = "";
-          task.color = categories[task.cat]?.color || "#3b82f6";
         }
-      });
 
-      entries.forEach((task) => {
-        if (!categories[task.cat]) {
+        const existingCategory = Object.keys(categories).find((name) => name.localeCompare(task.cat, "it", { sensitivity: "accent" }) === 0);
+        if (existingCategory) {
+          task.cat = existingCategory;
+        } else {
           categories[task.cat] = { subs: [], color: PALETTE[Object.keys(categories).length % PALETTE.length] };
         }
+
         if (!task.color) task.color = categories[task.cat].color;
-        if (task.sub && !categories[task.cat].subs.includes(task.sub)) categories[task.cat].subs.push(task.sub);
+        if (task.sub) {
+          const existingSub = categories[task.cat].subs.find((sub) => sub.localeCompare(task.sub, "it", { sensitivity: "accent" }) === 0);
+          if (existingSub) task.sub = existingSub;
+          else categories[task.cat].subs.push(task.sub);
+        }
       });
 
       const ids = new Set(entries.map((task) => task.id));
@@ -1999,6 +2312,17 @@
       return "";
     }
 
+    function nextPendingOccurrence(task, from = today()) {
+      if (task.status !== "active") return "";
+      let day = from < task.date ? task.date : from;
+      const limit = addDays(day, 3700);
+      while (day <= limit) {
+        if (scheduledOn(task, day) && !completedOn(task, day)) return day;
+        day = addDays(day, 1);
+      }
+      return "";
+    }
+
     function occurrencesBetween(task, start, end, limit = 500) {
       const out = [];
       if (task.status !== "active") return out;
@@ -2081,55 +2405,55 @@
     }
 
     function visibleOccurrences() {
-      const status = $("status-filter").value;
       const selected = state.selectedDate;
       const now = today();
       const tomorrow = addDays(now, 1);
       const weekEnd = addDays(now, 6);
       const list = [];
 
-      if (status !== "active") {
-        const statuses = status === "all" ? ["archived", "trash"] : [status];
-        state.entries.filter((task) => statuses.includes(task.status)).forEach((task) => list.push({ task, date: task.date }));
-      }
-
-      if (status === "active" || status === "all") {
+      if (state.view === "archive" || state.view === "trash") {
+        const wantedStatus = state.view === "archive" ? "archived" : "trash";
+        state.entries
+          .filter((task) => task.status === wantedStatus)
+          .forEach((task) => list.push({ task, date: task.date }));
+      } else {
         const active = state.entries.filter((task) => task.status === "active");
-        const activeWork = active.filter((task) => !isWaitingTask(task));
 
         if (state.view === "day") {
-          activeWork.forEach((task) => { if (scheduledOn(task, selected)) list.push({ task, date: selected }); });
+          active.forEach((task) => { if (scheduledOn(task, selected)) list.push({ task, date: selected }); });
         } else if (state.view === "today") {
-          activeWork.forEach((task) => { if (scheduledOn(task, now)) list.push({ task, date: now }); });
+          active.forEach((task) => { if (scheduledOn(task, now)) list.push({ task, date: now }); });
         } else if (state.view === "tomorrow") {
-          activeWork.forEach((task) => { if (scheduledOn(task, tomorrow)) list.push({ task, date: tomorrow }); });
+          active.forEach((task) => { if (scheduledOn(task, tomorrow)) list.push({ task, date: tomorrow }); });
         } else if (state.view === "week") {
-          activeWork.forEach((task) => occurrencesBetween(task, now, weekEnd).forEach((date) => list.push({ task, date })));
+          active.forEach((task) => occurrencesBetween(task, now, weekEnd).forEach((date) => list.push({ task, date })));
         } else if (state.view === "overdue") {
-          activeWork.filter((task) => task.repeat === "none" && task.date < now && !completedOn(task, task.date)).forEach((task) => list.push({ task, date: task.date }));
+          active
+            .filter((task) => !isWaitingTask(task) && task.repeat === "none" && task.date < now && !completedOn(task, task.date))
+            .forEach((task) => list.push({ task, date: task.date }));
         } else if (state.view === "high") {
-          activeWork.filter((task) => task.priority === "high").forEach((task) => {
-            const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
+          active.filter((task) => task.priority === "high").forEach((task) => {
+            const date = task.repeat === "none" ? (!completedOn(task, task.date) ? task.date : "") : nextPendingOccurrence(task, now);
             if (date) list.push({ task, date });
           });
         } else if (state.view === "completed") {
-          activeWork.forEach((task) => { if (scheduledOn(task, now) && completedOn(task, now)) list.push({ task, date: now }); });
+          active.forEach((task) => { if (scheduledOn(task, now) && completedOn(task, now)) list.push({ task, date: now }); });
         } else if (state.view === "no-time") {
-          activeWork.filter((task) => !task.time).forEach((task) => {
-            const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
+          active.filter((task) => !task.time).forEach((task) => {
+            const date = task.repeat === "none" ? (!completedOn(task, task.date) ? task.date : "") : nextPendingOccurrence(task, now);
             if (date) list.push({ task, date });
           });
         } else if (state.view === "recurring") {
-          activeWork
+          active
             .filter(isRecurring)
             .filter((task) => state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)
             .forEach((task) => {
-              const date = nextOccurrence(task, now);
+              const date = nextPendingOccurrence(task, now);
               if (date) list.push({ task, date });
             });
         } else if (state.view === "waiting") {
           active.filter(isWaitingTask).forEach((task) => {
-            const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
+            const date = task.repeat === "none" ? (!completedOn(task, task.date) ? task.date : "") : nextPendingOccurrence(task, now);
             if (date) list.push({ task, date });
           });
         }
@@ -2163,6 +2487,8 @@
     function sortOccurrences(list) {
       const mode = state.sort;
       const now = today();
+      if (state.view === "archive") return list.sort((a, b) => (b.task.archivedAt || b.task.updatedAt || b.date).localeCompare(a.task.archivedAt || a.task.updatedAt || a.date));
+      if (state.view === "trash") return list.sort((a, b) => (b.task.deletedAt || b.task.updatedAt || b.date).localeCompare(a.task.deletedAt || a.task.updatedAt || a.date));
       return list.sort((a, b) => {
         const aDone = completedOn(a.task, a.date);
         const bDone = completedOn(b.task, b.date);
@@ -2195,7 +2521,9 @@
         completed: ["Completati oggi", humanDate(today(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
         "no-time": ["Task senza orario", "Attività da pianificare"],
         recurring: ["Task ricorrenti", state.recurringCategoryFilter === "all" ? "Prossime occorrenze delle serie attive" : `Categoria: ${state.recurringCategoryFilter}`],
-        waiting: [WAITING_LABEL, "Task sospesi o da seguire più avanti"]
+        waiting: [WAITING_LABEL, "Task sospesi o da seguire più avanti"],
+        archive: ["Archivio", "Task archiviati, disponibili per il ripristino"],
+        trash: ["Cestino", "Task eliminati, disponibili fino allo svuotamento"]
       };
       return labels[state.view] || labels.day;
     }
@@ -2222,27 +2550,52 @@
       document.documentElement.style.setProperty("--nav-width", `${state.navWidth}px`);
       document.documentElement.style.setProperty("--editor-width", `${state.editorWidth}px`);
       document.querySelector('meta[name="theme-color"]')?.setAttribute("content", state.theme === "dark" ? "#020617" : "#4f46e5");
+      if ($("enable-notifications")) {
+        $("enable-notifications").textContent = state.notificationsEnabled
+          ? "🔔 Notifiche attive mentre l’app è aperta"
+          : "🔔 Attiva notifiche mentre l’app è aperta";
+        $("enable-notifications").classList.toggle("btn-success", state.notificationsEnabled);
+        $("enable-notifications").classList.toggle("btn-ghost", !state.notificationsEnabled);
+      }
     }
 
     function renderHeader() {
       const labels = viewLabels();
+      const systemView = state.view === "archive" || state.view === "trash";
       $("today-label").textContent = new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       $("main-title").textContent = labels[0];
       $("main-subtitle").textContent = labels[1];
       $("date-pill").textContent = state.view === "day" ? humanDate(state.selectedDate) : labels[0];
-      $("move-all").hidden = state.view !== "day";
+      $("date-pill").hidden = systemView;
+      $("prev-day").hidden = systemView;
+      $("go-today").hidden = systemView;
+      $("next-day").hidden = systemView;
+      $("move-all").hidden = systemView || state.view !== "day";
       $("recurring-category-row").hidden = state.view !== "recurring";
-      document.querySelectorAll("[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === state.view));
+      $("open-count-label").textContent = state.view === "archive" ? "Archiviati" : state.view === "trash" ? "Nel cestino" : "Aperti";
+      $("daily-summary").hidden = systemView;
+      if ($("more-views-details") && ["completed", "no-time", "archive", "trash"].includes(state.view)) $("more-views-details").open = true;
+      document.querySelector(".workspace")?.classList.toggle("is-system-view", systemView);
+      document.querySelectorAll("[data-view]").forEach((button) => {
+        const active = button.dataset.view === state.view;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
       $("sort-select").value = state.sort;
       renderDailySummary();
+      renderActiveFilters();
     }
 
     function renderDailySummary() {
-      const activeWork = state.entries.filter((task) => task.status === "active" && !isWaitingTask(task));
-      const todayTasks = activeWork.filter((task) => scheduledOn(task, today()));
+      const activeTasks = state.entries.filter((task) => task.status === "active");
+      const todayTasks = activeTasks.filter((task) => scheduledOn(task, today()));
       const openToday = todayTasks.filter((task) => !completedOn(task, today())).length;
       const urgentToday = todayTasks.filter((task) => task.priority === "high" && !completedOn(task, today())).length;
-      const waitingCount = state.entries.filter((task) => task.status === "active" && isWaitingTask(task)).length;
+      const waitingCount = state.entries.filter((task) => {
+        if (task.status !== "active" || !isWaitingTask(task)) return false;
+        const date = task.repeat === "none" ? task.date : nextPendingOccurrence(task, today());
+        return !!date && !completedOn(task, date);
+      }).length;
       const summary = $("daily-summary");
       if (!summary) return;
       summary.innerHTML = `
@@ -2250,6 +2603,20 @@
         <span class="badge badge-danger">Urgenti: ${urgentToday}</span>
         <span class="badge badge-warning">In attesa: ${waitingCount}</span>
       `;
+    }
+
+    function renderActiveFilters() {
+      const container = $("active-filters");
+      if (!container) return;
+      const chips = [];
+      const query = cleanText($("search-input")?.value);
+      const priority = $("priority-filter")?.value || "all";
+      const content = $("content-filter")?.value || "all";
+      if (query) chips.push({ key: "search", label: `Ricerca: ${query}` });
+      if (state.categoryFilter !== "all") chips.push({ key: "category", label: `Categoria: ${state.categoryFilter}` });
+      if (priority !== "all") chips.push({ key: "priority", label: `Priorità: ${priorityLabel(priority)}` });
+      if (content !== "all") chips.push({ key: "content", label: content === "has-link" ? "Con link" : "Con sottotask" });
+      container.innerHTML = chips.map((chip) => `<button class="filter-chip" type="button" data-clear-filter="${chip.key}" aria-label="Rimuovi filtro ${escapeHtml(chip.label)}">${escapeHtml(chip.label)} ×</button>`).join("");
     }
 
     function renderCategories() {
@@ -2272,17 +2639,31 @@
 
       renderSubcategories();
 
-      $("category-manager").innerHTML = categories.map((category) => `
+      $("category-manager").innerHTML = categories.map((category) => {
+        const subs = state.categories[category].subs.slice().sort((a, b) => a.localeCompare(b, "it"));
+        return `
         <div class="mini-card" data-category-row="${escapeHtml(category)}">
           <div class="row">
-            <input class="color-input" style="width: 52px; min-height: 36px;" type="color" data-category-color="${escapeHtml(category)}" value="${escapeHtml(state.categories[category].color)}" aria-label="Colore categoria ${escapeHtml(category)}">
+            <input class="color-input" style="width: 52px; min-height: 44px;" type="color" data-category-color="${escapeHtml(category)}" value="${escapeHtml(state.categories[category].color)}" aria-label="Colore categoria ${escapeHtml(category)}">
             <span class="category-pill category-manager-pill" style="${categoryPillStyle(category)}">${escapeHtml(category)}</span>
             <span class="spacer"></span>
-            <button class="btn btn-danger btn-icon" type="button" data-remove-category="${escapeHtml(category)}" title="Elimina categoria">×</button>
+            <button class="btn btn-danger btn-icon" type="button" data-remove-category="${escapeHtml(category)}" aria-label="Elimina categoria ${escapeHtml(category)}">×</button>
           </div>
-          <div class="tiny muted" style="margin-top: 6px;">Sottocategorie: ${escapeHtml(state.categories[category].subs.join(", ") || "nessuna")}</div>
-        </div>
-      `).join("");
+          <div class="category-tools">
+            <div class="category-edit-row">
+              <input class="field" data-category-rename-input="${escapeHtml(category)}" maxlength="60" value="${escapeHtml(category)}" aria-label="Rinomina categoria ${escapeHtml(category)}">
+              <button class="btn btn-ghost" type="button" data-rename-category="${escapeHtml(category)}">Rinomina</button>
+            </div>
+            <div class="subcategory-add-row">
+              <input class="field" data-subcategory-input="${escapeHtml(category)}" maxlength="60" placeholder="Nuova sottocategoria" aria-label="Nuova sottocategoria per ${escapeHtml(category)}">
+              <button class="btn btn-soft" type="button" data-add-subcategory="${escapeHtml(category)}">Aggiungi</button>
+            </div>
+            <div class="subcategory-list">
+              ${subs.length ? subs.map((sub) => `<span class="subcategory-chip">${escapeHtml(sub)}<button type="button" data-remove-subcategory="${escapeHtml(category)}" data-subcategory-name="${escapeHtml(sub)}" aria-label="Rimuovi sottocategoria ${escapeHtml(sub)}">×</button></span>`).join("") : `<span class="tiny muted">Nessuna sottocategoria</span>`}
+            </div>
+          </div>
+        </div>`;
+      }).join("");
     }
 
     function renderSubcategories() {
@@ -2314,7 +2695,10 @@
         const hasWaiting = dayTasks.some(isWaitingTask);
         const countLabel = hasTask ? `<span class="day-task-count">${dayTasks.length > 9 ? "9+" : dayTasks.length}</span>` : "";
         const title = hasTask ? `${dayTasks.length} task` : "Nessun task";
-        html += `<button class="day-btn ${date === today() ? "is-today" : ""} ${date === state.selectedDate ? "is-active" : ""} ${hasTask ? "has-task" : ""} ${hasOverdue ? "has-overdue" : ""} ${hasWaiting ? "has-waiting" : ""}" type="button" data-calendar-date="${date}" title="${title}">${day}${countLabel}</button>`;
+        const selectedAttributes = date === state.selectedDate ? `aria-pressed="true"` : `aria-pressed="false"`;
+        const currentAttribute = date === today() ? `aria-current="date"` : "";
+        const ariaLabel = `${humanDate(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}: ${title}`;
+        html += `<button class="day-btn ${date === today() ? "is-today" : ""} ${date === state.selectedDate ? "is-active" : ""} ${hasTask ? "has-task" : ""} ${hasOverdue ? "has-overdue" : ""} ${hasWaiting ? "has-waiting" : ""}" type="button" data-calendar-date="${date}" ${selectedAttributes} ${currentAttribute} aria-label="${escapeHtml(ariaLabel)}" title="${escapeHtml(title)}">${day}${countLabel}</button>`;
       }
 
       $("calendar-grid").innerHTML = html;
@@ -2323,35 +2707,43 @@
     function renderCounts() {
       const now = today();
       const tomorrow = addDays(now, 1);
+      const weekEnd = addDays(now, 6);
       const active = state.entries.filter((task) => task.status === "active");
-      const activeWork = active.filter((task) => !isWaitingTask(task));
       const setCount = (id, value) => {
         const element = $(id);
         if (element) element.textContent = value;
       };
 
-      setCount("count-day", activeWork.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length);
-      setCount("count-today-view", activeWork.filter((task) => scheduledOn(task, now) && !completedOn(task, now)).length);
-      setCount("count-tomorrow", activeWork.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length);
-      setCount("count-high", activeWork.filter((task) => task.priority === "high").length);
-      setCount("count-recurring", activeWork.filter((task) => isRecurring(task) && (state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)).length);
+      setCount("count-day", active.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length);
+      setCount("count-today-view", active.filter((task) => scheduledOn(task, now) && !completedOn(task, now)).length);
+      setCount("count-tomorrow", active.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length);
+      setCount("count-week", active.reduce((sum, task) => sum + occurrencesBetween(task, now, weekEnd).filter((date) => !completedOn(task, date)).length, 0));
+      setCount("count-overdue", active.filter((task) => !isWaitingTask(task) && task.repeat === "none" && task.date < now && !completedOn(task, task.date)).length);
+      setCount("count-high", active.filter((task) => task.priority === "high" && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
+      setCount("count-recurring", active.filter((task) => isRecurring(task) && !!nextPendingOccurrence(task, now) && (state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)).length);
       setCount("count-waiting", active.filter((task) => {
         if (!isWaitingTask(task)) return false;
-        const date = task.repeat === "none" ? task.date : nextOccurrence(task, now);
-        return date && !completedOn(task, date);
+        const date = task.repeat === "none" ? task.date : nextPendingOccurrence(task, now);
+        return !!date && !completedOn(task, date);
       }).length);
+      setCount("count-completed", active.filter((task) => scheduledOn(task, now) && completedOn(task, now)).length);
+      setCount("count-no-time", active.filter((task) => !task.time && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
+      setCount("count-archive", state.entries.filter((task) => task.status === "archived").length);
+      setCount("count-trash", state.entries.filter((task) => task.status === "trash").length);
     }
 
     function renderTaskList() {
       const list = visibleOccurrences();
       const visibleIds = new Set(list.map(({ task }) => task.id));
-      const permanent = state.permanentIds
+      const permanent = (state.view === "archive" || state.view === "trash") ? [] : state.permanentIds
         .map((id) => state.entries.find((task) => task.id === id))
         .filter((task) => task && task.status === "active" && !visibleIds.has(task.id))
         .map((task) => ({ task, date: isRecurring(task) ? (nextOccurrence(task, state.selectedDate) || task.date) : task.date }))
         .filter((item) => item.date);
 
-      $("open-count").textContent = list.filter(({ task, date }) => !completedOn(task, date)).length;
+      $("open-count").textContent = (state.view === "archive" || state.view === "trash")
+        ? list.length
+        : list.filter(({ task, date }) => !completedOn(task, date)).length;
 
       let html = "";
       if (list.length) html += list.map(taskCard).join("");
@@ -2366,7 +2758,7 @@
     function taskCard({ task, date }) {
       const done = completedOn(task, date);
       const waiting = isWaitingTask(task);
-      const overdue = date < today() && !done && !waiting;
+      const overdue = task.status === "active" && date < today() && !done && !waiting;
       const subtasksDone = safeArray(task.subtaskDone?.[date]);
       const priorityBadge = task.priority === "high" ? "badge-danger" : task.priority === "med" ? "badge-primary" : "badge-success";
       const repeatText = isRecurring(task) ? `<span class="badge">🔁 ${repeatLabel(task.repeat)}</span>` : "";
@@ -2377,18 +2769,45 @@
         <div class="subtask-list">
           ${task.subtasks.map((subtask) => {
             const checked = subtasksDone.includes(subtask.id);
-            return `<label class="subtask-item ${checked ? "done" : ""}"><input type="checkbox" data-action="subtask" data-subtask-id="${escapeHtml(subtask.id)}" ${checked ? "checked" : ""}> <span>${highlight(subtask.text)}</span></label>`;
+            return `<label class="subtask-item ${checked ? "done" : ""}"><input type="checkbox" data-action="subtask" data-subtask-id="${escapeHtml(subtask.id)}" ${checked ? "checked" : ""} ${task.status !== "active" ? "disabled" : ""}> <span>${highlight(subtask.text)}</span></label>`;
           }).join("")}
         </div>` : "";
 
+      const activeTitle = task.status === "active"
+        ? `<button type="button" data-action="edit" aria-label="Modifica ${escapeHtml(task.text)}">${highlight(task.text)}</button>`
+        : highlight(task.text);
+      const statusBadge = task.status === "archived"
+        ? `<span class="badge">🗂 Archiviato</span>`
+        : task.status === "trash" ? `<span class="badge badge-danger">🗑 Nel cestino</span>` : "";
+      const draggable = task.status === "active" && state.sort === "manual";
+      const activeActions = `
+        <button class="btn ${done ? "btn-ghost" : "btn-success"} btn-icon" type="button" data-action="toggle" aria-label="${done ? "Riapri" : "Completa"} ${escapeHtml(task.text)}">${done ? "↩" : "✓"}</button>
+        <button class="btn btn-ghost btn-icon" type="button" data-action="edit" aria-label="Modifica ${escapeHtml(task.text)}">✎</button>
+        <button class="btn btn-ghost btn-icon" type="button" data-action="move-next" aria-label="Sposta ${escapeHtml(task.text)} al giorno dopo">→</button>
+        <details class="task-more">
+          <summary aria-label="Altre azioni per ${escapeHtml(task.text)}">Altro</summary>
+          <div class="task-more-menu">
+            <button class="btn ${waiting ? "btn-soft" : "btn-ghost"}" type="button" data-action="waiting">${waiting ? "▶ Riattiva" : "⏳ Metti in attesa"}</button>
+            ${task.time ? `<button class="btn btn-ghost" type="button" data-action="snooze">🔔 Ricorda tra 10 min</button>` : ""}
+            <button class="btn btn-ghost" type="button" data-action="duplicate">⧉ Duplica task</button>
+            <button class="btn btn-ghost" type="button" data-action="permanent">${state.permanentIds.includes(task.id) ? "📍 Sblocca" : "📌 Fissa"}</button>
+            <button class="btn btn-ghost" type="button" data-action="archive">🗂 Archivia</button>
+            <button class="btn btn-danger" type="button" data-action="delete">🗑 Elimina</button>
+          </div>
+        </details>`;
+      const storedActions = `
+        <button class="btn btn-soft" type="button" data-action="restore">Ripristina</button>
+        ${task.status === "trash" ? `<button class="btn btn-danger" type="button" data-action="delete-forever">Elimina definitivamente</button>` : ""}`;
+
       return `
-        <article class="task-card ${done ? "is-complete" : ""} ${overdue ? "is-overdue" : ""} ${waiting ? "is-waiting" : ""}" draggable="true" data-task-id="${escapeHtml(task.id)}" data-date="${escapeHtml(date)}" style="--task-color:${escapeHtml(cleanColor(task.color, categoryColor(task.cat)))}">
+        <article class="task-card ${done ? "is-complete" : ""} ${overdue ? "is-overdue" : ""} ${waiting ? "is-waiting" : ""}" draggable="${draggable}" data-task-id="${escapeHtml(task.id)}" data-date="${escapeHtml(date)}" style="--task-color:${escapeHtml(cleanColor(task.color, categoryColor(task.cat)))}">
           <div class="task-timebox">
             <strong>${escapeHtml(task.time || "—")}</strong>
             <span>${humanDate(date, { day: "2-digit", month: "short" })}</span>
+            ${draggable ? `<span class="drag-handle" aria-hidden="true">⋮⋮</span>` : ""}
           </div>
           <div>
-            <h3 class="task-title"><button type="button" data-action="edit">${highlight(task.text)}</button></h3>
+            <h3 class="task-title">${activeTitle}</h3>
             <div class="task-meta">
               <span class="category-pill" style="${categoryPillStyle(task.cat)}"><span>${escapeHtml(task.cat)}</span>${task.sub ? `<span class="category-sub">· ${escapeHtml(task.sub)}</span>` : ""}</span>
               <span class="badge ${priorityBadge}">${task.priority === "high" ? "🔴" : task.priority === "med" ? "🟡" : "🟢"} ${priorityLabel(task.priority)}</span>
@@ -2398,6 +2817,7 @@
               ${followUpText}
               ${overdue ? `<span class="badge badge-danger">Scaduto</span>` : ""}
               ${state.permanentIds.includes(task.id) ? `<span class="badge">📌 fisso</span>` : ""}
+              ${statusBadge}
             </div>
             ${waiting && task.waitingReason ? `<p class="task-notes"><strong>Motivo attesa:</strong> ${highlight(task.waitingReason)}</p>` : ""}
             ${task.notes ? `<p class="task-notes">${highlight(task.notes)}</p>` : ""}
@@ -2406,21 +2826,7 @@
             ${image}
           </div>
           <div class="task-actions">
-            <div class="task-actions-main">
-              <button class="btn ${done ? "btn-ghost" : "btn-success"} btn-icon" type="button" data-action="toggle" title="${done ? "Riapri" : "Completa"}">${done ? "↩" : "✓"}</button>
-              <button class="btn btn-ghost btn-icon" type="button" data-action="edit" title="Modifica">✎</button>
-              <button class="btn btn-ghost btn-icon" type="button" data-action="move-next" title="Sposta al giorno dopo">→</button>
-              <details class="task-more">
-                <summary aria-label="Altre azioni">Altro</summary>
-                <div class="task-more-menu">
-                  <button class="btn ${waiting ? "btn-soft" : "btn-ghost"}" type="button" data-action="waiting">${waiting ? "▶ Riattiva" : "⏳ Metti in attesa"}</button>
-                  <button class="btn btn-ghost" type="button" data-action="duplicate">⧉ Duplica task</button>
-                  <button class="btn btn-ghost" type="button" data-action="permanent">${state.permanentIds.includes(task.id) ? "📍 Sblocca" : "📌 Fissa"}</button>
-                  <button class="btn btn-ghost" type="button" data-action="archive">🗂 Archivia</button>
-                  <button class="btn btn-danger" type="button" data-action="delete">🗑 Elimina</button>
-                </div>
-              </details>
-            </div>
+            <div class="task-actions-main">${task.status === "active" ? activeActions : storedActions}</div>
           </div>
         </article>`;
     }
@@ -2435,10 +2841,10 @@
       const todayDone = todayOccurrences.filter((task) => completedOn(task, now)).length;
       const weekDone = activeWork.reduce((sum, task) => sum + safeArray(task.completedDates).filter((date) => date >= weekStart && date <= weekEnd).length, 0);
       const archivedDone = Object.values(state.completionArchive).reduce((sum, value) => sum + Number(value || 0), 0);
-      const allDone = activeWork.reduce((sum, task) => sum + safeArray(task.completedDates).length, 0) + archivedDone;
+      const allDone = state.entries.reduce((sum, task) => sum + safeArray(task.completedDates).length, 0) + archivedDone;
       const score = todayOccurrences.length ? Math.round((todayDone / todayOccurrences.length) * 100) : 0;
 
-      $("stat-active").textContent = activeWork.length;
+      $("stat-active").textContent = active.length;
       $("stat-waiting").textContent = active.filter(isWaitingTask).length;
       $("stat-today").textContent = todayDone;
       $("stat-week").textContent = weekDone;
@@ -2448,22 +2854,10 @@
     }
 
     function renderArchiveAndTrash() {
-      const archived = state.entries.filter((task) => task.status === "archived").sort((a, b) => (b.archivedAt || "").localeCompare(a.archivedAt || ""));
-      const trash = state.entries.filter((task) => task.status === "trash").sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
-      $("archive-list").innerHTML = archived.length ? archived.map((task) => miniCard(task, "restore-archive")).join("") : `<div class="tiny muted">Archivio vuoto.</div>`;
-      $("trash-list").innerHTML = trash.length ? trash.map((task) => miniCard(task, "restore-trash", true)).join("") : `<div class="tiny muted">Cestino vuoto.</div>`;
-    }
-
-    function miniCard(task, action, forever = false) {
-      return `
-        <div class="mini-card">
-          <strong>${escapeHtml(task.text)}</strong>
-          <div class="tiny muted">${escapeHtml(task.cat)} · ${humanDate(task.date)}</div>
-          <div class="mini-actions">
-            <button class="btn btn-ghost" type="button" data-mini-action="${action}" data-id="${escapeHtml(task.id)}">Ripristina</button>
-            ${forever ? `<button class="btn btn-danger" type="button" data-mini-action="delete-forever" data-id="${escapeHtml(task.id)}">Elimina definitivamente</button>` : ""}
-          </div>
-        </div>`;
+      const archived = state.entries.filter((task) => task.status === "archived").length;
+      const trash = state.entries.filter((task) => task.status === "trash").length;
+      if ($("archive-total")) $("archive-total").textContent = archived;
+      if ($("trash-total")) $("trash-total").textContent = trash;
     }
 
     async function hydrateImages() {
@@ -2482,6 +2876,36 @@
     /* =========================================================
        7) FORM E CRUD TASK
        ========================================================= */
+    function toggleRepeatUntil() {
+      const row = $("repeat-until-row");
+      if (row) row.hidden = $("task-repeat").value === "none";
+      if ($("task-repeat-until")) $("task-repeat-until").min = $("task-date")?.value || today();
+    }
+
+    function openMobileDrawer(type) {
+      if (!window.matchMedia("(max-width: 820px)").matches) return;
+      closeMobileDrawers();
+      const panel = type === "editor" ? document.querySelector(".editor-panel") : document.querySelector(".nav-panel");
+      panel?.classList.add("mobile-open");
+      $("mobile-drawer-backdrop")?.classList.add("open");
+      $("mobile-drawer-backdrop")?.setAttribute("aria-hidden", "false");
+      document.body.classList.add("mobile-drawer-open");
+    }
+
+    function closeMobileDrawers() {
+      document.querySelector(".nav-panel")?.classList.remove("mobile-open");
+      document.querySelector(".editor-panel")?.classList.remove("mobile-open");
+      $("mobile-drawer-backdrop")?.classList.remove("open");
+      $("mobile-drawer-backdrop")?.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("mobile-drawer-open");
+    }
+
+    function focusSearchField() {
+      const details = $("search-details");
+      if (details) details.open = true;
+      $("search-input")?.focus();
+    }
+
     function toggleWaitingExtra() {
       const box = $("waiting-extra");
       if (box) box.hidden = !$("task-waiting").checked;
@@ -2492,7 +2916,7 @@
       const notes = cleanText($("task-notes").value);
       const cat = $("task-category").value;
       const sub = $("task-subcategory").value;
-      const waiting = $("task-waiting").checked || WAITING_PATTERN.test([text, notes, sub].join(" "));
+      const waiting = $("task-waiting").checked;
       return {
         text,
         cat,
@@ -2502,10 +2926,11 @@
         time: validTime($("task-time").value) ? $("task-time").value : "",
         priority: $("task-priority").value,
         repeat: $("task-repeat").value,
+        untilDate: $("task-repeat").value !== "none" && validDate($("task-repeat-until").value) ? $("task-repeat-until").value : "",
         reminderMinutes: Number($("task-reminder").value) || 0,
         durationMinutes: Number($("task-duration")?.value) || 0,
-        waitingReason: cleanText($("task-waiting-reason")?.value),
-        followUpDate: validDate($("task-followup-date")?.value) ? $("task-followup-date").value : "",
+        waitingReason: waiting ? cleanText($("task-waiting-reason")?.value) : "",
+        followUpDate: waiting && validDate($("task-followup-date")?.value) ? $("task-followup-date").value : "",
         link: normalizeUrl($("task-link").value),
         notes,
         subtasks: $("task-subtasks").value.split("\n").map((line) => cleanText(line)).filter(Boolean),
@@ -2521,6 +2946,11 @@
       }
       if (!data.cat || !state.categories[data.cat]) {
         showToast("Seleziona una categoria valida.", true);
+        return false;
+      }
+      if (data.untilDate && data.untilDate < data.date) {
+        showToast("La fine della ricorrenza non può precedere la data iniziale.", true);
+        $("task-repeat-until").focus();
         return false;
       }
       return true;
@@ -2555,7 +2985,6 @@
             completedDates: [],
             excludedDates: [],
             imageId,
-            untilDate: "",
             snoozed: {},
             status: "active",
             archivedAt: "",
@@ -2622,6 +3051,7 @@
             completedDates: completedOn(task, occurrence) ? [newDate] : [],
             excludedDates: [],
             subtaskDone: { [newDate]: safeArray(task.subtaskDone?.[occurrence]) },
+            snoozed: task.snoozed?.[occurrence] ? { [newDate]: task.snoozed[occurrence] } : {},
             status: "active",
             archivedAt: "",
             deletedAt: "",
@@ -2635,21 +3065,24 @@
           const futureCompleted = task.completedDates.filter((date) => date >= occurrence);
           const futureExcluded = task.excludedDates.filter((date) => date >= occurrence);
           const futureSubtaskDone = Object.fromEntries(Object.entries(task.subtaskDone).filter(([date]) => date >= occurrence));
+          const futureSnoozed = Object.fromEntries(Object.entries(safeObject(task.snoozed)).filter(([date]) => date >= occurrence));
 
           task.untilDate = addDays(occurrence, -1);
           task.completedDates = task.completedDates.filter((date) => date < occurrence);
           task.excludedDates = task.excludedDates.filter((date) => date < occurrence);
           task.subtaskDone = Object.fromEntries(Object.entries(task.subtaskDone).filter(([date]) => date < occurrence));
+          task.snoozed = Object.fromEntries(Object.entries(safeObject(task.snoozed)).filter(([date]) => date < occurrence));
 
           state.entries.push({
             ...clone(task),
             ...updatedData,
             id: uid(),
             date: data.date || occurrence,
-            untilDate: "",
+            untilDate: data.untilDate || "",
             completedDates: futureCompleted,
             excludedDates: futureExcluded,
             subtaskDone: futureSubtaskDone,
+            snoozed: futureSnoozed,
             originSeriesId: task.id,
             originalDate: occurrence,
             createdAt: today(),
@@ -2679,6 +3112,8 @@
       $("task-priority").value = task.priority;
       $("task-waiting").checked = isWaitingTask(task);
       $("task-repeat").value = task.repeat;
+      $("task-repeat-until").value = task.untilDate || "";
+      toggleRepeatUntil();
       $("task-reminder").value = String(task.reminderMinutes || 0);
       $("task-duration").value = String(task.durationMinutes || 0);
       $("task-waiting-reason").value = task.waitingReason || "";
@@ -2708,8 +3143,9 @@
       $("editor-help").textContent = isRecurring(task) ? "Questo task è ricorrente: al salvataggio potrai scegliere il tipo di modifica." : "Modifica i campi e salva.";
       $("save-task").textContent = "Aggiorna";
       $("cancel-edit").textContent = "Annulla";
+      openMobileDrawer("editor");
       $("task-text").focus();
-      document.querySelector(".editor-panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (!window.matchMedia("(max-width: 820px)").matches) document.querySelector(".editor-panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     function resetForm() {
@@ -2722,6 +3158,8 @@
       $("task-priority").value = "low";
       $("task-waiting").checked = false;
       $("task-repeat").value = "none";
+      $("task-repeat-until").value = "";
+      toggleRepeatUntil();
       $("task-reminder").value = "0";
       $("task-duration").value = "0";
       $("task-waiting-reason").value = "";
@@ -2738,6 +3176,7 @@
       $("editor-help").textContent = "Compila i campi principali. Le opzioni avanzate sono già ordinate per sezione.";
       $("save-task").textContent = "Salva task";
       renderSubcategories();
+      if (window.matchMedia("(max-width: 820px)").matches) closeMobileDrawers();
     }
 
     async function toggleComplete(task, date) {
@@ -2804,6 +3243,39 @@
         copy.updatedAt = today();
         copy.order = Date.now();
         state.entries.push(copy);
+      });
+    }
+
+    async function snoozeTask(task, date) {
+      await mutate("Promemoria rimandato di 10 minuti", async () => {
+        const reminderDate = isWaitingTask(task) && task.followUpDate ? task.followUpDate : date;
+        task.snoozed = safeObject(task.snoozed);
+        task.snoozed[reminderDate] = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        task.updatedAt = today();
+      }, false);
+    }
+
+    async function restoreStoredTask(task) {
+      await mutate("Task ripristinato", async () => {
+        task.status = "active";
+        task.archivedAt = "";
+        task.deletedAt = "";
+        task.updatedAt = today();
+      });
+    }
+
+    function archiveTaskCompletions(task) {
+      const count = safeArray(task.completedDates).length;
+      if (!count) return;
+      const key = String(new Date().getFullYear());
+      state.completionArchive[key] = Number(state.completionArchive[key] || 0) + count;
+    }
+
+    async function deleteTaskForever(task) {
+      await mutate("Task eliminato definitivamente", async () => {
+        archiveTaskCompletions(task);
+        state.entries = state.entries.filter((entry) => entry.id !== task.id);
+        state.permanentIds = state.permanentIds.filter((id) => id !== task.id);
       });
     }
 
@@ -2958,7 +3430,7 @@
       const name = cleanText($("new-category-name").value);
       if (!name) return showToast("Inserisci il nome della categoria.", true);
       if (name.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return showToast("“In attesa” è uno stato protetto, non una categoria eliminabile.", true);
-      if (state.categories[name]) return showToast("Categoria già presente.", true);
+      if (Object.keys(state.categories).some((category) => category.localeCompare(name, "it", { sensitivity: "accent" }) === 0)) return showToast("Categoria già presente.", true);
 
       await mutate("Categoria aggiunta", async () => {
         state.categories[name] = { subs: [], color: PALETTE[Object.keys(state.categories).length % PALETTE.length] };
@@ -2987,7 +3459,7 @@
         const task = row.task || row;
         const date = row.date || task.date;
         return [task.id, task.text, task.cat, task.sub, date, task.time, task.durationMinutes || "", task.priority, task.repeat, task.waiting ? "sì" : "no", task.status, task.completedDates.join(";"), task.notes, task.link]
-          .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",");
+          .map(csvCell).join(",");
       });
       downloadBlob(new Blob(["﻿" + [headers.join(","), ...csvRows].join("\r\n")], { type: "text/csv;charset=utf-8" }), filename);
     }
@@ -3015,7 +3487,7 @@
         task.completedDates.join(";"),
         task.notes,
         task.link
-      ].map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","));
+      ].map(csvCell).join(","));
 
       downloadBlob(new Blob(["\ufeff" + [headers.join(","), ...rows].join("\r\n")], { type: "text/csv;charset=utf-8" }), `calendario_task_pro_${today()}.csv`);
       showToast("CSV esportato.");
@@ -3047,22 +3519,57 @@
       if (mode === "replace") await exportJson();
 
       await mutate("Backup importato", async () => {
+        const imageIdMap = {};
+
         for (const [imageId, dataUrl] of Object.entries(pendingImport.images)) {
-          try { await putImage(dataUrlToBlob(dataUrl), imageId); }
-          catch (error) { console.warn("Immagine non importata", imageId, error); }
+          try {
+            let targetId = imageId;
+            if (mode === "merge") {
+              const isReferenced = state.entries.some((task) => task.imageId === imageId);
+              const existingBlob = isReferenced ? true : await getImage(imageId);
+              if (existingBlob) targetId = uid();
+            }
+            await putImage(dataUrlToBlob(dataUrl), targetId);
+            imageIdMap[imageId] = targetId;
+          } catch (error) {
+            console.warn("Immagine non importata", imageId, error);
+          }
         }
 
         if (mode === "replace") {
           state = normalizeState(pendingImport.state);
         } else {
           const existingIds = new Set(state.entries.map((task) => task.id));
+          const taskIdMap = {};
           pendingImport.state.entries.forEach((task) => {
-            if (existingIds.has(task.id)) task.id = uid();
-            existingIds.add(task.id);
-            state.entries.push(task);
+            const importedTask = clone(task);
+            const originalId = importedTask.id;
+            if (existingIds.has(importedTask.id)) importedTask.id = uid();
+            existingIds.add(importedTask.id);
+            taskIdMap[originalId] = importedTask.id;
+            if (importedTask.imageId && Object.prototype.hasOwnProperty.call(pendingImport.images, importedTask.imageId)) {
+              importedTask.imageId = imageIdMap[importedTask.imageId] || "";
+            }
+            state.entries.push(importedTask);
+          });
+          pendingImport.state.permanentIds.forEach((id) => {
+            const mappedId = taskIdMap[id] || id;
+            if (state.entries.some((task) => task.id === mappedId) && !state.permanentIds.includes(mappedId)) state.permanentIds.push(mappedId);
+          });
+          Object.entries(safeObject(pendingImport.state.completionArchive)).forEach(([key, value]) => {
+            state.completionArchive[key] = Number(state.completionArchive[key] || 0) + Number(value || 0);
           });
           Object.entries(pendingImport.state.categories).forEach(([name, value]) => {
-            if (!state.categories[name]) state.categories[name] = value;
+            const existingName = Object.keys(state.categories).find((category) => category.localeCompare(name, "it", { sensitivity: "accent" }) === 0);
+            if (!existingName) {
+              state.categories[name] = value;
+            } else {
+              safeArray(value.subs).forEach((sub) => {
+                if (!state.categories[existingName].subs.some((existingSub) => existingSub.localeCompare(sub, "it", { sensitivity: "accent" }) === 0)) {
+                  state.categories[existingName].subs.push(sub);
+                }
+              });
+            }
           });
         }
       });
@@ -3085,15 +3592,19 @@
       const now = new Date();
       state.entries.filter((task) => task.status === "active").forEach((task) => {
         [today(), addDays(today(), 1)].forEach((date) => {
-          if (!scheduledOn(task, date) || completedOn(task, date)) return;
-          const snoozed = task.snoozed?.[date] ? new Date(task.snoozed[date]) : null;
-          const when = snoozed || reminderTime(task, date);
+          const occurrenceDate = isWaitingTask(task) && task.followUpDate ? task.followUpDate : date;
+          const shouldNotify = isWaitingTask(task) && task.followUpDate
+            ? task.followUpDate === date && !completedOn(task, task.date)
+            : scheduledOn(task, date) && !completedOn(task, date);
+          if (!shouldNotify) return;
+          const snoozed = task.snoozed?.[occurrenceDate] ? new Date(task.snoozed[occurrenceDate]) : null;
+          const when = snoozed || reminderTime(task, occurrenceDate);
           if (!when) return;
           const delta = now - when;
           const key = `${task.id}@${date}@${when.toISOString()}`;
-          if (delta >= 0 && delta < 60000 && !notified.has(key)) {
+          if (delta >= 0 && delta < 5 * 60000 && !notified.has(key)) {
             notified.add(key);
-            notifyTask(task, date);
+            notifyTask(task, occurrenceDate);
             setTimeout(() => notified.delete(key), 3600000);
           }
         });
@@ -3121,6 +3632,7 @@
       const permission = await Notification.requestPermission();
       state.notificationsEnabled = permission === "granted";
       await persistState();
+      renderTheme();
       if (state.notificationsEnabled) {
         startAlarm();
         showToast("Notifiche attive mentre l'app è aperta.");
@@ -3137,11 +3649,29 @@
       }
     }
 
+    function requestConfirmation({ title, message, confirmLabel = "Conferma", danger = true, action }) {
+      pendingGenericConfirm = action;
+      $("confirm-title").textContent = title;
+      $("confirm-message").textContent = message;
+      $("confirm-generic-action").textContent = confirmLabel;
+      $("confirm-generic-action").className = `btn ${danger ? "btn-danger" : "btn-primary"}`;
+      openModal("modal-confirm");
+    }
+
+    async function runGenericConfirmation() {
+      const action = pendingGenericConfirm;
+      pendingGenericConfirm = null;
+      closeModal("modal-confirm");
+      if (action) await action();
+    }
+
     function openModal(id) {
       lastFocused = document.activeElement;
       const modal = $(id);
       modal.classList.add("open");
       modal.setAttribute("aria-hidden", "false");
+      document.querySelector(".app-shell")?.setAttribute("inert", "");
+      document.querySelector(".mobile-quick-nav")?.setAttribute("inert", "");
       setTimeout(() => modal.querySelector("input, button, select, textarea")?.focus(), 0);
     }
 
@@ -3149,6 +3679,10 @@
       const modal = $(id);
       modal.classList.remove("open");
       modal.setAttribute("aria-hidden", "true");
+      if (!document.querySelector(".modal-backdrop.open")) {
+        document.querySelector(".app-shell")?.removeAttribute("inert");
+        document.querySelector(".mobile-quick-nav")?.removeAttribute("inert");
+      }
       lastFocused?.focus?.();
     }
 
@@ -3185,6 +3719,7 @@
     }
 
     function launchConfetti() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       for (let i = 0; i < 34; i++) {
         const confetto = document.createElement("div");
         confetto.className = "confetti";
@@ -3279,6 +3814,18 @@
       $("cancel-edit").addEventListener("click", resetForm);
       $("task-category").addEventListener("change", renderSubcategories);
       $("task-waiting").addEventListener("change", toggleWaitingExtra);
+      $("task-repeat").addEventListener("change", toggleRepeatUntil);
+      $("task-date").addEventListener("change", toggleRepeatUntil);
+      $("open-editor").addEventListener("click", () => {
+        resetForm();
+        openMobileDrawer("editor");
+        $("task-text").focus();
+        if (!window.matchMedia("(max-width: 820px)").matches) document.querySelector(".editor-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      $("focus-search").addEventListener("click", () => { openMobileDrawer("nav"); setTimeout(focusSearchField, 0); });
+      $("close-nav-mobile").addEventListener("click", closeMobileDrawers);
+      $("close-editor-mobile").addEventListener("click", closeMobileDrawers);
+      $("mobile-drawer-backdrop").addEventListener("click", closeMobileDrawers);
 
       $("task-image").addEventListener("change", async (event) => {
         const file = event.target.files?.[0];
@@ -3324,25 +3871,34 @@
         const button = event.target.closest("[data-view]");
         if (!button || !VALID_VIEWS.includes(button.dataset.view)) return;
         state.view = button.dataset.view;
+        $("status-filter").value = "active";
         if (state.view === "today") selectDate(today(), "today");
         await persistState();
         await renderAll();
+        if (button.closest(".mobile-quick-nav") || window.matchMedia("(max-width: 820px)").matches) closeMobileDrawers();
       });
 
 
       document.addEventListener("click", (event) => {
         const action = event.target.closest("[data-mobile-action]")?.dataset.mobileAction;
         if (!action) return;
-        if (action === "add") $("task-text").focus();
-        if (action === "search") {
-          document.querySelector('summary')?.focus?.();
-          $("search-input").focus();
-        }
-        if (action === "calendar") document.querySelector(".calendar-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
-        if (action === "menu") document.querySelector(".nav-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (action === "add") { resetForm(); openMobileDrawer("editor"); setTimeout(() => $("task-text").focus(), 0); }
+        if (action === "search") { openMobileDrawer("nav"); setTimeout(focusSearchField, 0); }
+        if (action === "calendar") { openMobileDrawer("nav"); setTimeout(() => document.querySelector(".calendar-card")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }
+        if (action === "menu") { openMobileDrawer("nav"); setTimeout(() => document.querySelector(".nav-panel")?.scrollTo({ top: 0, behavior: "smooth" }), 0); }
       });
 
       $("search-input").addEventListener("input", debounceRender);
+      $("active-filters").addEventListener("click", async (event) => {
+        const key = event.target.closest("[data-clear-filter]")?.dataset.clearFilter;
+        if (!key) return;
+        if (key === "search") $("search-input").value = "";
+        if (key === "category") state.categoryFilter = "all";
+        if (key === "priority") $("priority-filter").value = "all";
+        if (key === "content") $("content-filter").value = "all";
+        await persistState();
+        await renderAll();
+      });
       $("priority-filter").addEventListener("change", renderAll);
       $("status-filter").addEventListener("change", renderAll);
       $("content-filter").addEventListener("change", renderAll);
@@ -3410,9 +3966,12 @@
         if (action === "toggle") await toggleComplete(task, date);
         if (action === "move-next") await moveOccurrence(task, date);
         if (action === "waiting") await toggleWaiting(task);
+        if (action === "snooze") await snoozeTask(task, date);
         if (action === "duplicate") await duplicateTask(task, date);
         if (action === "permanent") await togglePermanent(task);
         if (action === "archive") await archiveTask(task);
+        if (action === "restore") await restoreStoredTask(task);
+        if (action === "delete-forever") requestConfirmation({ title: "Elimina definitivamente", message: `Eliminare definitivamente “${task.text}”?`, confirmLabel: "Elimina", action: () => deleteTaskForever(task) });
         if (action === "delete") openDelete(task, date);
       });
 
@@ -3426,7 +3985,7 @@
       let draggedId = "";
       $("task-list").addEventListener("dragstart", (event) => {
         const card = event.target.closest(".task-card");
-        if (!card) return;
+        if (!card || state.sort !== "manual") return;
         draggedId = card.dataset.taskId;
         event.dataTransfer.effectAllowed = "move";
         event.dataTransfer.setData("text/plain", draggedId);
@@ -3486,50 +4045,82 @@
         }, false);
       });
       $("category-manager").addEventListener("click", async (event) => {
-        const category = event.target.dataset.removeCategory;
-        if (!category) return;
-        if (category === WAITING_CATEGORY) return showToast("“In attesa” è uno stato protetto, non una categoria eliminabile.", true);
-        if (state.entries.some((task) => task.cat === category)) return showToast("Categoria usata da alcuni task: prima cambia categoria a quei task.", true);
-        await mutate("Categoria eliminata", async () => { delete state.categories[category]; });
+        const removeCategory = event.target.closest("[data-remove-category]")?.dataset.removeCategory;
+        const renameCategory = event.target.closest("[data-rename-category]")?.dataset.renameCategory;
+        const addSubcategory = event.target.closest("[data-add-subcategory]")?.dataset.addSubcategory;
+        const removeSubcategory = event.target.closest("[data-remove-subcategory]");
+
+        if (renameCategory) {
+          const row = event.target.closest("[data-category-row]");
+          const input = row?.querySelector("[data-category-rename-input]");
+          const newName = cleanText(input?.value);
+          if (!newName || newName === renameCategory) return;
+          if (newName.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return showToast("Nome riservato.", true);
+          if (Object.keys(state.categories).some((name) => name !== renameCategory && name.localeCompare(newName, "it", { sensitivity: "accent" }) === 0)) return showToast("Categoria già presente.", true);
+          await mutate("Categoria rinominata", async () => {
+            const updated = {};
+            Object.entries(state.categories).forEach(([name, value]) => { updated[name === renameCategory ? newName : name] = value; });
+            state.categories = updated;
+            state.entries.filter((task) => task.cat === renameCategory).forEach((task) => { task.cat = newName; task.updatedAt = today(); });
+            if (state.categoryFilter === renameCategory) state.categoryFilter = newName;
+            if (state.recurringCategoryFilter === renameCategory) state.recurringCategoryFilter = newName;
+          });
+          return;
+        }
+
+        if (addSubcategory) {
+          const row = event.target.closest("[data-category-row]");
+          const input = row?.querySelector("[data-subcategory-input]");
+          const name = cleanText(input?.value);
+          if (!name) return showToast("Inserisci il nome della sottocategoria.", true);
+          const subs = state.categories[addSubcategory]?.subs || [];
+          if (subs.some((sub) => sub.localeCompare(name, "it", { sensitivity: "accent" }) === 0)) return showToast("Sottocategoria già presente.", true);
+          await mutate("Sottocategoria aggiunta", async () => { state.categories[addSubcategory].subs.push(name); });
+          return;
+        }
+
+        if (removeSubcategory) {
+          const category = removeSubcategory.dataset.removeSubcategory;
+          const sub = removeSubcategory.dataset.subcategoryName;
+          if (state.entries.some((task) => task.cat === category && task.sub === sub)) return showToast("Sottocategoria usata da alcuni task: modificali prima di eliminarla.", true);
+          await mutate("Sottocategoria eliminata", async () => {
+            state.categories[category].subs = state.categories[category].subs.filter((item) => item !== sub);
+          });
+          return;
+        }
+
+        if (removeCategory) {
+          if (removeCategory === WAITING_CATEGORY) return showToast("“In attesa” è uno stato protetto, non una categoria eliminabile.", true);
+          if (Object.keys(state.categories).length <= 1) return showToast("Deve rimanere almeno una categoria.", true);
+          if (state.entries.some((task) => task.cat === removeCategory)) return showToast("Categoria usata da alcuni task: prima cambia categoria a quei task.", true);
+          requestConfirmation({
+            title: "Elimina categoria",
+            message: `Eliminare la categoria “${removeCategory}”?`,
+            confirmLabel: "Elimina",
+            action: () => mutate("Categoria eliminata", async () => { delete state.categories[removeCategory]; })
+          });
+        }
       });
 
-      document.addEventListener("click", async (event) => {
-        const mini = event.target.closest("[data-mini-action]");
-        if (!mini) return;
-        const task = state.entries.find((entry) => entry.id === mini.dataset.id);
-        if (!task) return;
-        const action = mini.dataset.miniAction;
-        if (action === "restore-archive" || action === "restore-trash") {
-          await mutate("Task ripristinato", async () => {
-            task.status = "active";
-            task.archivedAt = "";
-            task.deletedAt = "";
-            task.updatedAt = today();
-          });
-        }
-        if (action === "delete-forever") {
-          await mutate("Task eliminato definitivamente", async () => {
-            state.entries = state.entries.filter((entry) => entry.id !== task.id);
-            state.permanentIds = state.permanentIds.filter((id) => id !== task.id);
-            if (task.imageId && !state.entries.some((entry) => entry.imageId === task.imageId)) await dbDelete(STORE_IMAGES, task.imageId);
-          });
-        }
-      });
+
 
       $("empty-trash").addEventListener("click", async () => {
         const trash = state.entries.filter((task) => task.status === "trash");
         if (!trash.length) return showToast("Il cestino è già vuoto.");
-        if (!confirm(`Eliminare definitivamente ${trash.length} task dal cestino?`)) return;
-        await mutate("Cestino svuotato", async () => {
-          state.entries = state.entries.filter((task) => task.status !== "trash");
-          state.permanentIds = state.permanentIds.filter((id) => state.entries.some((task) => task.id === id));
-          for (const task of trash) {
-            if (task.imageId && !state.entries.some((entry) => entry.imageId === task.imageId)) await dbDelete(STORE_IMAGES, task.imageId);
-          }
+        requestConfirmation({
+          title: "Svuota cestino",
+          message: `Eliminare definitivamente ${trash.length} task? L'operazione può essere annullata dal messaggio successivo.`,
+          confirmLabel: "Svuota cestino",
+          action: () => mutate("Cestino svuotato", async () => {
+            trash.forEach(archiveTaskCompletions);
+            state.entries = state.entries.filter((task) => task.status !== "trash");
+            state.permanentIds = state.permanentIds.filter((id) => state.entries.some((task) => task.id === id));
+          })
         });
       });
 
       $("confirm-delete").addEventListener("click", confirmDelete);
+      $("confirm-generic-action").addEventListener("click", runGenericConfirmation);
       $("confirm-recurring").addEventListener("click", () => applyRecurringEdit(document.querySelector('input[name="recurring-scope"]:checked')?.value || "single"));
 
       document.querySelectorAll("[data-close-modal]").forEach((button) => {
@@ -3542,14 +4133,20 @@
       });
       document.addEventListener("keydown", (event) => {
         trapModal(event);
-        if (event.key === "Escape") document.querySelectorAll(".modal-backdrop.open").forEach((modal) => closeModal(modal.id));
+        if (event.key === "Escape") {
+          document.querySelectorAll(".modal-backdrop.open").forEach((modal) => closeModal(modal.id));
+          closeMobileDrawers();
+        }
         if (event.altKey && event.key.toLowerCase() === "n") {
           event.preventDefault();
+          resetForm();
+          openMobileDrawer("editor");
           $("task-text").focus();
         }
         if (event.altKey && event.key.toLowerCase() === "f") {
           event.preventDefault();
-          $("search-input").focus();
+          openMobileDrawer("nav");
+          setTimeout(focusSearchField, 0);
         }
       });
     }
@@ -3569,15 +4166,13 @@
       try {
         db = await openDb();
         await loadState();
+        if (!("Notification" in window) || Notification.permission !== "granted") state.notificationsEnabled = false;
         currentMonth = parseDate(state.selectedDate || today());
         $("task-date").value = state.selectedDate;
         bindEvents();
         await renderAll();
         resetForm();
         startAlarm();
-        if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-          navigator.serviceWorker.register("sw.js").catch(() => {});
-        }
       } catch (error) {
         console.error(error);
         document.body.innerHTML = `<main style="padding: 2rem; font-family: system-ui; color: white; background: #020617; min-height: 100vh;"><h1>Errore di avvio</h1><p>${escapeHtml(error.message)}</p><p>Apri il file tramite un browser moderno. Se stai usando funzioni PWA, meglio caricarlo via HTTPS o server locale.</p></main>`;
@@ -3585,6 +4180,9 @@
     }
 
     window.addEventListener("load", init);
+    window.addEventListener("resize", () => {
+      if (!window.matchMedia("(max-width: 820px)").matches) closeMobileDrawers();
+    });
     window.addEventListener("beforeunload", () => clearInterval(alarmTimer));
   </script>
 </body>
