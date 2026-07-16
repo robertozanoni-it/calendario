@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#4f46e5" />
   <meta name="description" content="Calendario task locale con viste rapide, ricorrenze, sottotask, archivio, backup e ricerca." />
-  <title>Calendario Task Pro 34</title>
+  <title>Calendario Task Pro 36</title>
 
   <style>
     /* =========================================================
@@ -778,16 +778,109 @@
     /* =========================================================
        6) EDITOR TASK
        ========================================================= */
-    .editor-panel { display: grid; gap: 12px; }
+    .editor-panel {
+      display: grid;
+      gap: 12px;
+      background: color-mix(in srgb, var(--surface) 94%, var(--primary) 6%);
+    }
+
     .editor-head {
-      padding: 13px;
+      padding: 14px;
       border-radius: var(--radius-lg);
-      background: var(--primary-soft);
-      color: var(--primary);
-      border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+      background: linear-gradient(135deg,
+        color-mix(in srgb, #7c3aed 24%, var(--surface)),
+        color-mix(in srgb, #4f46e5 13%, var(--surface)));
+      color: color-mix(in srgb, #8b5cf6 82%, var(--text));
+      border: 1px solid color-mix(in srgb, #7c3aed 42%, var(--border));
+      border-left: 5px solid #8b5cf6;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
     }
     .editor-head h2 { margin: 0; font-size: .95rem; letter-spacing: -.015em; }
     .editor-head p { margin: 4px 0 0; font-size: .78rem; }
+
+    /* Sezioni colorate della sidebar destra */
+    .editor-section,
+    .editor-actions-panel {
+      --editor-accent: var(--primary);
+      position: relative;
+      padding: 12px;
+      border: 1px solid color-mix(in srgb, var(--editor-accent) 38%, var(--border));
+      border-left: 5px solid var(--editor-accent);
+      border-radius: var(--radius-lg);
+      background: color-mix(in srgb, var(--editor-accent) 10%, var(--surface));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+    }
+
+    [data-theme="dark"] .editor-section,
+    [data-theme="dark"] .editor-actions-panel {
+      background: color-mix(in srgb, var(--editor-accent) 16%, var(--surface));
+      border-color: color-mix(in srgb, var(--editor-accent) 48%, var(--border));
+    }
+
+    .editor-section-title { --editor-accent: #3b82f6; }
+    .editor-section-schedule { --editor-accent: #06b6d4; }
+    .editor-section-category { --editor-accent: #10b981; }
+    .editor-section-waiting { --editor-accent: #f59e0b; }
+    .editor-section-planning { --editor-accent: #8b5cf6; }
+    .editor-section-notes { --editor-accent: #14b8a6; }
+    .editor-section-advanced { --editor-accent: #ec4899; }
+    .editor-actions-panel { --editor-accent: #6366f1; }
+
+    .editor-section .field-label,
+    .editor-accordion .field-label {
+      color: color-mix(in srgb, var(--editor-accent) 72%, var(--text));
+    }
+
+    .editor-section .field,
+    .editor-section .select,
+    .editor-section .textarea,
+    .editor-section .color-input,
+    .editor-accordion .field,
+    .editor-accordion .select,
+    .editor-accordion .textarea,
+    .editor-accordion .color-input {
+      background: color-mix(in srgb, var(--surface) 92%, var(--editor-accent) 8%);
+      border-color: color-mix(in srgb, var(--editor-accent) 24%, var(--border));
+    }
+
+    .editor-section-waiting .status-option {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .editor-section-waiting .waiting-extra {
+      margin-top: 11px;
+      background: color-mix(in srgb, #f59e0b 9%, var(--surface));
+      border-color: color-mix(in srgb, #f59e0b 42%, var(--border));
+    }
+
+    .editor-section-planning #repeat-until-row { margin-top: 10px; }
+
+    .editor-accordion {
+      --editor-accent: var(--primary);
+      border: 1px solid color-mix(in srgb, var(--editor-accent) 38%, var(--border));
+      border-left: 5px solid var(--editor-accent);
+      background: color-mix(in srgb, var(--editor-accent) 10%, var(--surface));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+    }
+
+    [data-theme="dark"] .editor-accordion {
+      background: color-mix(in srgb, var(--editor-accent) 16%, var(--surface));
+      border-color: color-mix(in srgb, var(--editor-accent) 48%, var(--border));
+    }
+
+    .editor-accordion summary {
+      color: color-mix(in srgb, var(--editor-accent) 70%, var(--text));
+      background: color-mix(in srgb, var(--editor-accent) 5%, transparent);
+    }
+
+    .editor-accordion[open] summary {
+      border-bottom: 1px solid color-mix(in srgb, var(--editor-accent) 25%, var(--border));
+    }
+
+    .editor-accordion .details-body { padding-top: .85rem; }
+
     .form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .image-preview-wrap { display: grid; gap: 8px; }
     .image-preview {
@@ -1176,6 +1269,347 @@
       }
     }
 
+
+    /* =========================================================
+       10) SIDEBAR SINISTRA — GERARCHIA VISIVA V35
+       Blocchi colorati e stati semantici, coerenti con la UI.
+       ========================================================= */
+    .nav-panel {
+      background:
+        radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 34%),
+        linear-gradient(180deg, color-mix(in srgb, var(--surface) 96%, var(--primary) 4%), var(--surface));
+      border-color: color-mix(in srgb, var(--primary) 14%, var(--border));
+      scrollbar-color: color-mix(in srgb, var(--primary) 35%, var(--border)) transparent;
+    }
+
+    [data-theme="dark"] .nav-panel {
+      background:
+        radial-gradient(circle at 12% 0%, rgba(99, 102, 241, .18), transparent 34%),
+        linear-gradient(180deg, #11182a 0%, #0b1220 100%);
+      border-color: #2b3750;
+    }
+
+    .nav-panel .brand-block {
+      position: relative;
+      overflow: hidden;
+      margin: 0 0 12px;
+      padding: 14px 15px;
+      border: 1px solid color-mix(in srgb, var(--primary) 48%, transparent);
+      border-radius: var(--radius-lg);
+      background:
+        linear-gradient(135deg,
+          color-mix(in srgb, var(--primary-strong) 92%, #0f172a 8%),
+          color-mix(in srgb, var(--primary) 74%, #7c3aed 26%));
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--primary-strong) 22%, transparent);
+    }
+
+    .nav-panel .brand-block::after {
+      content: "";
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      right: -48px;
+      top: -62px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .13);
+      pointer-events: none;
+    }
+
+    .nav-panel .brand {
+      position: relative;
+      z-index: 1;
+      color: #fff;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, .16);
+    }
+
+    .nav-panel .today-label {
+      position: relative;
+      z-index: 1;
+      margin-top: 4px;
+      color: rgba(255, 255, 255, .78);
+      font-weight: 750;
+    }
+
+    .nav-panel .brand-block .drawer-close {
+      z-index: 2;
+      border-color: rgba(255, 255, 255, .3);
+      color: #fff;
+      background: rgba(255, 255, 255, .12);
+    }
+
+    .nav-panel .nav-section {
+      --section-accent: var(--primary);
+      position: relative;
+      isolation: isolate;
+      border-color: color-mix(in srgb, var(--section-accent) 34%, var(--border));
+      background: color-mix(in srgb, var(--section-accent) 7%, var(--surface-soft));
+      box-shadow:
+        inset 4px 0 0 var(--section-accent),
+        0 8px 20px color-mix(in srgb, var(--section-accent) 7%, transparent);
+    }
+
+    [data-theme="dark"] .nav-panel .nav-section {
+      background: color-mix(in srgb, var(--section-accent) 11%, #111827);
+      border-color: color-mix(in srgb, var(--section-accent) 38%, #273449);
+      box-shadow:
+        inset 4px 0 0 var(--section-accent),
+        0 10px 22px rgba(0, 0, 0, .16);
+    }
+
+    .nav-section-calendar { --section-accent: #3b82f6; }
+    .nav-section-views { --section-accent: #8b5cf6; }
+    .nav-section-search { --section-accent: #06b6d4; }
+    .nav-section-legend { --section-accent: #ec4899; }
+    .nav-section-tools { --section-accent: #6366f1; }
+    .nav-section-categories { --section-accent: #10b981; }
+    .nav-section-maintenance { --section-accent: #f59e0b; }
+
+    .nav-panel .nav-section > .section-title,
+    .nav-panel .nav-section > summary {
+      color: color-mix(in srgb, var(--section-accent) 78%, var(--text));
+    }
+
+    .nav-panel details.nav-section > summary {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      padding-left: 17px;
+      background: color-mix(in srgb, var(--section-accent) 9%, transparent);
+      transition: background .16s ease, color .16s ease;
+    }
+
+    .nav-panel details.nav-section > summary:hover,
+    .nav-panel details.nav-section[open] > summary {
+      background: color-mix(in srgb, var(--section-accent) 17%, transparent);
+      color: var(--text);
+    }
+
+    .nav-panel details.nav-section[open] > summary {
+      border-bottom: 1px solid color-mix(in srgb, var(--section-accent) 25%, var(--border));
+    }
+
+    .nav-panel details.nav-section .details-body {
+      padding: .8rem .85rem .9rem 1rem;
+    }
+
+    .nav-section-calendar .calendar-head {
+      color: color-mix(in srgb, #3b82f6 78%, var(--text));
+    }
+
+    .nav-section-calendar .calendar-head .btn {
+      border-color: color-mix(in srgb, #3b82f6 28%, var(--border));
+      background: color-mix(in srgb, #3b82f6 10%, var(--surface));
+      color: color-mix(in srgb, #3b82f6 82%, var(--text));
+    }
+
+    .nav-section-calendar .day-btn {
+      border-color: color-mix(in srgb, #3b82f6 10%, transparent);
+      background: color-mix(in srgb, #3b82f6 4%, transparent);
+    }
+
+    .nav-section-calendar .day-btn:hover {
+      background: color-mix(in srgb, #3b82f6 18%, var(--surface));
+      color: var(--text);
+    }
+
+    /* Le viste hanno colori semantici diversi, ma restano nella stessa palette. */
+    .nav-panel .view-btn {
+      --view-accent: #8b5cf6;
+      position: relative;
+      overflow: hidden;
+      min-height: 48px;
+      padding-left: .9rem;
+      border-color: color-mix(in srgb, var(--view-accent) 24%, var(--border));
+      background: color-mix(in srgb, var(--view-accent) 7%, var(--surface));
+      color: var(--text);
+      box-shadow: inset 3px 0 0 color-mix(in srgb, var(--view-accent) 74%, transparent);
+      transition:
+        transform .15s ease,
+        background .15s ease,
+        border-color .15s ease,
+        box-shadow .15s ease;
+    }
+
+    .nav-panel .view-btn > span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .nav-panel .view-btn[data-view="day"] { --view-accent: #6366f1; }
+    .nav-panel .view-btn[data-view="today"] { --view-accent: #f97316; }
+    .nav-panel .view-btn[data-view="tomorrow"] { --view-accent: #0ea5e9; }
+    .nav-panel .view-btn[data-view="week"] { --view-accent: #8b5cf6; }
+    .nav-panel .view-btn[data-view="overdue"] { --view-accent: #ef4444; }
+    .nav-panel .view-btn[data-view="high"] { --view-accent: #f43f5e; }
+    .nav-panel .view-btn[data-view="waiting"] { --view-accent: #f59e0b; }
+    .nav-panel .view-btn[data-view="recurring"] { --view-accent: #14b8a6; }
+    .nav-panel .view-btn[data-view="completed"] { --view-accent: #10b981; }
+    .nav-panel .view-btn[data-view="no-time"] { --view-accent: #64748b; }
+    .nav-panel .view-btn[data-view="archive"] { --view-accent: #a855f7; }
+    .nav-panel .view-btn[data-view="trash"] { --view-accent: #dc2626; }
+
+    .nav-panel .view-btn:hover {
+      transform: translateX(2px);
+      border-color: color-mix(in srgb, var(--view-accent) 56%, var(--border));
+      background: color-mix(in srgb, var(--view-accent) 15%, var(--surface));
+      color: var(--text);
+      box-shadow:
+        inset 5px 0 0 var(--view-accent),
+        0 8px 18px color-mix(in srgb, var(--view-accent) 11%, transparent);
+    }
+
+    .nav-panel .view-btn.active {
+      transform: translateX(2px);
+      border-color: color-mix(in srgb, var(--view-accent) 76%, var(--border));
+      background:
+        linear-gradient(90deg,
+          color-mix(in srgb, var(--view-accent) 28%, var(--surface)),
+          color-mix(in srgb, var(--view-accent) 12%, var(--surface)));
+      color: var(--text);
+      box-shadow:
+        inset 6px 0 0 var(--view-accent),
+        0 9px 22px color-mix(in srgb, var(--view-accent) 15%, transparent);
+    }
+
+    [data-theme="dark"] .nav-panel .view-btn {
+      background: color-mix(in srgb, var(--view-accent) 10%, #0f172a);
+    }
+
+    [data-theme="dark"] .nav-panel .view-btn:hover {
+      background: color-mix(in srgb, var(--view-accent) 18%, #111827);
+    }
+
+    [data-theme="dark"] .nav-panel .view-btn.active {
+      background:
+        linear-gradient(90deg,
+          color-mix(in srgb, var(--view-accent) 31%, #111827),
+          color-mix(in srgb, var(--view-accent) 15%, #0f172a));
+    }
+
+    .nav-panel .view-count {
+      flex: 0 0 auto;
+      min-width: 30px;
+      border: 1px solid color-mix(in srgb, var(--view-accent) 28%, var(--border));
+      background: color-mix(in srgb, var(--view-accent) 11%, var(--surface-strong));
+      color: color-mix(in srgb, var(--view-accent) 82%, var(--text));
+    }
+
+    .nav-panel .view-btn.active .view-count {
+      border-color: var(--view-accent);
+      background: var(--view-accent);
+      color: #fff;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--view-accent) 16%, transparent);
+    }
+
+    #more-views-details {
+      border-color: color-mix(in srgb, #8b5cf6 22%, var(--border));
+      background: color-mix(in srgb, #8b5cf6 6%, var(--surface));
+    }
+
+    #more-views-details > summary {
+      min-height: 44px;
+      color: color-mix(in srgb, #8b5cf6 76%, var(--text));
+    }
+
+    /* Ricerca: campo e filtri riconoscibili come area operativa. */
+    .nav-section-search .field,
+    .nav-section-search .select {
+      border-color: color-mix(in srgb, #06b6d4 26%, var(--border));
+      background: color-mix(in srgb, #06b6d4 5%, var(--surface));
+    }
+
+    /* Legenda: ogni stato ha il proprio fondo, non solo un piccolo pallino. */
+    .nav-section-legend .legend-item {
+      --legend-accent: var(--primary);
+      border-color: color-mix(in srgb, var(--legend-accent) 30%, var(--border));
+      background: color-mix(in srgb, var(--legend-accent) 9%, var(--surface));
+      box-shadow: inset 4px 0 0 var(--legend-accent);
+    }
+
+    .nav-section-legend .legend-item:nth-child(1) { --legend-accent: var(--danger); }
+    .nav-section-legend .legend-item:nth-child(2) { --legend-accent: var(--warning); }
+    .nav-section-legend .legend-item:nth-child(3) { --legend-accent: var(--success); }
+    .nav-section-legend .legend-item:nth-child(4) { --legend-accent: var(--primary); }
+
+    /* Strumenti: gruppi cromatici per tema, notifiche, export e import. */
+    .nav-section-tools .btn {
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .nav-section-tools #toggle-theme {
+      border-color: color-mix(in srgb, #8b5cf6 36%, var(--border));
+      background: color-mix(in srgb, #8b5cf6 12%, var(--surface));
+      color: color-mix(in srgb, #8b5cf6 82%, var(--text));
+    }
+
+    .nav-section-tools #enable-notifications {
+      border-color: color-mix(in srgb, #0ea5e9 34%, var(--border));
+      background: color-mix(in srgb, #0ea5e9 10%, var(--surface));
+    }
+
+    .nav-section-tools #export-json,
+    .nav-section-tools #export-csv,
+    .nav-section-tools #export-current-csv {
+      border-color: color-mix(in srgb, #10b981 28%, var(--border));
+      background: color-mix(in srgb, #10b981 8%, var(--surface));
+    }
+
+    .nav-section-tools #open-import {
+      border-color: color-mix(in srgb, #f59e0b 30%, var(--border));
+      background: color-mix(in srgb, #f59e0b 9%, var(--surface));
+    }
+
+    /* Categorie: anche le schede generate ereditano il colore della categoria. */
+    #category-manager .mini-card {
+      border-color: color-mix(in srgb, var(--category-accent, var(--primary)) 34%, var(--border));
+      background: color-mix(in srgb, var(--category-accent, var(--primary)) 8%, var(--surface));
+      box-shadow: inset 4px 0 0 var(--category-accent, var(--primary));
+    }
+
+    [data-theme="dark"] #category-manager .mini-card {
+      background: color-mix(in srgb, var(--category-accent, var(--primary)) 12%, #0f172a);
+    }
+
+    .nav-section-categories #add-category {
+      background: #059669;
+      border-color: #059669;
+    }
+
+    .nav-section-maintenance .archive-summary .stat-box:first-child {
+      border-color: color-mix(in srgb, #8b5cf6 32%, var(--border));
+      background: color-mix(in srgb, #8b5cf6 10%, var(--surface));
+    }
+
+    .nav-section-maintenance .archive-summary .stat-box:last-child {
+      border-color: color-mix(in srgb, #ef4444 30%, var(--border));
+      background: color-mix(in srgb, #ef4444 9%, var(--surface));
+    }
+
+    /* Migliore separazione verticale tra i moduli del menu. */
+    .nav-panel > .nav-section + .nav-section,
+    .nav-panel > .nav-section + details.nav-section,
+    .nav-panel > details.nav-section + .nav-section,
+    .nav-panel > details.nav-section + details.nav-section {
+      margin-top: 14px !important;
+    }
+
+    @media (max-width: 820px) {
+      .nav-panel {
+        padding: 12px;
+      }
+
+      .nav-panel .brand-block {
+        padding-right: 58px;
+      }
+
+      .nav-panel .view-btn {
+        min-height: 52px;
+      }
+    }
+
   </style>
 </head>
 
@@ -1254,7 +1688,7 @@
         <button class="btn btn-ghost btn-icon mobile-only drawer-close" type="button" id="close-nav-mobile" aria-label="Chiudi menu">×</button>
       </div>
 
-      <section class="calendar-card stack" aria-label="Calendario">
+      <section class="calendar-card stack nav-section nav-section-calendar" aria-label="Calendario">
         <div class="calendar-head">
           <button class="btn btn-icon" type="button" id="prev-month" aria-label="Mese precedente">‹</button>
           <span id="month-label"></span>
@@ -1263,7 +1697,7 @@
         <div class="calendar-grid" id="calendar-grid"></div>
       </section>
 
-      <section class="filter-card stack" aria-label="Viste rapide" style="margin-top: 12px;">
+      <section class="filter-card stack nav-section nav-section-views" aria-label="Viste rapide" style="margin-top: 12px;">
         <p class="section-title">Viste rapide</p>
         <div id="view-buttons" class="stack">
           <button class="view-btn active" type="button" data-view="day"><span>📅 Giorno selezionato</span><span class="view-count" id="count-day">0</span></button>
@@ -1290,7 +1724,7 @@
         </div>
       </section>
 
-      <details class="clean-details" id="search-details" style="margin-top: 12px;">
+      <details class="clean-details nav-section nav-section-search" id="search-details" style="margin-top: 12px;">
         <summary>🔎 Ricerca e filtri</summary>
         <div class="details-body stack">
           <div>
@@ -1323,7 +1757,7 @@
         </div>
       </details>
 
-      <details class="clean-details" style="margin-top: 12px;">
+      <details class="clean-details nav-section nav-section-legend" style="margin-top: 12px;">
         <summary>🎨 Legenda</summary>
         <div class="details-body">
           <div class="legend-list" aria-label="Legenda stati">
@@ -1335,7 +1769,7 @@
         </div>
       </details>
 
-      <details class="clean-details" id="tools-details" style="margin-top: 12px;">
+      <details class="clean-details nav-section nav-section-tools" id="tools-details" style="margin-top: 12px;">
         <summary>🧰 Strumenti</summary>
         <div class="details-body stack">
         <button class="btn btn-soft btn-block" type="button" id="toggle-theme">🌓 Cambia tema</button>
@@ -1348,7 +1782,7 @@
         </div>
       </details>
 
-      <details class="clean-details" style="margin-top: 12px;">
+      <details class="clean-details nav-section nav-section-categories" style="margin-top: 12px;">
         <summary>🏷️ Categorie</summary>
         <div class="details-body stack">
           <div class="field-grid-2">
@@ -1359,7 +1793,7 @@
         </div>
       </details>
 
-      <details class="clean-details" style="margin-top: 12px;">
+      <details class="clean-details nav-section nav-section-maintenance" style="margin-top: 12px;">
         <summary>🧹 Manutenzione dati</summary>
         <div class="details-body stack">
           <div class="archive-summary">
@@ -1456,97 +1890,105 @@
         <input type="hidden" id="task-occurrence-date" />
         <input type="hidden" id="task-image-id" />
 
-        <div>
+        <div class="editor-section editor-section-title">
           <label class="field-label" for="task-text">Titolo del task</label>
           <input class="field" id="task-text" maxlength="180" placeholder="Cosa devi fare?" required />
         </div>
 
-        <div class="field-grid-3">
-          <div>
-            <label class="field-label" for="task-date">Data</label>
-            <input class="field" id="task-date" type="date" required />
-          </div>
-          <div>
-            <label class="field-label" for="task-time">Ora</label>
-            <input class="field" id="task-time" type="time" />
-          </div>
-          <div>
-            <label class="field-label" for="task-duration">Durata</label>
-            <select class="select" id="task-duration">
-              <option value="0">Non indicata</option>
-              <option value="15">15 min</option>
-              <option value="30">30 min</option>
-              <option value="45">45 min</option>
-              <option value="60">1 ora</option>
-              <option value="90">1h 30</option>
-              <option value="120">2 ore</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="field-grid-category">
-          <div>
-            <label class="field-label" for="task-category">Categoria</label>
-            <select class="select" id="task-category"></select>
-          </div>
-          <div>
-            <label class="field-label" for="task-subcategory">Sottocategoria</label>
-            <select class="select" id="task-subcategory"></select>
+        <div class="editor-section editor-section-schedule">
+          <div class="field-grid-3">
+            <div>
+              <label class="field-label" for="task-date">Data</label>
+              <input class="field" id="task-date" type="date" required />
+            </div>
+            <div>
+              <label class="field-label" for="task-time">Ora</label>
+              <input class="field" id="task-time" type="time" />
+            </div>
+            <div>
+              <label class="field-label" for="task-duration">Durata</label>
+              <select class="select" id="task-duration">
+                <option value="0">Non indicata</option>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">1 ora</option>
+                <option value="90">1h 30</option>
+                <option value="120">2 ore</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <label class="status-option" for="task-waiting">
-          <input id="task-waiting" type="checkbox" />
-          <span><strong>Metti in attesa</strong><span class="tiny muted">Il task resta nella sua categoria, ma compare anche nella vista “In attesa”.</span></span>
-        </label>
-        <div class="waiting-extra" id="waiting-extra" hidden>
-          <div>
-            <label class="field-label" for="task-waiting-reason">Motivo attesa</label>
-            <input class="field" id="task-waiting-reason" placeholder="Esempio: aspetto risposta cliente" />
-          </div>
-          <div>
-            <label class="field-label" for="task-followup-date">Data follow-up</label>
-            <input class="field" id="task-followup-date" type="date" />
+        <div class="editor-section editor-section-category">
+          <div class="field-grid-category">
+            <div>
+              <label class="field-label" for="task-category">Categoria</label>
+              <select class="select" id="task-category"></select>
+            </div>
+            <div>
+              <label class="field-label" for="task-subcategory">Sottocategoria</label>
+              <select class="select" id="task-subcategory"></select>
+            </div>
           </div>
         </div>
 
-        <div class="field-grid-3">
-          <div>
-            <label class="field-label" for="task-priority">Priorità</label>
-            <select class="select" id="task-priority">
-              <option value="low">Bassa</option>
-              <option value="med">Media</option>
-              <option value="high">Alta</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="task-repeat">Ricorrenza</label>
-            <select class="select" id="task-repeat">
-              <option value="none">Nessuna</option>
-              <option value="daily">Giornaliera</option>
-              <option value="weekly">Settimanale</option>
-              <option value="monthly">Mensile</option>
-              <option value="yearly">Annuale</option>
-            </select>
-          </div>
-          <div>
-            <label class="field-label" for="task-reminder">Promemoria</label>
-            <select class="select" id="task-reminder">
-              <option value="0">All'orario</option>
-              <option value="5">5 min prima</option>
-              <option value="10">10 min prima</option>
-              <option value="30">30 min prima</option>
-              <option value="60">1 ora prima</option>
-            </select>
+        <div class="editor-section editor-section-waiting">
+          <label class="status-option" for="task-waiting">
+            <input id="task-waiting" type="checkbox" />
+            <span><strong>Metti in attesa</strong><span class="tiny muted">Il task resta nella sua categoria, ma compare anche nella vista “In attesa”.</span></span>
+          </label>
+          <div class="waiting-extra" id="waiting-extra" hidden>
+            <div>
+              <label class="field-label" for="task-waiting-reason">Motivo attesa</label>
+              <input class="field" id="task-waiting-reason" placeholder="Esempio: aspetto risposta cliente" />
+            </div>
+            <div>
+              <label class="field-label" for="task-followup-date">Data follow-up</label>
+              <input class="field" id="task-followup-date" type="date" />
+            </div>
           </div>
         </div>
 
-        <div id="repeat-until-row" hidden>
-          <label class="field-label" for="task-repeat-until">Termina ricorrenza il</label>
-          <input class="field" id="task-repeat-until" type="date" />
+        <div class="editor-section editor-section-planning">
+          <div class="field-grid-3">
+            <div>
+              <label class="field-label" for="task-priority">Priorità</label>
+              <select class="select" id="task-priority">
+                <option value="low">Bassa</option>
+                <option value="med">Media</option>
+                <option value="high">Alta</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="task-repeat">Ricorrenza</label>
+              <select class="select" id="task-repeat">
+                <option value="none">Nessuna</option>
+                <option value="daily">Giornaliera</option>
+                <option value="weekly">Settimanale</option>
+                <option value="monthly">Mensile</option>
+                <option value="yearly">Annuale</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="task-reminder">Promemoria</label>
+              <select class="select" id="task-reminder">
+                <option value="0">All'orario</option>
+                <option value="5">5 min prima</option>
+                <option value="10">10 min prima</option>
+                <option value="30">30 min prima</option>
+                <option value="60">1 ora prima</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="repeat-until-row" hidden>
+            <label class="field-label" for="task-repeat-until">Termina ricorrenza il</label>
+            <input class="field" id="task-repeat-until" type="date" />
+          </div>
         </div>
 
-        <details class="clean-details">
+        <details class="clean-details editor-accordion editor-section-notes">
           <summary>Dettagli, note e link</summary>
           <div class="details-body stack">
             <div>
@@ -1555,7 +1997,9 @@
             </div>
             <div>
               <label class="field-label" for="task-subtasks">Sottotask, uno per riga</label>
-              <textarea class="textarea" id="task-subtasks" placeholder="Esempio:\nPreparare contenuti\nControllare immagini"></textarea>
+              <textarea class="textarea" id="task-subtasks" placeholder="Esempio:
+Preparare contenuti
+Controllare immagini"></textarea>
             </div>
             <div>
               <label class="field-label" for="task-notes">Note</label>
@@ -1564,7 +2008,7 @@
           </div>
         </details>
 
-        <details class="clean-details">
+        <details class="clean-details editor-accordion editor-section-advanced">
           <summary>Avanzate: aspetto e allegato</summary>
           <div class="details-body stack">
             <div>
@@ -1582,7 +2026,7 @@
           </div>
         </details>
 
-        <div class="form-actions">
+        <div class="editor-actions-panel form-actions">
           <button class="btn btn-primary" type="submit" id="save-task">Salva task</button>
           <button class="btn btn-ghost" type="button" id="cancel-edit">Annulla</button>
         </div>
@@ -1605,7 +2049,7 @@
     /* =========================================================
        1) CONFIGURAZIONE E STATO
        ========================================================= */
-    const APP_VERSION = 34;
+    const APP_VERSION = 36;
     const DB_NAME = "calendario_task_pro_db";
     const DB_VERSION = 1;
     const STORE_STATE = "state";
@@ -2642,7 +3086,7 @@
       $("category-manager").innerHTML = categories.map((category) => {
         const subs = state.categories[category].subs.slice().sort((a, b) => a.localeCompare(b, "it"));
         return `
-        <div class="mini-card" data-category-row="${escapeHtml(category)}">
+        <div class="mini-card" data-category-row="${escapeHtml(category)}" style="--category-accent:${escapeHtml(state.categories[category].color)};">
           <div class="row">
             <input class="color-input" style="width: 52px; min-height: 44px;" type="color" data-category-color="${escapeHtml(category)}" value="${escapeHtml(state.categories[category].color)}" aria-label="Colore categoria ${escapeHtml(category)}">
             <span class="category-pill category-manager-pill" style="${categoryPillStyle(category)}">${escapeHtml(category)}</span>
