@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#4f46e5" />
   <meta name="description" content="Calendario task locale con viste rapide, ricorrenze, sottotask, archivio, backup e ricerca." />
-  <title>Calendario Task Pro 36</title>
+  <title>Calendario Task Pro 37</title>
 
   <style>
     /* =========================================================
@@ -3321,9 +3321,17 @@ Controllare immagini"></textarea>
        7) FORM E CRUD TASK
        ========================================================= */
     function toggleRepeatUntil() {
+      const repeatSelect = $("task-repeat");
+      const untilInput = $("task-repeat-until");
       const row = $("repeat-until-row");
-      if (row) row.hidden = $("task-repeat").value === "none";
-      if ($("task-repeat-until")) $("task-repeat-until").min = $("task-date")?.value || today();
+      const hasRecurrence = repeatSelect?.value !== "none";
+
+      if (row) row.hidden = !hasRecurrence;
+      if (untilInput) {
+        untilInput.disabled = !hasRecurrence;
+        untilInput.min = $("task-date")?.value || today();
+        if (!hasRecurrence) untilInput.value = "";
+      }
     }
 
     function openMobileDrawer(type) {
@@ -3361,6 +3369,8 @@ Controllare immagini"></textarea>
       const cat = $("task-category").value;
       const sub = $("task-subcategory").value;
       const waiting = $("task-waiting").checked;
+      const repeatValue = $("task-repeat").value;
+      const repeat = ["none", "daily", "weekly", "monthly", "yearly"].includes(repeatValue) ? repeatValue : "none";
       return {
         text,
         cat,
@@ -3369,8 +3379,8 @@ Controllare immagini"></textarea>
         date: cleanDate($("task-date").value, state.selectedDate),
         time: validTime($("task-time").value) ? $("task-time").value : "",
         priority: $("task-priority").value,
-        repeat: $("task-repeat").value,
-        untilDate: $("task-repeat").value !== "none" && validDate($("task-repeat-until").value) ? $("task-repeat-until").value : "",
+        repeat,
+        untilDate: repeat !== "none" && validDate($("task-repeat-until").value) ? $("task-repeat-until").value : "",
         reminderMinutes: Number($("task-reminder").value) || 0,
         durationMinutes: Number($("task-duration")?.value) || 0,
         waitingReason: waiting ? cleanText($("task-waiting-reason")?.value) : "",
@@ -3449,6 +3459,16 @@ Controllare immagini"></textarea>
 
       if (isRecurring(task) && occurrence) {
         pendingRecurringEdit = { taskId: id, occurrence, data, originalSeriesDate: task.date };
+
+        // Se l'utente ha scelto "Nessuna", salva direttamente questa occorrenza
+        // come task singolo: non serve chiedere l'ambito della ricorrenza.
+        if (data.repeat === "none") {
+          await applyRecurringEdit("single");
+          return;
+        }
+
+        const singleScope = document.querySelector('input[name="recurring-scope"][value="single"]');
+        if (singleScope) singleScope.checked = true;
         openModal("modal-recurring");
         return;
       }
@@ -3470,7 +3490,11 @@ Controllare immagini"></textarea>
       const task = state.entries.find((entry) => entry.id === taskId);
       if (!task) return;
 
-      await mutate("Ricorrenza aggiornata", async () => {
+      const mutationMessage = scope === "single" && data.repeat === "none"
+        ? "Task salvato senza ricorrenza"
+        : "Ricorrenza aggiornata";
+
+      await mutate(mutationMessage, async () => {
         const imageId = await resolveImageId(task.imageId);
         const updatedData = {
           ...data,
@@ -3510,29 +3534,44 @@ Controllare immagini"></textarea>
           const futureExcluded = task.excludedDates.filter((date) => date >= occurrence);
           const futureSubtaskDone = Object.fromEntries(Object.entries(task.subtaskDone).filter(([date]) => date >= occurrence));
           const futureSnoozed = Object.fromEntries(Object.entries(safeObject(task.snoozed)).filter(([date]) => date >= occurrence));
+          const nextSeriesDate = data.date || occurrence;
 
-          task.untilDate = addDays(occurrence, -1);
-          task.completedDates = task.completedDates.filter((date) => date < occurrence);
-          task.excludedDates = task.excludedDates.filter((date) => date < occurrence);
-          task.subtaskDone = Object.fromEntries(Object.entries(task.subtaskDone).filter(([date]) => date < occurrence));
-          task.snoozed = Object.fromEntries(Object.entries(safeObject(task.snoozed)).filter(([date]) => date < occurrence));
+          // Dividere una serie dalla sua prima occorrenza equivale a modificare
+          // l'intera serie. Evita una serie "vuota" con fine precedente all'inizio,
+          // che alla successiva normalizzazione potrebbe riapparire duplicata.
+          if (occurrence <= task.date) {
+            Object.assign(task, updatedData, {
+              date: nextSeriesDate,
+              untilDate: data.untilDate || "",
+              completedDates: futureCompleted.filter((date) => date >= nextSeriesDate),
+              excludedDates: futureExcluded.filter((date) => date >= nextSeriesDate),
+              subtaskDone: Object.fromEntries(Object.entries(futureSubtaskDone).filter(([date]) => date >= nextSeriesDate)),
+              snoozed: Object.fromEntries(Object.entries(futureSnoozed).filter(([date]) => date >= nextSeriesDate))
+            });
+          } else {
+            task.untilDate = addDays(occurrence, -1);
+            task.completedDates = task.completedDates.filter((date) => date < occurrence);
+            task.excludedDates = task.excludedDates.filter((date) => date < occurrence);
+            task.subtaskDone = Object.fromEntries(Object.entries(task.subtaskDone).filter(([date]) => date < occurrence));
+            task.snoozed = Object.fromEntries(Object.entries(safeObject(task.snoozed)).filter(([date]) => date < occurrence));
 
-          state.entries.push({
-            ...clone(task),
-            ...updatedData,
-            id: uid(),
-            date: data.date || occurrence,
-            untilDate: data.untilDate || "",
-            completedDates: futureCompleted,
-            excludedDates: futureExcluded,
-            subtaskDone: futureSubtaskDone,
-            snoozed: futureSnoozed,
-            originSeriesId: task.id,
-            originalDate: occurrence,
-            createdAt: today(),
-            updatedAt: today(),
-            order: Date.now()
-          });
+            state.entries.push({
+              ...clone(task),
+              ...updatedData,
+              id: uid(),
+              date: nextSeriesDate,
+              untilDate: data.untilDate || "",
+              completedDates: futureCompleted,
+              excludedDates: futureExcluded,
+              subtaskDone: futureSubtaskDone,
+              snoozed: futureSnoozed,
+              originSeriesId: task.id,
+              originalDate: occurrence,
+              createdAt: today(),
+              updatedAt: today(),
+              order: Date.now()
+            });
+          }
         }
       });
 
@@ -4123,6 +4162,13 @@ Controllare immagini"></textarea>
       const modal = $(id);
       modal.classList.remove("open");
       modal.setAttribute("aria-hidden", "true");
+
+      // Annullando una modale, elimina anche l'azione sospesa collegata.
+      if (id === "modal-recurring") pendingRecurringEdit = null;
+      if (id === "modal-delete") pendingDelete = null;
+      if (id === "modal-import") pendingImport = null;
+      if (id === "modal-confirm") pendingGenericConfirm = null;
+
       if (!document.querySelector(".modal-backdrop.open")) {
         document.querySelector(".app-shell")?.removeAttribute("inert");
         document.querySelector(".mobile-quick-nav")?.removeAttribute("inert");
