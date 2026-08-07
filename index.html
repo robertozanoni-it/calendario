@@ -4364,11 +4364,15 @@ Controllare immagini"></textarea>
       if (!issue || !task) return nextWizardIssue();
       state.wizard.status = "fix";
       state.wizard.manualTaskId = task.id;
+      // Porta l'utente nel contesto del task: non deve cercarlo manualmente
+      // fra date o sezioni diverse prima di poter decidere cosa fare.
+      selectDate(task.date);
+      state.areaFilter = taskArea(task);
       await persistState();
-      renderGuidanceCard();
       closeModal("modal-wizard");
+      await renderAll();
       await editTask(task.id, task.date);
-      showToast("Aggiorna il task e salvalo: torneremo qui per verificarlo.");
+      showToast(`Stai rivedendo “${task.text}”. Salva il task e torneremo qui per verificarlo.`);
     }
 
     async function resumeWizardAfterManualSave(taskId) {
@@ -4726,8 +4730,13 @@ Controllare immagini"></textarea>
         $("image-preview-wrap").hidden = true;
       }
 
-      $("editor-title").textContent = isRecurring(task) ? `Modifica occorrenza del ${humanDate(date)}` : "Modifica task";
-      $("editor-help").textContent = isRecurring(task) ? "Questo task è ricorrente: al salvataggio potrai scegliere il tipo di modifica." : "Modifica i campi e salva.";
+      const openedFromWizard = state.wizard.manualTaskId === task.id;
+      $("editor-title").textContent = openedFromWizard
+        ? `Task da decidere: ${task.text}`
+        : isRecurring(task) ? `Modifica occorrenza del ${humanDate(date)}` : "Modifica task";
+      $("editor-help").textContent = openedFromWizard
+        ? "Hai aperto il task rilevato dal controllo. Modifica ciò che serve e salva: verificheremo subito il risultato."
+        : isRecurring(task) ? "Questo task è ricorrente: al salvataggio potrai scegliere il tipo di modifica." : "Modifica i campi e salva.";
       $("save-task").textContent = "Aggiorna";
       $("cancel-edit").textContent = "Annulla";
       openMobileDrawer("editor");
