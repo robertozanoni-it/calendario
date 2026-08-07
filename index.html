@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#4f46e5" />
-  <meta name="description" content="Calendario task locale con viste rapide, ricorrenze, sottotask, archivio, backup e ricerca." />
-  <title>Calendario Task Pro 37</title>
+  <meta name="description" content="Calendario task locale con aree Lavoro e Personale, controllo guidato, ricorrenze, sottotask, archivio, backup e ricerca." />
+  <title>Calendario Task Pro 38</title>
 
   <style>
     /* =========================================================
@@ -1610,6 +1610,385 @@
       }
     }
 
+    /* =========================================================
+       11) V38 — AREE PRINCIPALI E WIZARD GUIDATO
+       Due aree chiare, senza eliminare categorie e sottocategorie.
+       ========================================================= */
+    .nav-section-areas { --section-accent: #2563eb; }
+
+    .area-switcher {
+      padding: 14px;
+    }
+
+    .area-filter-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .area-filter-btn {
+      --area-accent: #2563eb;
+      min-height: 76px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--area-accent) 30%, var(--border));
+      border-radius: var(--radius-md);
+      background: color-mix(in srgb, var(--area-accent) 7%, var(--surface));
+      color: var(--text);
+      text-align: left;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+    }
+
+    .area-filter-btn[data-area-filter="work"] { --area-accent: #2563eb; }
+    .area-filter-btn[data-area-filter="personal"] { --area-accent: #f97316; }
+
+    .area-filter-btn:hover {
+      transform: translateY(-1px);
+      border-color: color-mix(in srgb, var(--area-accent) 62%, var(--border));
+      background: color-mix(in srgb, var(--area-accent) 13%, var(--surface));
+      box-shadow: 0 8px 18px color-mix(in srgb, var(--area-accent) 13%, transparent);
+    }
+
+    .area-filter-btn.is-active {
+      border-color: var(--area-accent);
+      background: color-mix(in srgb, var(--area-accent) 18%, var(--surface));
+      box-shadow: inset 4px 0 0 var(--area-accent), 0 8px 18px color-mix(in srgb, var(--area-accent) 14%, transparent);
+    }
+
+    .area-filter-btn .area-icon {
+      width: 32px;
+      height: 32px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--area-accent) 17%, var(--surface));
+      color: var(--area-accent);
+      font-size: 1rem;
+    }
+
+    .area-filter-btn .area-name {
+      min-width: 0;
+      font-size: .9rem;
+      font-weight: 900;
+      letter-spacing: -.015em;
+    }
+
+    .area-filter-btn .area-count {
+      min-width: 24px;
+      padding: 3px 6px;
+      border-radius: 999px;
+      background: var(--area-accent);
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .area-show-all {
+      width: 100%;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .field-hint {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: .72rem;
+      line-height: 1.35;
+    }
+
+    .field-grid-category.field-grid-category--areas {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .area-pill {
+      --area-accent: #2563eb;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 7px;
+      border: 1px solid color-mix(in srgb, var(--area-accent) 28%, var(--border));
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--area-accent) 10%, var(--surface));
+      color: color-mix(in srgb, var(--area-accent) 82%, var(--text));
+      font-size: .72rem;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .area-pill.is-personal { --area-accent: #f97316; }
+
+    .section-row.area-group-row {
+      margin-top: 8px;
+      border-color: color-mix(in srgb, var(--area-accent, var(--primary)) 28%, var(--border));
+      background: color-mix(in srgb, var(--area-accent, var(--primary)) 8%, var(--surface));
+      color: color-mix(in srgb, var(--area-accent, var(--primary)) 82%, var(--text));
+    }
+
+    .guided-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 18px;
+      border: 1px solid color-mix(in srgb, var(--primary) 26%, var(--border));
+      border-radius: var(--radius-xl);
+      background: linear-gradient(90deg, color-mix(in srgb, var(--primary) 8%, var(--surface)), var(--surface) 62%);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .guided-card h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.2;
+      letter-spacing: -.025em;
+    }
+
+    .guided-card p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .guided-card .guidance-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .guided-card .guidance-mode {
+      display: block;
+      margin-top: 8px;
+      color: color-mix(in srgb, var(--primary) 84%, var(--text));
+      font-size: .75rem;
+      font-weight: 850;
+    }
+
+    .wizard-modal {
+      width: min(700px, calc(100vw - 24px));
+      max-height: min(780px, calc(100dvh - 24px));
+      overflow: auto;
+      padding: 0;
+    }
+
+    .wizard-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 20px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .wizard-head h3 {
+      margin: 0;
+      font-size: 1.22rem;
+      letter-spacing: -.035em;
+    }
+
+    .wizard-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .wizard-progress {
+      padding: 14px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--primary) 4%, var(--surface));
+    }
+
+    .wizard-step-label {
+      margin: 0 0 10px;
+      color: var(--primary);
+      font-size: .79rem;
+      font-weight: 900;
+    }
+
+    .wizard-step-list {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 5px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .wizard-step {
+      display: grid;
+      justify-items: center;
+      gap: 5px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: .66rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .wizard-step-number {
+      width: 25px;
+      height: 25px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: .7rem;
+    }
+
+    .wizard-step.is-complete,
+    .wizard-step.is-active { color: var(--primary); }
+
+    .wizard-step.is-complete .wizard-step-number {
+      border-color: var(--success);
+      background: var(--success);
+      color: #fff;
+    }
+
+    .wizard-step.is-active .wizard-step-number {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 15%, transparent);
+    }
+
+    .wizard-content {
+      padding: 22px 20px 20px;
+    }
+
+    .wizard-content h4 {
+      margin: 0;
+      font-size: 1.12rem;
+      letter-spacing: -.025em;
+    }
+
+    .wizard-content p { margin: 9px 0 0; }
+
+    .wizard-panel {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface-soft);
+    }
+
+    .wizard-panel strong { display: block; }
+    .wizard-panel p { margin: 5px 0 0; color: var(--muted); font-size: .86rem; }
+
+    .wizard-summary {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .wizard-summary-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+      font-size: .87rem;
+    }
+
+    .wizard-summary-item .wizard-summary-icon {
+      width: 21px;
+      height: 21px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: .76rem;
+      font-weight: 950;
+    }
+
+    .wizard-summary-item.is-issue .wizard-summary-icon { background: #fff7ed; color: var(--warning); }
+    .wizard-summary-item.is-success .wizard-summary-icon { background: #ecfdf5; color: var(--success); }
+
+    .wizard-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .wizard-actions .btn-primary { min-width: 180px; }
+
+    .wizard-details {
+      margin-top: 14px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .wizard-details summary { cursor: pointer; color: var(--muted); font-weight: 800; }
+    .wizard-details ul { margin: 8px 0 0; padding-left: 18px; }
+    .wizard-details li + li { margin-top: 4px; }
+
+    .wizard-loading-list {
+      display: grid;
+      gap: 9px;
+      margin-top: 18px;
+    }
+
+    .wizard-loading-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .wizard-loading-symbol {
+      width: 20px;
+      color: var(--muted);
+      font-weight: 950;
+      text-align: center;
+    }
+
+    .wizard-loading-item.is-done { color: var(--success); }
+    .wizard-loading-item.is-active { color: var(--primary); font-weight: 800; }
+
+    .wizard-confirmation {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+      border-radius: var(--radius-lg);
+      background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+    }
+
+    .wizard-confirmation p { margin: 5px 0 0; color: var(--muted); font-size: .85rem; }
+
+    .wizard-success {
+      border-color: color-mix(in srgb, var(--success) 36%, var(--border));
+      background: color-mix(in srgb, var(--success) 8%, var(--surface));
+    }
+
+    .wizard-warning {
+      border-color: color-mix(in srgb, var(--warning) 38%, var(--border));
+      background: color-mix(in srgb, var(--warning) 8%, var(--surface));
+    }
+
+    @media (max-width: 820px) {
+      .field-grid-category.field-grid-category--areas { grid-template-columns: 1fr; }
+      .guided-card { grid-template-columns: 1fr; gap: 14px; }
+      .guided-card .guidance-actions { justify-content: stretch; }
+      .guided-card .guidance-actions .btn { flex: 1 1 100%; }
+      .wizard-modal { width: calc(100vw - 20px); }
+      .wizard-head, .wizard-progress, .wizard-content { padding-left: 15px; padding-right: 15px; }
+      .wizard-step { font-size: .58rem; }
+      .wizard-actions .btn { width: 100%; }
+    }
+
   </style>
 </head>
 
@@ -1677,6 +2056,30 @@
     </div>
   </div>
 
+  <!-- Wizard guidato: conserva lo stato e propone una sola azione principale alla volta. -->
+  <div id="modal-wizard" class="modal-backdrop" aria-hidden="true">
+    <section class="modal wizard-modal" role="dialog" aria-modal="true" aria-labelledby="wizard-title" aria-describedby="wizard-subtitle">
+      <div class="wizard-head">
+        <div>
+          <h3 id="wizard-title">Controllo guidato intelligente</h3>
+          <p id="wizard-subtitle">Ti accompagniamo passo dopo passo, senza modifiche non spiegate.</p>
+        </div>
+        <button class="btn btn-ghost btn-icon" type="button" id="close-wizard" aria-label="Interrompi il controllo guidato e riprendi più tardi">×</button>
+      </div>
+      <div class="wizard-progress" aria-label="Avanzamento del controllo guidato">
+        <p class="wizard-step-label" id="wizard-step-label">Passaggio 1 di 5</p>
+        <ol class="wizard-step-list" id="wizard-steps">
+          <li class="wizard-step" data-wizard-step="1"><span class="wizard-step-number">1</span><span>Analisi</span></li>
+          <li class="wizard-step" data-wizard-step="2"><span class="wizard-step-number">2</span><span>Problemi</span></li>
+          <li class="wizard-step" data-wizard-step="3"><span class="wizard-step-number">3</span><span>Correzioni</span></li>
+          <li class="wizard-step" data-wizard-step="4"><span class="wizard-step-number">4</span><span>Verifica</span></li>
+          <li class="wizard-step" data-wizard-step="5"><span class="wizard-step-number">5</span><span>Completato</span></li>
+        </ol>
+      </div>
+      <div class="wizard-content" id="wizard-content" aria-live="polite"></div>
+    </section>
+  </div>
+
   <button id="mobile-drawer-backdrop" class="mobile-drawer-backdrop" type="button" aria-label="Chiudi pannello" aria-hidden="true"></button>
 
   <div class="app-shell">
@@ -1687,6 +2090,19 @@
         <div class="today-label" id="today-label"></div>
         <button class="btn btn-ghost btn-icon mobile-only drawer-close" type="button" id="close-nav-mobile" aria-label="Chiudi menu">×</button>
       </div>
+
+      <section class="area-switcher nav-section nav-section-areas" aria-label="Aree principali">
+        <p class="section-title">Aree principali</p>
+        <div class="area-filter-grid" id="area-filter-buttons">
+          <button class="area-filter-btn" type="button" data-area-filter="work" aria-pressed="false">
+            <span class="area-icon" aria-hidden="true">💼</span><span class="area-name">Lavoro</span><span class="area-count" id="count-work-area">0</span>
+          </button>
+          <button class="area-filter-btn" type="button" data-area-filter="personal" aria-pressed="false">
+            <span class="area-icon" aria-hidden="true">⌂</span><span class="area-name">Personale</span><span class="area-count" id="count-personal-area">0</span>
+          </button>
+        </div>
+        <button class="btn btn-ghost area-show-all" type="button" data-area-filter="all">Mostra tutti i task</button>
+      </section>
 
       <section class="calendar-card stack nav-section nav-section-calendar" aria-label="Calendario">
         <div class="calendar-head">
@@ -1730,6 +2146,14 @@
           <div>
             <label class="sr-only" for="search-input">Cerca task</label>
             <input class="field" id="search-input" type="search" placeholder="Cerca titolo, note, link…" />
+          </div>
+          <div>
+            <label class="field-label" for="area-filter">Area principale</label>
+            <select class="select" id="area-filter">
+              <option value="all">Lavoro e personale</option>
+              <option value="work">Lavoro</option>
+              <option value="personal">Personale</option>
+            </select>
           </div>
           <div>
             <label class="field-label" for="category-filter">Categoria</label>
@@ -1828,13 +2252,25 @@
         </div>
       </header>
 
+      <section class="guided-card" id="guidance-card" aria-labelledby="guidance-title">
+        <div>
+          <h2 id="guidance-title">Organizza i task con un controllo guidato</h2>
+          <p id="guidance-text">Ti guideremo passo dopo passo. Non sono necessarie conoscenze tecniche.</p>
+          <span class="guidance-mode" id="guidance-mode">Modalità guidata consigliata</span>
+        </div>
+        <div class="guidance-actions">
+          <button class="btn btn-primary" type="button" id="guidance-primary">Avvia controllo guidato</button>
+          <button class="btn btn-ghost" type="button" id="guidance-secondary">Modalità avanzata</button>
+        </div>
+      </section>
+
       <section class="quick-add" aria-label="Aggiunta rapida">
         <div class="quick-add-grid">
           <label class="sr-only" for="quick-add-input">Aggiunta rapida</label>
           <input class="field" id="quick-add-input" placeholder="Esempio: Chiamare Marco domani @15:30 #Clienti !alta ogni settimana" />
           <button class="btn btn-primary" type="button" id="quick-add-button">Aggiungi</button>
         </div>
-        <p class="quick-help">Comandi: <strong>#categoria</strong>, <strong>!alta</strong>, <strong>@15:30</strong>, “domani”, “in attesa”, “ogni giorno/settimana/mese/anno”.</p>
+        <p class="quick-help">Comandi: <strong>#categoria</strong>, <strong>!alta</strong>, <strong>@15:30</strong>, “domani”, “in attesa”, “ogni giorno/settimana/mese/anno”. Se stai visualizzando Lavoro o Personale, il task rapido verrà assegnato a quell’area.</p>
         <details class="clean-details" style="margin-top: 10px;">
           <summary>Mostra esempi</summary>
           <div class="details-body small muted">
@@ -1921,7 +2357,15 @@
         </div>
 
         <div class="editor-section editor-section-category">
-          <div class="field-grid-category">
+          <div class="field-grid-category field-grid-category--areas">
+            <div>
+              <label class="field-label" for="task-area">Sezione principale</label>
+              <select class="select" id="task-area">
+                <option value="work">💼 Lavoro</option>
+                <option value="personal">⌂ Personale</option>
+              </select>
+              <p class="field-hint">Dove vuoi ritrovare questo task.</p>
+            </div>
             <div>
               <label class="field-label" for="task-category">Categoria</label>
               <select class="select" id="task-category"></select>
@@ -2049,7 +2493,7 @@ Controllare immagini"></textarea>
     /* =========================================================
        1) CONFIGURAZIONE E STATO
        ========================================================= */
-    const APP_VERSION = 36;
+    const APP_VERSION = 38;
     const DB_NAME = "calendario_task_pro_db";
     const DB_VERSION = 1;
     const STORE_STATE = "state";
@@ -2072,6 +2516,24 @@ Controllare immagini"></textarea>
     const WAITING_CATEGORY = "Attesa"; // usata solo per migrare vecchi dati: non viene più mostrata come categoria eliminabile
     const WAITING_LABEL = "In attesa";
     const DEFAULT_TASK_CATEGORY = "Lavoro";
+    const TASK_AREAS = {
+      work: { label: "Lavoro", icon: "💼", color: "#2563eb" },
+      personal: { label: "Personale", icon: "⌂", color: "#f97316" }
+    };
+    const AREA_VALUES = Object.keys(TASK_AREAS);
+    const WORK_CATEGORY_PATTERN = /\b(lavoro|client|cliente|progetto|seo|copy|social|fattur|preventiv|sito|web|app|marketing|riunion|amministrazion|fornitor|azienda|business)\b/iu;
+    const DEFAULT_WIZARD_STATE = {
+      mode: "guided",
+      status: "idle",
+      currentIssueId: "",
+      completedIssueIds: [],
+      manualTaskId: "",
+      lastRunAt: "",
+      lastCompletedAt: "",
+      lastStatus: "",
+      analysisPhase: 0,
+      lastVerificationOK: null
+    };
     const WAITING_PATTERN = /(^|[^\p{L}\p{N}])(attesa|in attesa|attendo|attendere|aspettando|aspetto|sospeso|sospesa|follow[- ]?up)(?=$|[^\p{L}\p{N}])/iu;
     const VALID_VIEWS = ["day", "today", "tomorrow", "week", "overdue", "high", "completed", "no-time", "waiting", "recurring", "archive", "trash"];
 
@@ -2098,6 +2560,7 @@ Controllare immagini"></textarea>
       permanentIds: [],
       selectedDate: "",
       view: "day",
+      areaFilter: "all",
       categoryFilter: "all",
       recurringCategoryFilter: "all",
       sort: "smart",
@@ -2106,6 +2569,7 @@ Controllare immagini"></textarea>
       editorWidth: 368,
       notificationsEnabled: false,
       completionArchive: {},
+      wizard: clone(DEFAULT_WIZARD_STATE),
       createdAt: ""
     };
 
@@ -2126,6 +2590,7 @@ Controllare immagini"></textarea>
     let notified = new Set();
     let lastFocused = null;
     let pendingGenericConfirm = null;
+    let wizardRunToken = 0;
 
     const $ = (id) => document.getElementById(id);
 
@@ -2145,6 +2610,56 @@ Controllare immagini"></textarea>
     function safeArray(value) { return Array.isArray(value) ? value : []; }
     function safeObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
     function cleanText(value, fallback = "") { return typeof value === "string" ? value.trim() : fallback; }
+
+    function normalizeArea(value, fallback = "") {
+      const normalized = cleanText(String(value || "")).toLowerCase();
+      if (["work", "lavoro", "professionale", "professionali"].includes(normalized)) return "work";
+      if (["personal", "personale", "privato", "privata", "privati", "private"].includes(normalized)) return "personal";
+      return AREA_VALUES.includes(fallback) ? fallback : "";
+    }
+
+    function inferTaskArea(raw, fallback = "personal") {
+      const item = safeObject(raw);
+      const explicit = normalizeArea(item.area || item.section || item.mainArea || item.mainCategory, "");
+      if (explicit) return explicit;
+      const context = [item.cat, item.category, item.sub, item.subcategory, item.text, item.title, item.notes, item.note].map((value) => cleanText(value)).join(" ");
+      if (WORK_CATEGORY_PATTERN.test(context)) return "work";
+      return normalizeArea(fallback, "personal") || "personal";
+    }
+
+    function taskArea(task) {
+      return normalizeArea(task?.area, inferTaskArea(task));
+    }
+
+    function areaLabel(area) {
+      return TASK_AREAS[normalizeArea(area)]?.label || "Personale";
+    }
+
+    function areaIcon(area) {
+      return TASK_AREAS[normalizeArea(area)]?.icon || "⌂";
+    }
+
+    function taskMatchesArea(task) {
+      return state.areaFilter === "all" || taskArea(task) === state.areaFilter;
+    }
+
+    function normalizeWizardState(raw) {
+      const item = safeObject(raw);
+      const validStatuses = ["idle", "intro", "analysis", "results", "fix", "verify", "completed"];
+      return {
+        ...clone(DEFAULT_WIZARD_STATE),
+        mode: item.mode === "advanced" ? "advanced" : "guided",
+        status: validStatuses.includes(item.status) ? item.status : "idle",
+        currentIssueId: cleanText(item.currentIssueId),
+        completedIssueIds: [...new Set(safeArray(item.completedIssueIds).map(String))],
+        manualTaskId: cleanText(item.manualTaskId),
+        lastRunAt: cleanText(item.lastRunAt),
+        lastCompletedAt: cleanText(item.lastCompletedAt),
+        lastStatus: ["good", "attention"].includes(item.lastStatus) ? item.lastStatus : "",
+        analysisPhase: clampNumber(item.analysisPhase, 0, 3, 0),
+        lastVerificationOK: typeof item.lastVerificationOK === "boolean" ? item.lastVerificationOK : null
+      };
+    }
 
     function ymd(date) {
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -2538,6 +3053,7 @@ Controllare immagini"></textarea>
       const repeat = ["none", "daily", "weekly", "monthly", "yearly"].includes(item.repeat) ? item.repeat : "none";
       const priority = ["low", "med", "high"].includes(item.priority || item.pri) ? (item.priority || item.pri) : "low";
       const category = cleanText(item.cat || item.category, DEFAULT_TASK_CATEGORY);
+      const area = normalizeArea(item.area || item.section || item.mainArea || item.mainCategory, inferTaskArea({ ...item, cat: category }));
       const legacyWaiting = rawStatus === "waiting" || cleanText(item.cat || item.category).toLowerCase() === WAITING_CATEGORY.toLowerCase() || cleanText(item.sub || item.subcategory).toLowerCase() === WAITING_CATEGORY.toLowerCase();
       const hasExplicitWaiting = Object.prototype.hasOwnProperty.call(item, "waiting") || Object.prototype.hasOwnProperty.call(item, "isWaiting");
       const waiting = hasExplicitWaiting
@@ -2547,6 +3063,7 @@ Controllare immagini"></textarea>
       return {
         id: String(item.id || uid()),
         text: cleanText(item.text || item.title, "Task senza titolo"),
+        area,
         cat: category,
         sub: cleanText(item.sub || item.subcategory),
         date,
@@ -2625,6 +3142,7 @@ Controllare immagini"></textarea>
         permanentIds,
         selectedDate: cleanDate(data.selectedDate || data.selectedFocusDate),
         view: VALID_VIEWS.includes(data.view) ? data.view : "day",
+        areaFilter: ["all", ...AREA_VALUES].includes(data.areaFilter) ? data.areaFilter : "all",
         categoryFilter: cleanText(data.categoryFilter || data.focusCatFilter, "all") === WAITING_CATEGORY ? "all" : cleanText(data.categoryFilter || data.focusCatFilter, "all"),
         recurringCategoryFilter: cleanText(data.recurringCategoryFilter, "all") === WAITING_CATEGORY ? "all" : cleanText(data.recurringCategoryFilter, "all"),
         sort: ["smart", "time", "priority", "category", "manual"].includes(data.sort) ? data.sort : "smart",
@@ -2633,6 +3151,7 @@ Controllare immagini"></textarea>
         editorWidth: clampNumber(data.editorWidth, 300, 680, 368),
         notificationsEnabled: !!data.notificationsEnabled,
         completionArchive: safeObject(data.completionArchive),
+        wizard: normalizeWizardState(data.wizard || data.guidance),
         createdAt: validDate(data.createdAt) ? data.createdAt : today()
       };
     }
@@ -2858,10 +3377,10 @@ Controllare immagini"></textarea>
       if (state.view === "archive" || state.view === "trash") {
         const wantedStatus = state.view === "archive" ? "archived" : "trash";
         state.entries
-          .filter((task) => task.status === wantedStatus)
+          .filter((task) => task.status === wantedStatus && taskMatchesArea(task))
           .forEach((task) => list.push({ task, date: task.date }));
       } else {
-        const active = state.entries.filter((task) => task.status === "active");
+        const active = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
 
         if (state.view === "day") {
           active.forEach((task) => { if (scheduledOn(task, selected)) list.push({ task, date: selected }); });
@@ -2904,13 +3423,15 @@ Controllare immagini"></textarea>
       }
 
       const query = cleanText($("search-input").value).toLowerCase();
+      const area = state.areaFilter;
       const category = state.categoryFilter;
       const priority = $("priority-filter").value;
       const contentFilter = $("content-filter")?.value || "all";
 
       const filtered = list.filter(({ task, date }) => {
-        const haystack = [task.text, task.cat, task.sub, task.link, task.notes, task.waitingReason, date, humanDate(date), task.followUpDate, ...task.subtasks.map((subtask) => subtask.text)].join(" ").toLowerCase();
+        const haystack = [task.text, areaLabel(taskArea(task)), task.cat, task.sub, task.link, task.notes, task.waitingReason, date, humanDate(date), task.followUpDate, ...task.subtasks.map((subtask) => subtask.text)].join(" ").toLowerCase();
         return (!query || haystack.includes(query))
+          && (area === "all" || taskArea(task) === area)
           && (category === "all" || task.cat === category)
           && (priority === "all" || task.priority === priority)
           && (contentFilter === "all" || (contentFilter === "has-link" && !!task.link) || (contentFilter === "has-subtasks" && task.subtasks.length > 0))
@@ -2977,13 +3498,15 @@ Controllare immagini"></textarea>
        ========================================================= */
     async function renderAll() {
       renderTheme();
-      renderHeader();
       renderCategories();
+      renderAreas();
+      renderHeader();
       renderCalendar();
       renderCounts();
       renderTaskList();
       renderStats();
       renderArchiveAndTrash();
+      renderGuidanceCard();
       await hydrateImages();
     }
 
@@ -3003,12 +3526,35 @@ Controllare immagini"></textarea>
       }
     }
 
+    function renderAreas() {
+      const active = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
+      AREA_VALUES.forEach((area) => {
+        const count = active.filter((task) => taskArea(task) === area).length;
+        const countElement = $(area === "work" ? "count-work-area" : "count-personal-area");
+        if (countElement) countElement.textContent = count;
+      });
+
+      document.querySelectorAll("[data-area-filter]").forEach((button) => {
+        const selected = button.dataset.areaFilter === state.areaFilter;
+        button.classList.toggle("is-active", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+
+      const areaFilter = $("area-filter");
+      if (areaFilter) areaFilter.value = ["all", ...AREA_VALUES].includes(state.areaFilter) ? state.areaFilter : "all";
+
+      const taskAreaSelect = $("task-area");
+      if (taskAreaSelect && !AREA_VALUES.includes(taskAreaSelect.value)) {
+        taskAreaSelect.value = state.areaFilter === "all" ? "work" : state.areaFilter;
+      }
+    }
+
     function renderHeader() {
       const labels = viewLabels();
       const systemView = state.view === "archive" || state.view === "trash";
       $("today-label").textContent = new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       $("main-title").textContent = labels[0];
-      $("main-subtitle").textContent = labels[1];
+      $("main-subtitle").textContent = `${labels[1]}${state.areaFilter === "all" ? "" : ` · Area ${areaLabel(state.areaFilter)}`}`;
       $("date-pill").textContent = state.view === "day" ? humanDate(state.selectedDate) : labels[0];
       $("date-pill").hidden = systemView;
       $("prev-day").hidden = systemView;
@@ -3031,7 +3577,7 @@ Controllare immagini"></textarea>
     }
 
     function renderDailySummary() {
-      const activeTasks = state.entries.filter((task) => task.status === "active");
+      const activeTasks = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
       const todayTasks = activeTasks.filter((task) => scheduledOn(task, today()));
       const openToday = todayTasks.filter((task) => !completedOn(task, today())).length;
       const urgentToday = todayTasks.filter((task) => task.priority === "high" && !completedOn(task, today())).length;
@@ -3057,6 +3603,7 @@ Controllare immagini"></textarea>
       const priority = $("priority-filter")?.value || "all";
       const content = $("content-filter")?.value || "all";
       if (query) chips.push({ key: "search", label: `Ricerca: ${query}` });
+      if (state.areaFilter !== "all") chips.push({ key: "area", label: `Area: ${areaLabel(state.areaFilter)}` });
       if (state.categoryFilter !== "all") chips.push({ key: "category", label: `Categoria: ${state.categoryFilter}` });
       if (priority !== "all") chips.push({ key: "priority", label: `Priorità: ${priorityLabel(priority)}` });
       if (content !== "all") chips.push({ key: "content", label: content === "has-link" ? "Con link" : "Con sottotask" });
@@ -3133,7 +3680,7 @@ Controllare immagini"></textarea>
 
       for (let day = 1; day <= totalDays; day++) {
         const date = ymd(new Date(year, month, day));
-        const dayTasks = state.entries.filter((task) => task.status === "active" && scheduledOn(task, date));
+        const dayTasks = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task) && scheduledOn(task, date));
         const hasTask = dayTasks.length > 0;
         const hasOverdue = dayTasks.some((task) => task.repeat === "none" && date < today() && !completedOn(task, date) && !isWaitingTask(task));
         const hasWaiting = dayTasks.some(isWaitingTask);
@@ -3152,7 +3699,7 @@ Controllare immagini"></textarea>
       const now = today();
       const tomorrow = addDays(now, 1);
       const weekEnd = addDays(now, 6);
-      const active = state.entries.filter((task) => task.status === "active");
+      const active = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
       const setCount = (id, value) => {
         const element = $(id);
         if (element) element.textContent = value;
@@ -3172,8 +3719,19 @@ Controllare immagini"></textarea>
       }).length);
       setCount("count-completed", active.filter((task) => scheduledOn(task, now) && completedOn(task, now)).length);
       setCount("count-no-time", active.filter((task) => !task.time && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
-      setCount("count-archive", state.entries.filter((task) => task.status === "archived").length);
-      setCount("count-trash", state.entries.filter((task) => task.status === "trash").length);
+      setCount("count-archive", state.entries.filter((task) => task.status === "archived" && taskMatchesArea(task)).length);
+      setCount("count-trash", state.entries.filter((task) => task.status === "trash" && taskMatchesArea(task)).length);
+    }
+
+    function taskRowsByArea(rows) {
+      if (state.areaFilter !== "all" || state.sort === "manual") return rows.map(taskCard).join("");
+      return AREA_VALUES.map((area) => {
+        const group = rows.filter(({ task }) => taskArea(task) === area);
+        if (!group.length) return "";
+        return `
+          <div class="section-row area-group-row" style="--area-accent:${TASK_AREAS[area].color};"><span>${areaIcon(area)} ${areaLabel(area)}</span><span>${group.length}</span></div>
+          ${group.map(taskCard).join("")}`;
+      }).join("");
     }
 
     function renderTaskList() {
@@ -3181,7 +3739,7 @@ Controllare immagini"></textarea>
       const visibleIds = new Set(list.map(({ task }) => task.id));
       const permanent = (state.view === "archive" || state.view === "trash") ? [] : state.permanentIds
         .map((id) => state.entries.find((task) => task.id === id))
-        .filter((task) => task && task.status === "active" && !visibleIds.has(task.id))
+        .filter((task) => task && task.status === "active" && taskMatchesArea(task) && !visibleIds.has(task.id))
         .map((task) => ({ task, date: isRecurring(task) ? (nextOccurrence(task, state.selectedDate) || task.date) : task.date }))
         .filter((item) => item.date);
 
@@ -3190,10 +3748,10 @@ Controllare immagini"></textarea>
         : list.filter(({ task, date }) => !completedOn(task, date)).length;
 
       let html = "";
-      if (list.length) html += list.map(taskCard).join("");
+      if (list.length) html += taskRowsByArea(list);
       if (permanent.length) {
         html += `<div class="section-row"><span>Task permanenti</span><span>${permanent.length}</span></div>`;
-        html += permanent.map(taskCard).join("");
+        html += taskRowsByArea(permanent);
       }
 
       $("task-list").innerHTML = html || `<div class="empty-state"><strong>Nessun task da mostrare</strong><br>Prova a cambiare vista, categoria o ricerca.</div>`;
@@ -3253,6 +3811,7 @@ Controllare immagini"></textarea>
           <div>
             <h3 class="task-title">${activeTitle}</h3>
             <div class="task-meta">
+              <span class="area-pill ${taskArea(task) === "personal" ? "is-personal" : ""}">${areaIcon(taskArea(task))} ${areaLabel(taskArea(task))}</span>
               <span class="category-pill" style="${categoryPillStyle(task.cat)}"><span>${escapeHtml(task.cat)}</span>${task.sub ? `<span class="category-sub">· ${escapeHtml(task.sub)}</span>` : ""}</span>
               <span class="badge ${priorityBadge}">${task.priority === "high" ? "🔴" : task.priority === "med" ? "🟡" : "🟢"} ${priorityLabel(task.priority)}</span>
               ${repeatText}
@@ -3279,13 +3838,13 @@ Controllare immagini"></textarea>
       const now = today();
       const weekStart = addDays(now, -((parseDate(now).getDay() + 6) % 7));
       const weekEnd = addDays(weekStart, 6);
-      const active = state.entries.filter((task) => task.status === "active");
+      const active = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
       const activeWork = active.filter((task) => !isWaitingTask(task));
       const todayOccurrences = activeWork.filter((task) => scheduledOn(task, now));
       const todayDone = todayOccurrences.filter((task) => completedOn(task, now)).length;
       const weekDone = activeWork.reduce((sum, task) => sum + safeArray(task.completedDates).filter((date) => date >= weekStart && date <= weekEnd).length, 0);
-      const archivedDone = Object.values(state.completionArchive).reduce((sum, value) => sum + Number(value || 0), 0);
-      const allDone = state.entries.reduce((sum, task) => sum + safeArray(task.completedDates).length, 0) + archivedDone;
+      const archivedDone = state.areaFilter === "all" ? Object.values(state.completionArchive).reduce((sum, value) => sum + Number(value || 0), 0) : 0;
+      const allDone = state.entries.filter(taskMatchesArea).reduce((sum, task) => sum + safeArray(task.completedDates).length, 0) + archivedDone;
       const score = todayOccurrences.length ? Math.round((todayDone / todayOccurrences.length) * 100) : 0;
 
       $("stat-active").textContent = active.length;
@@ -3298,10 +3857,546 @@ Controllare immagini"></textarea>
     }
 
     function renderArchiveAndTrash() {
-      const archived = state.entries.filter((task) => task.status === "archived").length;
-      const trash = state.entries.filter((task) => task.status === "trash").length;
+      const archived = state.entries.filter((task) => task.status === "archived" && taskMatchesArea(task)).length;
+      const trash = state.entries.filter((task) => task.status === "trash" && taskMatchesArea(task)).length;
       if ($("archive-total")) $("archive-total").textContent = archived;
       if ($("trash-total")) $("trash-total").textContent = trash;
+    }
+
+    /* =========================================================
+       6B) WIZARD GUIDATO INTELLIGENTE
+       Analizza → spiega → consiglia → esegui → verifica → continua.
+       ========================================================= */
+    function wizardStepForStatus(status) {
+      return ({ idle: 1, intro: 1, analysis: 1, results: 2, fix: 3, verify: 4, completed: 5 })[status] || 1;
+    }
+
+    function formatWizardDate(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      return date.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+
+    function buildWizardReport() {
+      const active = state.entries.filter((task) => task.status === "active");
+      const withoutArea = active.filter((task) => !AREA_VALUES.includes(normalizeArea(task.area)));
+      const withoutCategory = active.filter((task) => !cleanText(task.cat) || !state.categories[task.cat]);
+      const overdue = active.filter((task) => task.repeat === "none" && !isWaitingTask(task) && task.date < today() && !completedOn(task, task.date));
+      const waitingWithoutFollowUp = active.filter((task) => isWaitingTask(task) && !validDate(task.followUpDate));
+      const issues = [];
+
+      withoutArea.forEach((task) => issues.push({
+        id: `area:${task.id}`,
+        type: "area",
+        taskId: task.id,
+        title: "Manca la sezione principale",
+        description: "Questo task deve essere assegnato a Lavoro o Personale per restare ordinato."
+      }));
+      withoutCategory.forEach((task) => issues.push({
+        id: `category:${task.id}`,
+        type: "category",
+        taskId: task.id,
+        title: "Manca una categoria valida",
+        description: "La categoria del task non è più disponibile e può essere ripristinata senza cambiare il contenuto."
+      }));
+      overdue.forEach((task) => issues.push({
+        id: `overdue:${task.id}`,
+        type: "overdue",
+        taskId: task.id,
+        title: "C’è un task scaduto da rivedere",
+        description: "Prima di continuare, decidi se spostarlo o completarlo."
+      }));
+      waitingWithoutFollowUp.forEach((task) => issues.push({
+        id: `followup:${task.id}`,
+        type: "followup",
+        taskId: task.id,
+        title: "Un task in attesa non ha una data di follow-up",
+        description: "Senza una data, rischia di restare dimenticato."
+      }));
+
+      const suggestions = [];
+      const withoutTime = active.filter((task) => !task.time && !isWaitingTask(task));
+      const highPriority = active.filter((task) => task.priority === "high" && !isWaitingTask(task));
+      if (withoutTime.length) suggestions.push(`${withoutTime.length} task non hanno un orario: aggiungilo solo quando ti aiuta a pianificare meglio.`);
+      if (highPriority.length > 3) suggestions.push(`Hai ${highPriority.length} task ad alta priorità: scegli quelli davvero urgenti per mantenere il focus.`);
+      if (!active.length) suggestions.push("Non ci sono task attivi: puoi creare il primo quando ne avrai bisogno.");
+
+      const checks = [
+        { label: "Le aree Lavoro e Personale sono disponibili", passed: true },
+        { label: "Ogni task ha una sezione principale", passed: withoutArea.length === 0 },
+        { label: "Ogni task usa una categoria valida", passed: withoutCategory.length === 0 },
+        { label: "Non ci sono task scaduti da rivedere", passed: overdue.length === 0 },
+        { label: "I task in attesa hanno un follow-up", passed: waitingWithoutFollowUp.length === 0 }
+      ];
+
+      return {
+        active,
+        issues,
+        suggestions,
+        checks,
+        passedCount: checks.filter((check) => check.passed).length,
+        failedCount: checks.filter((check) => !check.passed).length
+      };
+    }
+
+    function wizardTechnicalDetails(report) {
+      return `
+        <details class="wizard-details">
+          <summary>Mostra dettagli tecnici</summary>
+          <ul>
+            <li>Task attivi analizzati: ${report.active.length}</li>
+            <li>Task senza sezione: ${report.issues.filter((issue) => issue.type === "area").length}</li>
+            <li>Task senza categoria valida: ${report.issues.filter((issue) => issue.type === "category").length}</li>
+            <li>Task scaduti: ${report.issues.filter((issue) => issue.type === "overdue").length}</li>
+            <li>Task in attesa senza follow-up: ${report.issues.filter((issue) => issue.type === "followup").length}</li>
+          </ul>
+        </details>`;
+    }
+
+    function renderGuidanceCard() {
+      const report = buildWizardReport();
+      const wizard = state.wizard || clone(DEFAULT_WIZARD_STATE);
+      const inProgress = ["intro", "analysis", "results", "fix", "verify"].includes(wizard.status);
+      const title = $("guidance-title");
+      const text = $("guidance-text");
+      const mode = $("guidance-mode");
+      const primary = $("guidance-primary");
+      const secondary = $("guidance-secondary");
+      if (!title || !text || !mode || !primary || !secondary) return;
+
+      if (inProgress) {
+        const remaining = report.issues.length;
+        title.textContent = "Riprendi il controllo guidato";
+        text.textContent = remaining ? `Hai ancora ${remaining} ${remaining === 1 ? "problema" : "problemi"} da controllare.` : "La verifica è pronta per essere completata.";
+        primary.textContent = "Continua il controllo";
+        primary.dataset.wizardIntent = "resume";
+      } else if (wizard.lastRunAt) {
+        const statusLabel = report.issues.length ? "richiede attenzione" : "buono";
+        title.textContent = `Stato attuale: ${statusLabel}`;
+        text.textContent = report.issues.length
+          ? `${report.issues.length} ${report.issues.length === 1 ? "problema richiede" : "problemi richiedono"} ancora attenzione. Ultimo controllo: ${formatWizardDate(wizard.lastRunAt)}.`
+          : `Ultimo controllo: ${formatWizardDate(wizard.lastRunAt)}. Tutti i controlli essenziali sono superati.`;
+        primary.textContent = report.issues.length ? "Continua la correzione" : "Nuovo controllo";
+        primary.dataset.wizardIntent = report.issues.length ? "resume" : "restart";
+      } else {
+        title.textContent = "Organizza i task con un controllo guidato";
+        text.textContent = "Ti guideremo passo dopo passo. Non sono necessarie conoscenze tecniche.";
+        primary.textContent = "Avvia controllo guidato";
+        primary.dataset.wizardIntent = "start";
+      }
+
+      mode.textContent = wizard.mode === "advanced"
+        ? "Modalità avanzata attiva: tutte le funzioni restano disponibili."
+        : "Modalità guidata consigliata";
+      secondary.textContent = wizard.mode === "advanced" ? "Torna alla guida" : "Modalità avanzata";
+      secondary.setAttribute("aria-pressed", String(wizard.mode === "advanced"));
+    }
+
+    function renderWizardProgress(status) {
+      const current = wizardStepForStatus(status);
+      const stepLabel = $("wizard-step-label");
+      if (stepLabel) stepLabel.textContent = `Passaggio ${current} di 5`;
+      document.querySelectorAll("#wizard-steps [data-wizard-step]").forEach((step) => {
+        const number = Number(step.dataset.wizardStep);
+        step.classList.toggle("is-complete", number < current);
+        step.classList.toggle("is-active", number === current);
+        if (number < current) step.querySelector(".wizard-step-number").textContent = "✓";
+        else step.querySelector(".wizard-step-number").textContent = String(number);
+      });
+    }
+
+    function currentWizardIssue(report = buildWizardReport()) {
+      const wanted = state.wizard.currentIssueId;
+      return report.issues.find((issue) => issue.id === wanted) || report.issues[0] || null;
+    }
+
+    function wizardIssueMarkup(issue, report) {
+      const task = state.entries.find((entry) => entry.id === issue.taskId);
+      if (!task) {
+        return `<h4>Il problema è già stato aggiornato</h4><p>Rieseguiamo la verifica prima di continuare.</p><div class="wizard-actions"><button class="btn btn-primary" type="button" data-wizard-action="next-issue">Verifica e continua</button></div>`;
+      }
+
+      const index = Math.max(0, report.issues.findIndex((item) => item.id === issue.id)) + 1;
+      const taskName = escapeHtml(task.text);
+      const shared = `
+        <p class="muted small">Problema ${index} di ${report.issues.length}</p>
+        <h4>${escapeHtml(issue.title)}</h4>
+        <p><strong>${taskName}</strong></p>
+        <p>${escapeHtml(issue.description)}</p>`;
+
+      if (issue.type === "overdue") {
+        return `${shared}
+          <div class="wizard-confirmation">
+            <strong>Cosa faremo</strong>
+            <p>Sposteremo la data del task a oggi.</p>
+            <strong style="margin-top:10px;">Cosa non toccheremo</strong>
+            <p>Categoria, note, sottotask e altre impostazioni resteranno invariati. Puoi annullare la modifica: sì.</p>
+          </div>
+          <div class="wizard-actions">
+            <button class="btn btn-primary" type="button" data-wizard-action="move-overdue">Sposta a oggi e verifica</button>
+            <button class="btn btn-ghost" type="button" data-wizard-action="open-task">Apri il task e decidi</button>
+          </div>
+          ${wizardTechnicalDetails(report)}`;
+      }
+
+      if (issue.type === "followup") {
+        return `${shared}
+          <div class="wizard-confirmation">
+            <strong>Cosa ti consigliamo</strong>
+            <p>Scegli una data in cui tornare su questo task. Il sistema userà la data solo come follow-up.</p>
+          </div>
+          <div class="wizard-panel">
+            <label class="field-label" for="wizard-followup-date">Data di follow-up</label>
+            <input class="field" id="wizard-followup-date" type="date" min="${today()}" value="${today()}">
+          </div>
+          <div class="wizard-actions">
+            <button class="btn btn-primary" type="button" data-wizard-action="save-followup">Salva e verifica</button>
+            <button class="btn btn-ghost" type="button" data-wizard-action="open-task">Apri il task</button>
+          </div>
+          ${wizardTechnicalDetails(report)}`;
+      }
+
+      if (issue.type === "area") {
+        return `${shared}
+          <div class="wizard-confirmation">
+            <strong>Cosa faremo</strong>
+            <p>Assegneremo il task a una sola sezione principale. Categoria e contenuto non verranno modificati.</p>
+          </div>
+          <div class="wizard-panel">
+            <label class="field-label" for="wizard-area-input">Sezione principale</label>
+            <select class="select" id="wizard-area-input">
+              <option value="work">💼 Lavoro</option>
+              <option value="personal">⌂ Personale</option>
+            </select>
+          </div>
+          <div class="wizard-actions"><button class="btn btn-primary" type="button" data-wizard-action="save-area">Salva e verifica</button></div>
+          ${wizardTechnicalDetails(report)}`;
+      }
+
+      return `${shared}
+        <div class="wizard-confirmation">
+          <strong>Correzione sicura</strong>
+          <p>Ripristineremo la categoria senza cambiare testo, date o note del task. Puoi annullare la modifica: sì.</p>
+        </div>
+        <div class="wizard-actions"><button class="btn btn-primary" type="button" data-wizard-action="restore-category">Ripristina categoria e verifica</button></div>
+        ${wizardTechnicalDetails(report)}`;
+    }
+
+    function renderWizard() {
+      const content = $("wizard-content");
+      if (!content) return;
+      const status = state.wizard.status === "idle" ? "intro" : state.wizard.status;
+      const report = buildWizardReport();
+      renderWizardProgress(status);
+
+      if (status === "intro") {
+        content.innerHTML = `
+          <h4>Controlliamo l’organizzazione dei tuoi task</h4>
+          <p>Verificheremo automaticamente le due aree, le categorie, i task scaduti e quelli in attesa. Non verrà modificato nulla durante questo controllo.</p>
+          <div class="wizard-panel"><strong>Cosa succederà dopo</strong><p>Ti mostreremo un riepilogo semplice e, solo se serve, una correzione alla volta.</p></div>
+          <div class="wizard-actions"><button class="btn btn-primary" type="button" data-wizard-action="run-analysis">Avvia controllo</button></div>`;
+        return;
+      }
+
+      if (status === "analysis") {
+        const phase = state.wizard.analysisPhase || 0;
+        const checks = ["Verifica delle aree Lavoro e Personale", "Controllo di categorie e date", "Verifica finale dei follow-up"];
+        content.innerHTML = `
+          <h4>Controllo in corso…</h4>
+          <p>Stiamo verificando la configurazione. Non stiamo modificando nessun task.</p>
+          <div class="wizard-loading-list">
+            ${checks.map((label, index) => {
+              const done = index < phase;
+              const active = index === phase;
+              return `<div class="wizard-loading-item ${done ? "is-done" : ""} ${active ? "is-active" : ""}"><span class="wizard-loading-symbol">${done ? "✓" : active ? "◌" : "○"}</span><span>${label}${active ? " in corso" : ""}</span></div>`;
+            }).join("")}
+          </div>`;
+        return;
+      }
+
+      if (status === "results") {
+        const needsAttention = report.issues.length > 0;
+        content.innerHTML = `
+          <h4>Abbiamo completato il controllo</h4>
+          <p><strong>Situazione generale: ${needsAttention ? "richiede attenzione" : "buona"}</strong></p>
+          <div class="wizard-summary">
+            <div class="wizard-summary-item is-success"><span class="wizard-summary-icon">✓</span><span>${report.passedCount} controlli superati</span></div>
+            <div class="wizard-summary-item ${needsAttention ? "is-issue" : "is-success"}"><span class="wizard-summary-icon">${needsAttention ? "!" : "✓"}</span><span>${report.issues.length} ${report.issues.length === 1 ? "problema da correggere" : "problemi da correggere"}</span></div>
+            <div class="wizard-summary-item"><span class="wizard-summary-icon">i</span><span>${report.suggestions.length} ${report.suggestions.length === 1 ? "suggerimento facoltativo" : "suggerimenti facoltativi"}</span></div>
+          </div>
+          <p>${needsAttention ? "Ti consigliamo di iniziare dal problema più importante." : "Non sono necessarie correzioni. Puoi chiudere qui oppure esaminare i suggerimenti facoltativi."}</p>
+          <div class="wizard-actions">
+            <button class="btn btn-primary" type="button" data-wizard-action="${needsAttention ? "start-fixes" : "complete-wizard"}">${needsAttention ? "Inizia le correzioni" : "Completa controllo"}</button>
+            ${needsAttention ? "" : `<button class="btn btn-ghost" type="button" data-wizard-action="show-suggestions">Esamina i suggerimenti</button>`}
+          </div>
+          ${wizardTechnicalDetails(report)}`;
+        return;
+      }
+
+      if (status === "fix") {
+        const issue = currentWizardIssue(report);
+        content.innerHTML = issue
+          ? wizardIssueMarkup(issue, report)
+          : `<h4>Tutti i problemi sono stati risolti</h4><p>Facciamo un’ultima verifica prima di completare il controllo.</p><div class="wizard-actions"><button class="btn btn-primary" type="button" data-wizard-action="complete-wizard">Completa controllo</button></div>`;
+        return;
+      }
+
+      if (status === "verify") {
+        const resolved = state.wizard.lastVerificationOK === true;
+        const issue = currentWizardIssue(report);
+        content.innerHTML = resolved ? `
+          <h4>Problema risolto ✓</h4>
+          <div class="wizard-confirmation wizard-success"><strong>Modifica verificata</strong><p>Abbiamo ricontrollato il risultato e il problema non risulta più presente.</p></div>
+          <div class="wizard-actions"><button class="btn btn-primary" type="button" data-wizard-action="next-issue">Continua</button></div>
+          ${wizardTechnicalDetails(report)}` : `
+          <h4>La correzione non è ancora completa</h4>
+          <div class="wizard-confirmation wizard-warning"><strong>Serve ancora un intervento</strong><p>La modifica è stata applicata, ma il controllo rileva ancora il problema. Non lo segniamo come risolto.</p></div>
+          <div class="wizard-actions">
+            <button class="btn btn-primary" type="button" data-wizard-action="retry-issue">Riprova</button>
+            ${issue ? `<button class="btn btn-ghost" type="button" data-wizard-action="open-task">Segui la soluzione manuale</button>` : ""}
+          </div>
+          ${wizardTechnicalDetails(report)}`;
+        return;
+      }
+
+      const corrected = state.wizard.completedIssueIds.length;
+      content.innerHTML = `
+        <h4>Controllo completato ✓</h4>
+        <p><strong>La situazione è buona.</strong></p>
+        <div class="wizard-summary">
+          <div class="wizard-summary-item is-success"><span class="wizard-summary-icon">✓</span><span>${report.passedCount} controlli superati</span></div>
+          <div class="wizard-summary-item is-success"><span class="wizard-summary-icon">✓</span><span>${corrected} ${corrected === 1 ? "problema corretto" : "problemi corretti"}</span></div>
+          <div class="wizard-summary-item is-success"><span class="wizard-summary-icon">✓</span><span>Tutte le correzioni sono state verificate</span></div>
+          <div class="wizard-summary-item"><span class="wizard-summary-icon">i</span><span>${report.suggestions.length} ${report.suggestions.length === 1 ? "suggerimento facoltativo" : "suggerimenti facoltativi disponibili"}</span></div>
+        </div>
+        <div class="wizard-actions">
+          <button class="btn btn-primary" type="button" data-wizard-action="show-results">Visualizza riepilogo</button>
+          <button class="btn btn-ghost" type="button" data-wizard-action="show-suggestions">Esamina i suggerimenti</button>
+          <button class="btn btn-ghost" type="button" data-wizard-action="restart-wizard">Nuovo controllo</button>
+        </div>
+        ${wizardTechnicalDetails(report)}`;
+    }
+
+    async function openGuidedWizard({ restart = false } = {}) {
+      wizardRunToken += 1;
+      const previousMode = state.wizard?.mode === "advanced" ? "advanced" : "guided";
+      const shouldStartFresh = restart || ["idle", "completed"].includes(state.wizard?.status);
+      if (shouldStartFresh) {
+        state.wizard = { ...clone(DEFAULT_WIZARD_STATE), mode: previousMode, status: "intro" };
+      } else if (state.wizard.status === "analysis") {
+        state.wizard.status = "intro";
+        state.wizard.analysisPhase = 0;
+      }
+      await persistState();
+      await renderAll();
+      renderWizard();
+      openModal("modal-wizard");
+    }
+
+    async function closeGuidedWizard() {
+      wizardRunToken += 1;
+      if (state.wizard.status === "analysis") {
+        state.wizard.status = "intro";
+        state.wizard.analysisPhase = 0;
+      }
+      await persistState();
+      renderGuidanceCard();
+      closeModal("modal-wizard");
+    }
+
+    async function toggleGuidanceMode() {
+      state.wizard.mode = state.wizard.mode === "advanced" ? "guided" : "advanced";
+      await persistState();
+      renderGuidanceCard();
+      showToast(state.wizard.mode === "advanced"
+        ? "Modalità avanzata attiva: puoi usare direttamente tutte le funzioni."
+        : "Modalità guidata attiva: il controllo ti proporrà il prossimo passo.");
+    }
+
+    async function runWizardAnalysis() {
+      const token = ++wizardRunToken;
+      state.wizard.status = "analysis";
+      state.wizard.analysisPhase = 0;
+      state.wizard.currentIssueId = "";
+      state.wizard.completedIssueIds = [];
+      state.wizard.lastVerificationOK = null;
+      await persistState();
+      renderGuidanceCard();
+      renderWizard();
+
+      for (let phase = 0; phase < 3; phase += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 280));
+        if (token !== wizardRunToken || !$("modal-wizard")?.classList.contains("open")) return;
+        state.wizard.analysisPhase = phase + 1;
+        renderWizard();
+      }
+
+      if (token !== wizardRunToken || !$("modal-wizard")?.classList.contains("open")) return;
+      const report = buildWizardReport();
+      state.wizard.status = "results";
+      state.wizard.currentIssueId = report.issues[0]?.id || "";
+      state.wizard.lastRunAt = new Date().toISOString();
+      state.wizard.lastStatus = report.issues.length ? "attention" : "good";
+      await persistState();
+      await renderAll();
+      renderWizard();
+    }
+
+    async function startWizardFixes() {
+      const report = buildWizardReport();
+      if (!report.issues.length) return completeGuidedWizard();
+      state.wizard.status = "fix";
+      state.wizard.currentIssueId = currentWizardIssue(report)?.id || report.issues[0].id;
+      state.wizard.lastVerificationOK = null;
+      await persistState();
+      renderGuidanceCard();
+      renderWizard();
+    }
+
+    async function completeGuidedWizard() {
+      const report = buildWizardReport();
+      if (report.issues.length) return startWizardFixes();
+      state.wizard.status = "completed";
+      state.wizard.currentIssueId = "";
+      state.wizard.manualTaskId = "";
+      state.wizard.lastCompletedAt = new Date().toISOString();
+      state.wizard.lastRunAt = state.wizard.lastRunAt || state.wizard.lastCompletedAt;
+      state.wizard.lastStatus = "good";
+      await persistState();
+      await renderAll();
+      renderWizard();
+    }
+
+    async function showWizardResults() {
+      state.wizard.status = "results";
+      state.wizard.currentIssueId = currentWizardIssue()?.id || "";
+      await persistState();
+      renderGuidanceCard();
+      renderWizard();
+    }
+
+    async function nextWizardIssue() {
+      const report = buildWizardReport();
+      if (!report.issues.length) return completeGuidedWizard();
+      state.wizard.status = "fix";
+      state.wizard.currentIssueId = report.issues[0].id;
+      state.wizard.lastVerificationOK = null;
+      await persistState();
+      renderGuidanceCard();
+      renderWizard();
+    }
+
+    async function verifyWizardIssue(issueId) {
+      const report = buildWizardReport();
+      const resolved = !report.issues.some((issue) => issue.id === issueId);
+      state.wizard.status = "verify";
+      state.wizard.currentIssueId = issueId;
+      state.wizard.lastVerificationOK = resolved;
+      state.wizard.manualTaskId = "";
+      if (resolved && !state.wizard.completedIssueIds.includes(issueId)) state.wizard.completedIssueIds.push(issueId);
+      state.wizard.lastRunAt = new Date().toISOString();
+      state.wizard.lastStatus = buildWizardReport().issues.length ? "attention" : "good";
+      await persistState();
+      await renderAll();
+      renderWizard();
+    }
+
+    async function moveWizardOverdueTask() {
+      const issue = currentWizardIssue();
+      const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
+      if (!issue || !task) return nextWizardIssue();
+      await mutate("Task spostato a oggi", async () => {
+        task.date = today();
+        task.updatedAt = today();
+      });
+      await verifyWizardIssue(issue.id);
+    }
+
+    async function saveWizardFollowUp() {
+      const issue = currentWizardIssue();
+      const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
+      const followUpDate = $("wizard-followup-date")?.value || "";
+      if (!issue || !task) return nextWizardIssue();
+      if (!validDate(followUpDate)) return showToast("Scegli una data di follow-up valida.", true);
+      await mutate("Data di follow-up salvata", async () => {
+        task.followUpDate = followUpDate;
+        task.updatedAt = today();
+      });
+      await verifyWizardIssue(issue.id);
+    }
+
+    async function saveWizardArea() {
+      const issue = currentWizardIssue();
+      const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
+      const area = normalizeArea($("wizard-area-input")?.value, "");
+      if (!issue || !task) return nextWizardIssue();
+      if (!AREA_VALUES.includes(area)) return showToast("Scegli Lavoro o Personale.", true);
+      await mutate("Sezione principale aggiornata", async () => {
+        task.area = area;
+        task.updatedAt = today();
+      });
+      await verifyWizardIssue(issue.id);
+    }
+
+    async function restoreWizardCategory() {
+      const issue = currentWizardIssue();
+      const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
+      if (!issue || !task) return nextWizardIssue();
+      await mutate("Categoria ripristinata", async () => {
+        const category = cleanText(task.cat, DEFAULT_TASK_CATEGORY);
+        task.cat = category;
+        if (!state.categories[category]) {
+          state.categories[category] = {
+            subs: task.sub ? [task.sub] : [],
+            color: cleanColor(task.color, PALETTE[Object.keys(state.categories).length % PALETTE.length])
+          };
+        }
+        if (task.sub && !state.categories[category].subs.includes(task.sub)) state.categories[category].subs.push(task.sub);
+        if (!task.color) task.color = state.categories[category].color;
+        task.updatedAt = today();
+      });
+      await verifyWizardIssue(issue.id);
+    }
+
+    async function openWizardTaskForManualFix() {
+      const issue = currentWizardIssue();
+      const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
+      if (!issue || !task) return nextWizardIssue();
+      state.wizard.status = "fix";
+      state.wizard.manualTaskId = task.id;
+      await persistState();
+      renderGuidanceCard();
+      closeModal("modal-wizard");
+      await editTask(task.id, task.date);
+      showToast("Aggiorna il task e salvalo: torneremo qui per verificarlo.");
+    }
+
+    async function resumeWizardAfterManualSave(taskId) {
+      if (state.wizard.manualTaskId !== taskId || !state.wizard.currentIssueId) return;
+      const issueId = state.wizard.currentIssueId;
+      await verifyWizardIssue(issueId);
+      if (!$("modal-wizard")?.classList.contains("open")) openModal("modal-wizard");
+    }
+
+    async function handleWizardAction(action) {
+      if (action === "run-analysis") return runWizardAnalysis();
+      if (action === "start-fixes") return startWizardFixes();
+      if (action === "complete-wizard") return completeGuidedWizard();
+      if (action === "show-results" || action === "show-suggestions") return showWizardResults();
+      if (action === "restart-wizard") return openGuidedWizard({ restart: true });
+      if (action === "move-overdue") return moveWizardOverdueTask();
+      if (action === "save-followup") return saveWizardFollowUp();
+      if (action === "save-area") return saveWizardArea();
+      if (action === "restore-category") return restoreWizardCategory();
+      if (action === "open-task") return openWizardTaskForManualFix();
+      if (action === "next-issue") return nextWizardIssue();
+      if (action === "retry-issue") {
+        state.wizard.status = "fix";
+        state.wizard.lastVerificationOK = null;
+        await persistState();
+        renderGuidanceCard();
+        renderWizard();
+      }
     }
 
     async function hydrateImages() {
@@ -3367,12 +4462,14 @@ Controllare immagini"></textarea>
       const text = cleanText($("task-text").value);
       const notes = cleanText($("task-notes").value);
       const cat = $("task-category").value;
+      const area = normalizeArea($("task-area").value, inferTaskArea({ cat, text, notes }));
       const sub = $("task-subcategory").value;
       const waiting = $("task-waiting").checked;
       const repeatValue = $("task-repeat").value;
       const repeat = ["none", "daily", "weekly", "monthly", "yearly"].includes(repeatValue) ? repeatValue : "none";
       return {
         text,
+        area,
         cat,
         sub,
         waiting,
@@ -3400,6 +4497,11 @@ Controllare immagini"></textarea>
       }
       if (!data.cat || !state.categories[data.cat]) {
         showToast("Seleziona una categoria valida.", true);
+        return false;
+      }
+      if (!AREA_VALUES.includes(data.area)) {
+        showToast("Scegli se il task è di lavoro o personale.", true);
+        $("task-area").focus();
         return false;
       }
       if (data.untilDate && data.untilDate < data.date) {
@@ -3482,6 +4584,7 @@ Controllare immagini"></textarea>
         });
       });
       resetForm();
+      await resumeWizardAfterManualSave(task.id);
     }
 
     async function applyRecurringEdit(scope) {
@@ -3589,6 +4692,7 @@ Controllare immagini"></textarea>
       $("task-text").value = task.text;
       $("task-date").value = date || task.date;
       $("task-time").value = task.time;
+      $("task-area").value = taskArea(task);
       $("task-category").value = task.cat;
       renderSubcategories();
       $("task-subcategory").value = task.sub;
@@ -3638,6 +4742,7 @@ Controllare immagini"></textarea>
       $("task-text").value = "";
       $("task-date").value = state.selectedDate;
       $("task-time").value = "";
+      $("task-area").value = state.areaFilter === "all" ? "work" : state.areaFilter;
       $("task-priority").value = "low";
       $("task-waiting").checked = false;
       $("task-repeat").value = "none";
@@ -3809,7 +4914,7 @@ Controllare immagini"></textarea>
     async function moveAllPending() {
       const selected = state.selectedDate;
       const next = addDays(selected, 1);
-      const pending = state.entries.filter((task) => task.status === "active" && !isWaitingTask(task) && scheduledOn(task, selected) && !completedOn(task, selected));
+      const pending = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task) && !isWaitingTask(task) && scheduledOn(task, selected) && !completedOn(task, selected));
       if (!pending.length) return showToast("Non ci sono task pendenti da spostare.");
 
       await mutate(`${pending.length} task spostati al ${humanDate(next)}`, async () => {
@@ -3832,6 +4937,7 @@ Controllare immagini"></textarea>
       let priority = "low";
       let repeat = "none";
       let waiting = false;
+      let area = state.areaFilter === "all" ? inferTaskArea({ cat, text }) : state.areaFilter;
 
       const categoryMatch = text.match(/#([\p{L}\p{N}_.-]+)/u);
       if (categoryMatch) {
@@ -3869,11 +4975,13 @@ Controllare immagini"></textarea>
       text = cleanText(text.replace(/\s+/g, " "));
       if (WAITING_PATTERN.test(text)) waiting = true;
       if (!text) return showToast("Scrivi il titolo del task.", true);
+      area = state.areaFilter === "all" ? inferTaskArea({ cat, text }) : state.areaFilter;
 
       await mutate("Task aggiunto rapidamente", async () => {
         state.entries.push({
           id: uid(),
           text,
+          area,
           cat,
           sub: "",
           date,
@@ -3937,11 +5045,11 @@ Controllare immagini"></textarea>
     }
 
     function csvDownloadFromEntries(rows, filename) {
-      const headers = ["ID", "Titolo", "Categoria", "Sottocategoria", "Data", "Ora", "Durata", "Priorità", "Ricorrenza", "In attesa", "Stato", "Completamenti", "Note", "Link"];
+      const headers = ["ID", "Titolo", "Area principale", "Categoria", "Sottocategoria", "Data", "Ora", "Durata", "Priorità", "Ricorrenza", "In attesa", "Stato", "Completamenti", "Note", "Link"];
       const csvRows = rows.map((row) => {
         const task = row.task || row;
         const date = row.date || task.date;
-        return [task.id, task.text, task.cat, task.sub, date, task.time, task.durationMinutes || "", task.priority, task.repeat, task.waiting ? "sì" : "no", task.status, task.completedDates.join(";"), task.notes, task.link]
+        return [task.id, task.text, areaLabel(taskArea(task)), task.cat, task.sub, date, task.time, task.durationMinutes || "", task.priority, task.repeat, task.waiting ? "sì" : "no", task.status, task.completedDates.join(";"), task.notes, task.link]
           .map(csvCell).join(",");
       });
       downloadBlob(new Blob(["﻿" + [headers.join(","), ...csvRows].join("\r\n")], { type: "text/csv;charset=utf-8" }), filename);
@@ -3955,10 +5063,11 @@ Controllare immagini"></textarea>
     }
 
     function exportCsv() {
-      const headers = ["ID", "Titolo", "Categoria", "Sottocategoria", "Data", "Ora", "Priorità", "Ricorrenza", "In attesa", "Stato", "Completamenti", "Note", "Link"];
+      const headers = ["ID", "Titolo", "Area principale", "Categoria", "Sottocategoria", "Data", "Ora", "Priorità", "Ricorrenza", "In attesa", "Stato", "Completamenti", "Note", "Link"];
       const rows = state.entries.map((task) => [
         task.id,
         task.text,
+        areaLabel(taskArea(task)),
         task.cat,
         task.sub,
         task.date,
@@ -4302,6 +5411,15 @@ Controllare immagini"></textarea>
       setupResizeBars();
       $("task-form").addEventListener("submit", saveTask);
       $("cancel-edit").addEventListener("click", resetForm);
+      $("guidance-primary").addEventListener("click", () => openGuidedWizard({ restart: $("guidance-primary").dataset.wizardIntent === "restart" }));
+      $("guidance-secondary").addEventListener("click", toggleGuidanceMode);
+      $("close-wizard").addEventListener("click", closeGuidedWizard);
+      $("modal-wizard").addEventListener("click", async (event) => {
+        const action = event.target.closest("[data-wizard-action]")?.dataset.wizardAction;
+        if (!action) return;
+        event.preventDefault();
+        await handleWizardAction(action);
+      });
       $("task-category").addEventListener("change", renderSubcategories);
       $("task-waiting").addEventListener("change", toggleWaitingExtra);
       $("task-repeat").addEventListener("change", toggleRepeatUntil);
@@ -4368,6 +5486,17 @@ Controllare immagini"></textarea>
         if (button.closest(".mobile-quick-nav") || window.matchMedia("(max-width: 820px)").matches) closeMobileDrawers();
       });
 
+      document.addEventListener("click", async (event) => {
+        const button = event.target.closest("[data-area-filter]");
+        if (!button) return;
+        const area = button.dataset.areaFilter;
+        if (!["all", ...AREA_VALUES].includes(area)) return;
+        state.areaFilter = area;
+        await persistState();
+        await renderAll();
+        if (window.matchMedia("(max-width: 820px)").matches) closeMobileDrawers();
+      });
+
 
       document.addEventListener("click", (event) => {
         const action = event.target.closest("[data-mobile-action]")?.dataset.mobileAction;
@@ -4383,6 +5512,7 @@ Controllare immagini"></textarea>
         const key = event.target.closest("[data-clear-filter]")?.dataset.clearFilter;
         if (!key) return;
         if (key === "search") $("search-input").value = "";
+        if (key === "area") state.areaFilter = "all";
         if (key === "category") state.categoryFilter = "all";
         if (key === "priority") $("priority-filter").value = "all";
         if (key === "content") $("content-filter").value = "all";
@@ -4392,6 +5522,11 @@ Controllare immagini"></textarea>
       $("priority-filter").addEventListener("change", renderAll);
       $("status-filter").addEventListener("change", renderAll);
       $("content-filter").addEventListener("change", renderAll);
+      $("area-filter").addEventListener("change", async (event) => {
+        state.areaFilter = ["all", ...AREA_VALUES].includes(event.target.value) ? event.target.value : "all";
+        await persistState();
+        await renderAll();
+      });
       $("category-filter").addEventListener("change", async (event) => {
         state.categoryFilter = event.target.value;
         await persistState();
@@ -4413,6 +5548,7 @@ Controllare immagini"></textarea>
         $("priority-filter").value = "all";
         $("status-filter").value = "active";
         $("content-filter").value = "all";
+        state.areaFilter = "all";
         state.categoryFilter = "all";
         state.recurringCategoryFilter = "all";
         await persistState();
@@ -4595,7 +5731,7 @@ Controllare immagini"></textarea>
 
 
       $("empty-trash").addEventListener("click", async () => {
-        const trash = state.entries.filter((task) => task.status === "trash");
+        const trash = state.entries.filter((task) => task.status === "trash" && taskMatchesArea(task));
         if (!trash.length) return showToast("Il cestino è già vuoto.");
         requestConfirmation({
           title: "Svuota cestino",
@@ -4603,7 +5739,7 @@ Controllare immagini"></textarea>
           confirmLabel: "Svuota cestino",
           action: () => mutate("Cestino svuotato", async () => {
             trash.forEach(archiveTaskCompletions);
-            state.entries = state.entries.filter((task) => task.status !== "trash");
+            state.entries = state.entries.filter((task) => task.status !== "trash" || !taskMatchesArea(task));
             state.permanentIds = state.permanentIds.filter((id) => state.entries.some((task) => task.id === id));
           })
         });
@@ -4618,13 +5754,18 @@ Controllare immagini"></textarea>
       });
       document.querySelectorAll(".modal-backdrop").forEach((modal) => {
         modal.addEventListener("mousedown", (event) => {
-          if (event.target === modal) closeModal(modal.id);
+          if (event.target !== modal) return;
+          if (modal.id === "modal-wizard") closeGuidedWizard();
+          else closeModal(modal.id);
         });
       });
       document.addEventListener("keydown", (event) => {
         trapModal(event);
         if (event.key === "Escape") {
-          document.querySelectorAll(".modal-backdrop.open").forEach((modal) => closeModal(modal.id));
+          document.querySelectorAll(".modal-backdrop.open").forEach((modal) => {
+            if (modal.id === "modal-wizard") closeGuidedWizard();
+            else closeModal(modal.id);
+          });
           closeMobileDrawers();
         }
         if (event.altKey && event.key.toLowerCase() === "n") {
