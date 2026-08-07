@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#4f46e5" />
   <meta name="description" content="Calendario task locale con aree Lavoro e Personale, controllo guidato, ricorrenze, sottotask, archivio, backup e ricerca." />
-  <title>Calendario Task Pro 38</title>
+  <title>Calendario Task Pro 39</title>
 
   <style>
     /* =========================================================
@@ -2380,7 +2380,7 @@
         <div class="editor-section editor-section-waiting">
           <label class="status-option" for="task-waiting">
             <input id="task-waiting" type="checkbox" />
-            <span><strong>Metti in attesa</strong><span class="tiny muted">Il task resta nella sua categoria, ma compare anche nella vista “In attesa”.</span></span>
+            <span><strong>Metti in attesa</strong><span class="tiny muted">Resta sempre visibile nella vista “In attesa” e nelle altre viste finché non lo riattivi, completi, archivi o elimini.</span></span>
           </label>
           <div class="waiting-extra" id="waiting-extra" hidden>
             <div>
@@ -2493,7 +2493,7 @@ Controllare immagini"></textarea>
     /* =========================================================
        1) CONFIGURAZIONE E STATO
        ========================================================= */
-    const APP_VERSION = 38;
+    const APP_VERSION = 39;
     const DB_NAME = "calendario_task_pro_db";
     const DB_VERSION = 1;
     const STORE_STATE = "state";
@@ -3239,6 +3239,23 @@ Controllare immagini"></textarea>
       return !!task && !!task.waiting;
     }
 
+    function waitingFollowUpOverdue(task, referenceDate = today()) {
+      return isWaitingTask(task) && validDate(task.followUpDate) && task.followUpDate < referenceDate;
+    }
+
+    function waitingDisplayDate(task, referenceDate = today()) {
+      if (!task) return referenceDate;
+      if (validDate(task.followUpDate)) return task.followUpDate;
+      if (isRecurring(task)) return nextPendingOccurrence(task, referenceDate) || task.date;
+      return task.date;
+    }
+
+    function taskHasPendingWork(task, referenceDate = today()) {
+      if (!task || task.status !== "active") return false;
+      if (isRecurring(task)) return !!nextPendingOccurrence(task, referenceDate);
+      return !completedOn(task, task.date);
+    }
+
     function scheduledOn(task, date) {
       if (task.status !== "active") return false;
       if (safeArray(task.excludedDates).includes(date)) return false;
@@ -3395,14 +3412,14 @@ Controllare immagini"></textarea>
             .filter((task) => !isWaitingTask(task) && task.repeat === "none" && task.date < now && !completedOn(task, task.date))
             .forEach((task) => list.push({ task, date: task.date }));
         } else if (state.view === "high") {
-          active.filter((task) => task.priority === "high").forEach((task) => {
+          active.filter((task) => !isWaitingTask(task) && task.priority === "high").forEach((task) => {
             const date = task.repeat === "none" ? (!completedOn(task, task.date) ? task.date : "") : nextPendingOccurrence(task, now);
             if (date) list.push({ task, date });
           });
         } else if (state.view === "completed") {
           active.forEach((task) => { if (scheduledOn(task, now) && completedOn(task, now)) list.push({ task, date: now }); });
         } else if (state.view === "no-time") {
-          active.filter((task) => !task.time).forEach((task) => {
+          active.filter((task) => !isWaitingTask(task) && !task.time).forEach((task) => {
             const date = task.repeat === "none" ? (!completedOn(task, task.date) ? task.date : "") : nextPendingOccurrence(task, now);
             if (date) list.push({ task, date });
           });
@@ -3415,9 +3432,10 @@ Controllare immagini"></textarea>
               if (date) list.push({ task, date });
             });
         } else if (state.view === "waiting") {
-          active.filter(isWaitingTask).forEach((task) => {
-            const date = task.repeat === "none" ? (!completedOn(task, task.date) ? task.date : "") : nextPendingOccurrence(task, now);
-            if (date) list.push({ task, date });
+          // Un task in attesa resta visibile finché non viene riattivato, completato, archiviato o eliminato.
+          active.filter((task) => isWaitingTask(task) && taskHasPendingWork(task, now)).forEach((task) => {
+            const completionDate = task.repeat === "none" ? task.date : (nextPendingOccurrence(task, now) || task.date);
+            if (!completedOn(task, completionDate)) list.push({ task, date: waitingDisplayDate(task, now) });
           });
         }
       }
@@ -3527,7 +3545,8 @@ Controllare immagini"></textarea>
     }
 
     function renderAreas() {
-      const active = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
+      // I contatori delle aree devono mostrare il totale reale, indipendentemente dal filtro attivo.
+      const active = state.entries.filter((task) => taskHasPendingWork(task));
       AREA_VALUES.forEach((area) => {
         const count = active.filter((task) => taskArea(task) === area).length;
         const countElement = $(area === "work" ? "count-work-area" : "count-personal-area");
@@ -3578,11 +3597,11 @@ Controllare immagini"></textarea>
 
     function renderDailySummary() {
       const activeTasks = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
-      const todayTasks = activeTasks.filter((task) => scheduledOn(task, today()));
+      const todayTasks = activeTasks.filter((task) => !isWaitingTask(task) && scheduledOn(task, today()));
       const openToday = todayTasks.filter((task) => !completedOn(task, today())).length;
       const urgentToday = todayTasks.filter((task) => task.priority === "high" && !completedOn(task, today())).length;
       const waitingCount = state.entries.filter((task) => {
-        if (task.status !== "active" || !isWaitingTask(task)) return false;
+        if (!taskHasPendingWork(task) || !taskMatchesArea(task) || !isWaitingTask(task)) return false;
         const date = task.repeat === "none" ? task.date : nextPendingOccurrence(task, today());
         return !!date && !completedOn(task, date);
       }).length;
@@ -3710,15 +3729,11 @@ Controllare immagini"></textarea>
       setCount("count-tomorrow", active.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length);
       setCount("count-week", active.reduce((sum, task) => sum + occurrencesBetween(task, now, weekEnd).filter((date) => !completedOn(task, date)).length, 0));
       setCount("count-overdue", active.filter((task) => !isWaitingTask(task) && task.repeat === "none" && task.date < now && !completedOn(task, task.date)).length);
-      setCount("count-high", active.filter((task) => task.priority === "high" && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
+      setCount("count-high", active.filter((task) => !isWaitingTask(task) && task.priority === "high" && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
       setCount("count-recurring", active.filter((task) => isRecurring(task) && !!nextPendingOccurrence(task, now) && (state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)).length);
-      setCount("count-waiting", active.filter((task) => {
-        if (!isWaitingTask(task)) return false;
-        const date = task.repeat === "none" ? task.date : nextPendingOccurrence(task, now);
-        return !!date && !completedOn(task, date);
-      }).length);
+      setCount("count-waiting", active.filter((task) => isWaitingTask(task) && taskHasPendingWork(task, now)).length);
       setCount("count-completed", active.filter((task) => scheduledOn(task, now) && completedOn(task, now)).length);
-      setCount("count-no-time", active.filter((task) => !task.time && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
+      setCount("count-no-time", active.filter((task) => !isWaitingTask(task) && !task.time && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
       setCount("count-archive", state.entries.filter((task) => task.status === "archived" && taskMatchesArea(task)).length);
       setCount("count-trash", state.entries.filter((task) => task.status === "trash" && taskMatchesArea(task)).length);
     }
@@ -3737,9 +3752,15 @@ Controllare immagini"></textarea>
     function renderTaskList() {
       const list = visibleOccurrences();
       const visibleIds = new Set(list.map(({ task }) => task.id));
+      const waitingPersistent = (state.view === "archive" || state.view === "trash" || state.view === "waiting") ? [] : state.entries
+        .filter((task) => taskHasPendingWork(task) && taskMatchesArea(task) && isWaitingTask(task) && !visibleIds.has(task.id))
+        .map((task) => ({ task, date: waitingDisplayDate(task, today()) }))
+        .filter((item) => item.date);
+
+      const persistentIds = new Set([...visibleIds, ...waitingPersistent.map(({ task }) => task.id)]);
       const permanent = (state.view === "archive" || state.view === "trash") ? [] : state.permanentIds
         .map((id) => state.entries.find((task) => task.id === id))
-        .filter((task) => task && task.status === "active" && taskMatchesArea(task) && !visibleIds.has(task.id))
+        .filter((task) => task && task.status === "active" && taskMatchesArea(task) && !persistentIds.has(task.id))
         .map((task) => ({ task, date: isRecurring(task) ? (nextOccurrence(task, state.selectedDate) || task.date) : task.date }))
         .filter((item) => item.date);
 
@@ -3749,6 +3770,10 @@ Controllare immagini"></textarea>
 
       let html = "";
       if (list.length) html += taskRowsByArea(list);
+      if (waitingPersistent.length) {
+        html += `<div class="section-row"><span>⏳ In attesa · sempre visibili</span><span>${waitingPersistent.length}</span></div>`;
+        html += taskRowsByArea(waitingPersistent);
+      }
       if (permanent.length) {
         html += `<div class="section-row"><span>Task permanenti</span><span>${permanent.length}</span></div>`;
         html += taskRowsByArea(permanent);
@@ -3765,7 +3790,10 @@ Controllare immagini"></textarea>
       const priorityBadge = task.priority === "high" ? "badge-danger" : task.priority === "med" ? "badge-primary" : "badge-success";
       const repeatText = isRecurring(task) ? `<span class="badge">🔁 ${repeatLabel(task.repeat)}</span>` : "";
       const durationText = task.durationMinutes ? `<span class="badge">⏱ ${task.durationMinutes} min</span>` : "";
-      const followUpText = waiting && task.followUpDate ? `<span class="badge badge-warning">↪ follow-up ${humanDate(task.followUpDate)}</span>` : "";
+      const followUpOverdue = waitingFollowUpOverdue(task);
+      const followUpText = waiting && task.followUpDate
+        ? `<span class="badge ${followUpOverdue ? "badge-danger" : "badge-warning"}">${followUpOverdue ? "⚠ Follow-up da controllare" : "↪ Ricontrolla"} ${humanDate(task.followUpDate)}</span>`
+        : waiting ? `<span class="badge">Sempre visibile fino alla risoluzione</span>` : "";
       const image = task.imageId ? `<img class="task-image" data-image-id="${escapeHtml(task.imageId)}" alt="Immagine allegata a ${escapeHtml(task.text)}" loading="lazy">` : "";
       const subtasks = task.subtasks.length ? `
         <div class="subtask-list">
@@ -3792,7 +3820,7 @@ Controllare immagini"></textarea>
             <button class="btn ${waiting ? "btn-soft" : "btn-ghost"}" type="button" data-action="waiting">${waiting ? "▶ Riattiva" : "⏳ Metti in attesa"}</button>
             ${task.time ? `<button class="btn btn-ghost" type="button" data-action="snooze">🔔 Ricorda tra 10 min</button>` : ""}
             <button class="btn btn-ghost" type="button" data-action="duplicate">⧉ Duplica task</button>
-            <button class="btn btn-ghost" type="button" data-action="permanent">${state.permanentIds.includes(task.id) ? "📍 Sblocca" : "📌 Fissa"}</button>
+            ${waiting ? "" : `<button class="btn btn-ghost" type="button" data-action="permanent">${state.permanentIds.includes(task.id) ? "📍 Non mantenere sempre visibile" : "📌 Mantieni sempre visibile"}</button>`}
             <button class="btn btn-ghost" type="button" data-action="archive">🗂 Archivia</button>
             <button class="btn btn-danger" type="button" data-action="delete">🗑 Elimina</button>
           </div>
@@ -3838,8 +3866,9 @@ Controllare immagini"></textarea>
       const now = today();
       const weekStart = addDays(now, -((parseDate(now).getDay() + 6) % 7));
       const weekEnd = addDays(weekStart, 6);
-      const active = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
-      const activeWork = active.filter((task) => !isWaitingTask(task));
+      const activeEntries = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
+      const active = activeEntries.filter((task) => taskHasPendingWork(task, now));
+      const activeWork = activeEntries.filter((task) => !isWaitingTask(task));
       const todayOccurrences = activeWork.filter((task) => scheduledOn(task, now));
       const todayDone = todayOccurrences.filter((task) => completedOn(task, now)).length;
       const weekDone = activeWork.reduce((sum, task) => sum + safeArray(task.completedDates).filter((date) => date >= weekStart && date <= weekEnd).length, 0);
@@ -3878,11 +3907,12 @@ Controllare immagini"></textarea>
     }
 
     function buildWizardReport() {
-      const active = state.entries.filter((task) => task.status === "active");
+      const active = state.entries.filter((task) => taskHasPendingWork(task));
       const withoutArea = active.filter((task) => !AREA_VALUES.includes(normalizeArea(task.area)));
       const withoutCategory = active.filter((task) => !cleanText(task.cat) || !state.categories[task.cat]);
       const overdue = active.filter((task) => task.repeat === "none" && !isWaitingTask(task) && task.date < today() && !completedOn(task, task.date));
       const waitingWithoutFollowUp = active.filter((task) => isWaitingTask(task) && !validDate(task.followUpDate));
+      const waitingWithOverdueFollowUp = active.filter((task) => waitingFollowUpOverdue(task));
       const issues = [];
 
       withoutArea.forEach((task) => issues.push({
@@ -3906,17 +3936,18 @@ Controllare immagini"></textarea>
         title: "C’è un task scaduto da rivedere",
         description: "Prima di continuare, decidi se spostarlo o completarlo."
       }));
-      waitingWithoutFollowUp.forEach((task) => issues.push({
+      waitingWithOverdueFollowUp.forEach((task) => issues.push({
         id: `followup:${task.id}`,
         type: "followup",
         taskId: task.id,
-        title: "Un task in attesa non ha una data di follow-up",
-        description: "Senza una data, rischia di restare dimenticato."
+        title: "Un follow-up è arrivato a scadenza",
+        description: `Il task resta in attesa, ma la data di controllo (${humanDate(task.followUpDate)}) è passata: scegli quando ricontrollarlo.`
       }));
 
       const suggestions = [];
       const withoutTime = active.filter((task) => !task.time && !isWaitingTask(task));
       const highPriority = active.filter((task) => task.priority === "high" && !isWaitingTask(task));
+      if (waitingWithoutFollowUp.length) suggestions.push(`${waitingWithoutFollowUp.length} task in attesa non hanno follow-up: va bene, resteranno comunque sempre visibili nella vista In attesa.`);
       if (withoutTime.length) suggestions.push(`${withoutTime.length} task non hanno un orario: aggiungilo solo quando ti aiuta a pianificare meglio.`);
       if (highPriority.length > 3) suggestions.push(`Hai ${highPriority.length} task ad alta priorità: scegli quelli davvero urgenti per mantenere il focus.`);
       if (!active.length) suggestions.push("Non ci sono task attivi: puoi creare il primo quando ne avrai bisogno.");
@@ -3926,7 +3957,7 @@ Controllare immagini"></textarea>
         { label: "Ogni task ha una sezione principale", passed: withoutArea.length === 0 },
         { label: "Ogni task usa una categoria valida", passed: withoutCategory.length === 0 },
         { label: "Non ci sono task scaduti da rivedere", passed: overdue.length === 0 },
-        { label: "I task in attesa hanno un follow-up", passed: waitingWithoutFollowUp.length === 0 }
+        { label: "Non ci sono follow-up scaduti da ricontrollare", passed: waitingWithOverdueFollowUp.length === 0 }
       ];
 
       return {
@@ -3948,7 +3979,7 @@ Controllare immagini"></textarea>
             <li>Task senza sezione: ${report.issues.filter((issue) => issue.type === "area").length}</li>
             <li>Task senza categoria valida: ${report.issues.filter((issue) => issue.type === "category").length}</li>
             <li>Task scaduti: ${report.issues.filter((issue) => issue.type === "overdue").length}</li>
-            <li>Task in attesa senza follow-up: ${report.issues.filter((issue) => issue.type === "followup").length}</li>
+            <li>Follow-up scaduti: ${report.issues.filter((issue) => issue.type === "followup").length}</li>
           </ul>
         </details>`;
     }
@@ -4814,8 +4845,9 @@ Controllare immagini"></textarea>
     }
 
     async function toggleWaiting(task) {
-      await mutate(isWaitingTask(task) ? "Task riattivato" : "Task messo in attesa", async () => {
-        task.waiting = !isWaitingTask(task);
+      const wasWaiting = isWaitingTask(task);
+      await mutate(wasWaiting ? "Task riattivato" : "Task in attesa: resterà sempre visibile fino alla risoluzione", async () => {
+        task.waiting = !wasWaiting;
         task.updatedAt = today();
       });
     }
