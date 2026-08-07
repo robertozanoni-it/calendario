@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#4f46e5" />
   <meta name="description" content="Calendario task locale con aree Lavoro e Personale, controllo guidato, ricorrenze, sottotask, archivio, backup e ricerca." />
-  <title>Calendario Task Pro 39</title>
+  <title>Calendario Task Pro 41</title>
 
   <style>
     /* =========================================================
@@ -2302,7 +2302,7 @@
       </section>
 
       <section class="stats-strip" aria-label="Statistiche">
-        <div class="stat-box"><span>Task attivi</span><strong id="stat-active">0</strong></div>
+        <div class="stat-box"><span>Task aperti</span><strong id="stat-active">0</strong></div>
         <div class="stat-box"><span>In attesa</span><strong id="stat-waiting">0</strong></div>
         <div class="stat-box"><span>Completati oggi</span><strong id="stat-today">0</strong></div>
         <div class="stat-box"><span>Questa settimana</span><strong id="stat-week">0</strong></div>
@@ -2493,7 +2493,7 @@ Controllare immagini"></textarea>
     /* =========================================================
        1) CONFIGURAZIONE E STATO
        ========================================================= */
-    const APP_VERSION = 39;
+    const APP_VERSION = 41;
     const DB_NAME = "calendario_task_pro_db";
     const DB_VERSION = 1;
     const STORE_STATE = "state";
@@ -2645,7 +2645,7 @@ Controllare immagini"></textarea>
 
     function normalizeWizardState(raw) {
       const item = safeObject(raw);
-      const validStatuses = ["idle", "intro", "analysis", "results", "fix", "verify", "completed"];
+      const validStatuses = ["idle", "intro", "analysis", "results", "suggestions", "fix", "verify", "completed"];
       return {
         ...clone(DEFAULT_WIZARD_STATE),
         mode: item.mode === "advanced" ? "advanced" : "guided",
@@ -3250,6 +3250,12 @@ Controllare immagini"></textarea>
       return task.date;
     }
 
+    function taskCompletionDate(task, referenceDate = today()) {
+      if (!task) return referenceDate;
+      if (!isRecurring(task)) return task.date;
+      return nextPendingOccurrence(task, referenceDate) || task.date;
+    }
+
     function taskHasPendingWork(task, referenceDate = today()) {
       if (!task || task.status !== "active") return false;
       if (isRecurring(task)) return !!nextPendingOccurrence(task, referenceDate);
@@ -3400,13 +3406,13 @@ Controllare immagini"></textarea>
         const active = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task));
 
         if (state.view === "day") {
-          active.forEach((task) => { if (scheduledOn(task, selected)) list.push({ task, date: selected }); });
+          active.forEach((task) => { if (!isWaitingTask(task) && scheduledOn(task, selected)) list.push({ task, date: selected }); });
         } else if (state.view === "today") {
-          active.forEach((task) => { if (scheduledOn(task, now)) list.push({ task, date: now }); });
+          active.forEach((task) => { if (!isWaitingTask(task) && scheduledOn(task, now)) list.push({ task, date: now }); });
         } else if (state.view === "tomorrow") {
-          active.forEach((task) => { if (scheduledOn(task, tomorrow)) list.push({ task, date: tomorrow }); });
+          active.forEach((task) => { if (!isWaitingTask(task) && scheduledOn(task, tomorrow)) list.push({ task, date: tomorrow }); });
         } else if (state.view === "week") {
-          active.forEach((task) => occurrencesBetween(task, now, weekEnd).forEach((date) => list.push({ task, date })));
+          active.filter((task) => !isWaitingTask(task)).forEach((task) => occurrencesBetween(task, now, weekEnd).forEach((date) => list.push({ task, date })));
         } else if (state.view === "overdue") {
           active
             .filter((task) => !isWaitingTask(task) && task.repeat === "none" && task.date < now && !completedOn(task, task.date))
@@ -3425,7 +3431,7 @@ Controllare immagini"></textarea>
           });
         } else if (state.view === "recurring") {
           active
-            .filter(isRecurring)
+            .filter((task) => isRecurring(task) && !isWaitingTask(task))
             .filter((task) => state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)
             .forEach((task) => {
               const date = nextPendingOccurrence(task, now);
@@ -3545,12 +3551,21 @@ Controllare immagini"></textarea>
     }
 
     function renderAreas() {
-      // I contatori delle aree devono mostrare il totale reale, indipendentemente dal filtro attivo.
-      const active = state.entries.filter((task) => taskHasPendingWork(task));
+      // I contatori delle aree sono globali: non dipendono dalla vista, dal filtro attivo o dall'altra area selezionata.
+      const pendingByArea = Object.fromEntries(AREA_VALUES.map((area) => [area, 0]));
+      state.entries.forEach((task) => {
+        if (!taskHasPendingWork(task)) return;
+        const area = taskArea(task);
+        if (Object.prototype.hasOwnProperty.call(pendingByArea, area)) pendingByArea[area] += 1;
+      });
       AREA_VALUES.forEach((area) => {
-        const count = active.filter((task) => taskArea(task) === area).length;
+        const count = pendingByArea[area] || 0;
         const countElement = $(area === "work" ? "count-work-area" : "count-personal-area");
-        if (countElement) countElement.textContent = count;
+        if (countElement) {
+          countElement.textContent = count;
+          countElement.title = `${count} task aperti in ${areaLabel(area)}`;
+          countElement.setAttribute("aria-label", `${count} task aperti in ${areaLabel(area)}`);
+        }
       });
 
       document.querySelectorAll("[data-area-filter]").forEach((button) => {
@@ -3699,10 +3714,10 @@ Controllare immagini"></textarea>
 
       for (let day = 1; day <= totalDays; day++) {
         const date = ymd(new Date(year, month, day));
-        const dayTasks = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task) && scheduledOn(task, date));
+        const dayTasks = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task) && !isWaitingTask(task) && scheduledOn(task, date));
         const hasTask = dayTasks.length > 0;
         const hasOverdue = dayTasks.some((task) => task.repeat === "none" && date < today() && !completedOn(task, date) && !isWaitingTask(task));
-        const hasWaiting = dayTasks.some(isWaitingTask);
+        const hasWaiting = false;
         const countLabel = hasTask ? `<span class="day-task-count">${dayTasks.length > 9 ? "9+" : dayTasks.length}</span>` : "";
         const title = hasTask ? `${dayTasks.length} task` : "Nessun task";
         const selectedAttributes = date === state.selectedDate ? `aria-pressed="true"` : `aria-pressed="false"`;
@@ -3724,13 +3739,13 @@ Controllare immagini"></textarea>
         if (element) element.textContent = value;
       };
 
-      setCount("count-day", active.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length);
-      setCount("count-today-view", active.filter((task) => scheduledOn(task, now) && !completedOn(task, now)).length);
-      setCount("count-tomorrow", active.filter((task) => scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length);
-      setCount("count-week", active.reduce((sum, task) => sum + occurrencesBetween(task, now, weekEnd).filter((date) => !completedOn(task, date)).length, 0));
+      setCount("count-day", active.filter((task) => !isWaitingTask(task) && scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length);
+      setCount("count-today-view", active.filter((task) => !isWaitingTask(task) && scheduledOn(task, now) && !completedOn(task, now)).length);
+      setCount("count-tomorrow", active.filter((task) => !isWaitingTask(task) && scheduledOn(task, tomorrow) && !completedOn(task, tomorrow)).length);
+      setCount("count-week", active.filter((task) => !isWaitingTask(task)).reduce((sum, task) => sum + occurrencesBetween(task, now, weekEnd).filter((date) => !completedOn(task, date)).length, 0));
       setCount("count-overdue", active.filter((task) => !isWaitingTask(task) && task.repeat === "none" && task.date < now && !completedOn(task, task.date)).length);
       setCount("count-high", active.filter((task) => !isWaitingTask(task) && task.priority === "high" && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
-      setCount("count-recurring", active.filter((task) => isRecurring(task) && !!nextPendingOccurrence(task, now) && (state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)).length);
+      setCount("count-recurring", active.filter((task) => !isWaitingTask(task) && isRecurring(task) && !!nextPendingOccurrence(task, now) && (state.recurringCategoryFilter === "all" || task.cat === state.recurringCategoryFilter)).length);
       setCount("count-waiting", active.filter((task) => isWaitingTask(task) && taskHasPendingWork(task, now)).length);
       setCount("count-completed", active.filter((task) => scheduledOn(task, now) && completedOn(task, now)).length);
       setCount("count-no-time", active.filter((task) => !isWaitingTask(task) && !task.time && (task.repeat === "none" ? !completedOn(task, task.date) : !!nextPendingOccurrence(task, now))).length);
@@ -3760,13 +3775,17 @@ Controllare immagini"></textarea>
       const persistentIds = new Set([...visibleIds, ...waitingPersistent.map(({ task }) => task.id)]);
       const permanent = (state.view === "archive" || state.view === "trash") ? [] : state.permanentIds
         .map((id) => state.entries.find((task) => task.id === id))
-        .filter((task) => task && task.status === "active" && taskMatchesArea(task) && !persistentIds.has(task.id))
-        .map((task) => ({ task, date: isRecurring(task) ? (nextOccurrence(task, state.selectedDate) || task.date) : task.date }))
+        .filter((task) => task && taskHasPendingWork(task) && taskMatchesArea(task) && !persistentIds.has(task.id))
+        .map((task) => ({ task, date: isRecurring(task) ? (nextPendingOccurrence(task, today()) || task.date) : task.date }))
         .filter((item) => item.date);
 
+      const renderedOpenKeys = new Set();
+      [...list, ...waitingPersistent, ...permanent].forEach(({ task, date }) => {
+        if (!completedOn(task, date)) renderedOpenKeys.add(`${task.id}@${date}`);
+      });
       $("open-count").textContent = (state.view === "archive" || state.view === "trash")
         ? list.length
-        : list.filter(({ task, date }) => !completedOn(task, date)).length;
+        : renderedOpenKeys.size;
 
       let html = "";
       if (list.length) html += taskRowsByArea(list);
@@ -3783,10 +3802,11 @@ Controllare immagini"></textarea>
     }
 
     function taskCard({ task, date }) {
-      const done = completedOn(task, date);
       const waiting = isWaitingTask(task);
+      const completionDate = waiting ? taskCompletionDate(task, today()) : date;
+      const done = completedOn(task, completionDate);
       const overdue = task.status === "active" && date < today() && !done && !waiting;
-      const subtasksDone = safeArray(task.subtaskDone?.[date]);
+      const subtasksDone = safeArray(task.subtaskDone?.[completionDate]);
       const priorityBadge = task.priority === "high" ? "badge-danger" : task.priority === "med" ? "badge-primary" : "badge-success";
       const repeatText = isRecurring(task) ? `<span class="badge">🔁 ${repeatLabel(task.repeat)}</span>` : "";
       const durationText = task.durationMinutes ? `<span class="badge">⏱ ${task.durationMinutes} min</span>` : "";
@@ -3813,7 +3833,7 @@ Controllare immagini"></textarea>
       const activeActions = `
         <button class="btn ${done ? "btn-ghost" : "btn-success"} btn-icon" type="button" data-action="toggle" aria-label="${done ? "Riapri" : "Completa"} ${escapeHtml(task.text)}">${done ? "↩" : "✓"}</button>
         <button class="btn btn-ghost btn-icon" type="button" data-action="edit" aria-label="Modifica ${escapeHtml(task.text)}">✎</button>
-        <button class="btn btn-ghost btn-icon" type="button" data-action="move-next" aria-label="Sposta ${escapeHtml(task.text)} al giorno dopo">→</button>
+        ${waiting ? "" : `<button class="btn btn-ghost btn-icon" type="button" data-action="move-next" aria-label="Sposta ${escapeHtml(task.text)} al giorno dopo">→</button>`}
         <details class="task-more">
           <summary aria-label="Altre azioni per ${escapeHtml(task.text)}">Altro</summary>
           <div class="task-more-menu">
@@ -3830,7 +3850,7 @@ Controllare immagini"></textarea>
         ${task.status === "trash" ? `<button class="btn btn-danger" type="button" data-action="delete-forever">Elimina definitivamente</button>` : ""}`;
 
       return `
-        <article class="task-card ${done ? "is-complete" : ""} ${overdue ? "is-overdue" : ""} ${waiting ? "is-waiting" : ""}" draggable="${draggable}" data-task-id="${escapeHtml(task.id)}" data-date="${escapeHtml(date)}" style="--task-color:${escapeHtml(cleanColor(task.color, categoryColor(task.cat)))}">
+        <article class="task-card ${done ? "is-complete" : ""} ${overdue ? "is-overdue" : ""} ${waiting ? "is-waiting" : ""}" draggable="${draggable}" data-task-id="${escapeHtml(task.id)}" data-date="${escapeHtml(date)}" data-completion-date="${escapeHtml(completionDate)}" style="--task-color:${escapeHtml(cleanColor(task.color, categoryColor(task.cat)))}">
           <div class="task-timebox">
             <strong>${escapeHtml(task.time || "—")}</strong>
             <span>${humanDate(date, { day: "2-digit", month: "short" })}</span>
@@ -3897,7 +3917,7 @@ Controllare immagini"></textarea>
        Analizza → spiega → consiglia → esegui → verifica → continua.
        ========================================================= */
     function wizardStepForStatus(status) {
-      return ({ idle: 1, intro: 1, analysis: 1, results: 2, fix: 3, verify: 4, completed: 5 })[status] || 1;
+      return ({ idle: 1, intro: 1, analysis: 1, results: 2, suggestions: 2, fix: 3, verify: 4, completed: 5 })[status] || 1;
     }
 
     function formatWizardDate(value) {
@@ -3987,7 +4007,7 @@ Controllare immagini"></textarea>
     function renderGuidanceCard() {
       const report = buildWizardReport();
       const wizard = state.wizard || clone(DEFAULT_WIZARD_STATE);
-      const inProgress = ["intro", "analysis", "results", "fix", "verify"].includes(wizard.status);
+      const inProgress = ["intro", "analysis", "results", "suggestions", "fix", "verify"].includes(wizard.status);
       const title = $("guidance-title");
       const text = $("guidance-text");
       const mode = $("guidance-mode");
@@ -3997,8 +4017,10 @@ Controllare immagini"></textarea>
 
       if (inProgress) {
         const remaining = report.issues.length;
-        title.textContent = "Riprendi il controllo guidato";
-        text.textContent = remaining ? `Hai ancora ${remaining} ${remaining === 1 ? "problema" : "problemi"} da controllare.` : "La verifica è pronta per essere completata.";
+        title.textContent = wizard.status === "suggestions" ? "Suggerimenti del controllo" : "Riprendi il controllo guidato";
+        text.textContent = wizard.status === "suggestions"
+          ? `${report.suggestions.length} ${report.suggestions.length === 1 ? "suggerimento facoltativo disponibile" : "suggerimenti facoltativi disponibili"}.`
+          : remaining ? `Hai ancora ${remaining} ${remaining === 1 ? "problema" : "problemi"} da controllare.` : "La verifica è pronta per essere completata.";
         primary.textContent = "Continua il controllo";
         primary.dataset.wizardIntent = "resume";
       } else if (wizard.lastRunAt) {
@@ -4164,6 +4186,24 @@ Controllare immagini"></textarea>
         return;
       }
 
+      if (status === "suggestions") {
+        const suggestions = report.suggestions;
+        content.innerHTML = `
+          <h4>Suggerimenti facoltativi</h4>
+          <p>Questi consigli non sono errori e non modificano automaticamente i tuoi task.</p>
+          <div class="wizard-summary">
+            ${suggestions.length
+              ? suggestions.map((suggestion, index) => `<div class="wizard-summary-item"><span class="wizard-summary-icon">${index + 1}</span><span>${escapeHtml(suggestion)}</span></div>`).join("")
+              : `<div class="wizard-summary-item is-success"><span class="wizard-summary-icon">✓</span><span>Non ci sono suggerimenti facoltativi in questo momento.</span></div>`}
+          </div>
+          <div class="wizard-actions">
+            <button class="btn btn-primary" type="button" data-wizard-action="show-results">Torna al riepilogo</button>
+            ${report.issues.length ? `<button class="btn btn-ghost" type="button" data-wizard-action="start-fixes">Vai alle correzioni</button>` : `<button class="btn btn-ghost" type="button" data-wizard-action="complete-wizard">Completa controllo</button>`}
+          </div>
+          ${wizardTechnicalDetails(report)}`;
+        return;
+      }
+
       if (status === "fix") {
         const issue = currentWizardIssue(report);
         content.innerHTML = issue
@@ -4306,6 +4346,13 @@ Controllare immagini"></textarea>
       renderWizard();
     }
 
+    async function showWizardSuggestions() {
+      state.wizard.status = "suggestions";
+      await persistState();
+      renderGuidanceCard();
+      renderWizard();
+    }
+
     async function nextWizardIssue() {
       const report = buildWizardReport();
       if (!report.issues.length) return completeGuidedWizard();
@@ -4417,7 +4464,8 @@ Controllare immagini"></textarea>
       if (action === "run-analysis") return runWizardAnalysis();
       if (action === "start-fixes") return startWizardFixes();
       if (action === "complete-wizard") return completeGuidedWizard();
-      if (action === "show-results" || action === "show-suggestions") return showWizardResults();
+      if (action === "show-results") return showWizardResults();
+      if (action === "show-suggestions") return showWizardSuggestions();
       if (action === "restart-wizard") return openGuidedWizard({ restart: true });
       if (action === "move-overdue") return moveWizardOverdueTask();
       if (action === "save-followup") return saveWizardFollowUp();
@@ -5630,7 +5678,7 @@ Controllare immagini"></textarea>
         if (!task || !action || action === "subtask") return;
 
         if (action === "edit") await editTask(task.id, date);
-        if (action === "toggle") await toggleComplete(task, date);
+        if (action === "toggle") await toggleComplete(task, card.dataset.completionDate || date);
         if (action === "move-next") await moveOccurrence(task, date);
         if (action === "waiting") await toggleWaiting(task);
         if (action === "snooze") await snoozeTask(task, date);
@@ -5646,7 +5694,7 @@ Controllare immagini"></textarea>
         if (event.target.dataset.action !== "subtask") return;
         const card = event.target.closest(".task-card");
         const task = state.entries.find((entry) => entry.id === card.dataset.taskId);
-        if (task) await toggleSubtask(task, card.dataset.date, event.target.dataset.subtaskId);
+        if (task) await toggleSubtask(task, card.dataset.completionDate || card.dataset.date, event.target.dataset.subtaskId);
       });
 
       let draggedId = "";
