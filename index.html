@@ -1989,6 +1989,44 @@
       .wizard-actions .btn { width: 100%; }
     }
 
+  
+    /* =========================================================
+       PERSONALIZZAZIONE — "IN ATTESA" ARANCIONE
+       Evidenzia la vista rapida e il box statistico In attesa.
+       ========================================================= */
+    .nav-panel .view-btn[data-view="waiting"] {
+      background: color-mix(in srgb, #f59e0b 24%, var(--surface));
+      border-color: color-mix(in srgb, #f59e0b 58%, var(--border));
+      box-shadow: inset 5px 0 0 #f59e0b;
+    }
+
+    .nav-panel .view-btn[data-view="waiting"]:hover,
+    .nav-panel .view-btn[data-view="waiting"].active {
+      background: color-mix(in srgb, #f59e0b 34%, var(--surface));
+      border-color: #f59e0b;
+    }
+
+    .stats-strip .stat-box:has(#stat-waiting) {
+      background: color-mix(in srgb, #f59e0b 26%, var(--surface));
+      border-color: color-mix(in srgb, #f59e0b 58%, var(--border));
+      box-shadow: inset 0 4px 0 #f59e0b;
+    }
+
+    .stats-strip .stat-box:has(#stat-waiting) span,
+    .stats-strip .stat-box:has(#stat-waiting) strong {
+      color: color-mix(in srgb, #b45309 82%, var(--text));
+    }
+
+    [data-theme="dark"] .nav-panel .view-btn[data-view="waiting"] {
+      background: color-mix(in srgb, #f59e0b 24%, #0f172a);
+    }
+
+    [data-theme="dark"] .nav-panel .view-btn[data-view="waiting"]:hover,
+    [data-theme="dark"] .nav-panel .view-btn[data-view="waiting"].active,
+    [data-theme="dark"] .stats-strip .stat-box:has(#stat-waiting) {
+      background: color-mix(in srgb, #f59e0b 30%, #0f172a);
+    }
+
   </style>
 </head>
 
