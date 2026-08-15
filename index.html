@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#4f46e5" />
   <meta name="description" content="Calendario task locale con aree Lavoro e Personale, controllo guidato, ricorrenze, sottotask, archivio, backup e ricerca." />
-  <title>Calendario Task Pro 42</title>
+  <title>Calendario Task Pro 41</title>
 
   <style>
     /* =========================================================
@@ -669,8 +669,10 @@
     .task-card.is-complete { opacity: .62; }
     .task-card.is-overdue { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
     .task-card.is-waiting {
-      background: color-mix(in srgb, var(--warning) 5%, var(--surface));
-      border-color: color-mix(in srgb, var(--warning) 34%, var(--border));
+      /* Lo stato deve restare immediatamente riconoscibile anche fuori dalla vista dedicata. */
+      background: color-mix(in srgb, #f59e0b 18%, var(--surface));
+      border-color: color-mix(in srgb, #f59e0b 60%, var(--border));
+      box-shadow: inset 5px 0 0 #f59e0b, 0 8px 22px rgba(245, 158, 11, .10);
     }
     .task-timebox {
       border-radius: var(--radius-md);
@@ -765,6 +767,18 @@
       letter-spacing: .08em;
     }
     .stat-box strong { display: block; margin-top: 4px; font-size: 1.24rem; }
+    button.stat-box {
+      width: 100%;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+    }
+    button.stat-box:hover,
+    button.stat-box:focus-visible {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--primary) 48%, var(--border));
+      box-shadow: var(--soft-shadow);
+    }
     .progress {
       height: 7px;
       margin-top: 8px;
@@ -2027,56 +2041,6 @@
       background: color-mix(in srgb, #f59e0b 30%, #0f172a);
     }
 
-  
-    /* "IN ATTESA · SEMPRE VISIBILI" — background arancione */
-    .section-row.waiting-persistent-row {
-      padding: 10px 12px;
-      border: 1px solid color-mix(in srgb, #f59e0b 58%, var(--border));
-      border-radius: var(--radius-md);
-      background: color-mix(in srgb, #f59e0b 28%, var(--surface));
-      color: color-mix(in srgb, #b45309 84%, var(--text));
-      box-shadow: inset 5px 0 0 #f59e0b;
-    }
-
-    [data-theme="dark"] .section-row.waiting-persistent-row {
-      background: color-mix(in srgb, #f59e0b 30%, #0f172a);
-      color: #fbbf24;
-    }
-
-  
-    /* =========================================================
-       V42 — BOX STATISTICHE CLICCABILI
-       ========================================================= */
-    .stats-strip .stat-box[data-stat-view] {
-      appearance: none;
-      width: 100%;
-      font: inherit;
-      color: inherit;
-      cursor: pointer;
-      transition: transform .15s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease;
-    }
-
-    .stats-strip .stat-box[data-stat-view]:hover {
-      transform: translateY(-2px);
-      border-color: color-mix(in srgb, var(--primary) 46%, var(--border));
-      box-shadow: 0 10px 22px rgba(15, 23, 42, .08);
-    }
-
-    .stats-strip .stat-box[data-stat-view]:focus-visible {
-      outline: 3px solid color-mix(in srgb, var(--primary) 55%, transparent);
-      outline-offset: 3px;
-    }
-
-    .stats-strip .stat-box[data-stat-view].is-active {
-      border-color: color-mix(in srgb, var(--primary) 62%, var(--border));
-      box-shadow: inset 0 4px 0 var(--primary);
-    }
-
-    .stats-strip .stat-box[data-stat-view="waiting"].is-active {
-      border-color: #f59e0b;
-      box-shadow: inset 0 4px 0 #f59e0b;
-    }
-
   </style>
 </head>
 
@@ -2390,12 +2354,12 @@
       </section>
 
       <section class="stats-strip" aria-label="Statistiche">
-        <button class="stat-box" type="button" data-stat-view="open-all" aria-label="Visualizza tutti i task aperti"><span>Task aperti</span><strong id="stat-active">0</strong></button>
-        <button class="stat-box" type="button" data-stat-view="waiting" aria-label="Visualizza i task in attesa"><span>In attesa</span><strong id="stat-waiting">0</strong></button>
-        <button class="stat-box" type="button" data-stat-view="completed" aria-label="Visualizza i task completati oggi"><span>Completati oggi</span><strong id="stat-today">0</strong></button>
-        <button class="stat-box" type="button" data-stat-view="completed-week" aria-label="Visualizza i task completati questa settimana"><span>Questa settimana</span><strong id="stat-week">0</strong></button>
-        <button class="stat-box" type="button" data-stat-view="completed-all" aria-label="Visualizza tutti i task completati"><span>Totale completati</span><strong id="stat-all">0</strong></button>
-        <button class="stat-box" type="button" data-stat-view="day" aria-label="Visualizza il focus del giorno selezionato"><span>Focus giorno</span><strong id="stat-score">0%</strong><div class="progress"><div id="stat-progress"></div></div></button>
+        <button class="stat-box" type="button" data-view="day" aria-label="Apri i task del giorno selezionato"><span>Task aperti</span><strong id="stat-active">0</strong></button>
+        <button class="stat-box" type="button" data-view="waiting" aria-label="Apri i task in attesa"><span>In attesa</span><strong id="stat-waiting">0</strong></button>
+        <button class="stat-box" type="button" data-view="completed" aria-label="Apri i task completati oggi"><span>Completati oggi</span><strong id="stat-today">0</strong></button>
+        <button class="stat-box" type="button" data-view="week" aria-label="Apri i task dei prossimi sette giorni"><span>Questa settimana</span><strong id="stat-week">0</strong></button>
+        <div class="stat-box"><span>Totale completati</span><strong id="stat-all">0</strong></div>
+        <div class="stat-box"><span>Focus giorno</span><strong id="stat-score">0%</strong><div class="progress"><div id="stat-progress"></div></div></div>
       </section>
     </main>
 
@@ -2623,7 +2587,7 @@ Controllare immagini"></textarea>
       lastVerificationOK: null
     };
     const WAITING_PATTERN = /(^|[^\p{L}\p{N}])(attesa|in attesa|attendo|attendere|aspettando|aspetto|sospeso|sospesa|follow[- ]?up)(?=$|[^\p{L}\p{N}])/iu;
-    const VALID_VIEWS = ["day", "today", "tomorrow", "week", "overdue", "high", "completed", "completed-week", "completed-all", "open-all", "no-time", "waiting", "recurring", "archive", "trash"];
+    const VALID_VIEWS = ["day", "today", "tomorrow", "week", "overdue", "high", "completed", "no-time", "waiting", "recurring", "archive", "trash"];
 
     const DEFAULT_CATEGORIES = {
       "App.ti": { subs: ["Visita", "Call"], color: "#6366f1" },
@@ -3188,6 +3152,13 @@ Controllare immagini"></textarea>
     function normalizeState(raw) {
       const data = Array.isArray(raw) ? { entries: raw } : safeObject(raw);
       const entries = safeArray(data.entries || data.tasks || data.data).map(normalizeTask);
+      // Un backup unito o un vecchio salvataggio può contenere ID duplicati.
+      // Senza questa correzione un click può modificare o eliminare il task sbagliato.
+      const usedTaskIds = new Set();
+      entries.forEach((task) => {
+        while (usedTaskIds.has(task.id)) task.id = uid();
+        usedTaskIds.add(task.id);
+      });
       const categories = normalizeCategories(data);
       Object.keys(categories).forEach((name) => {
         if (name.toLowerCase() === WAITING_CATEGORY.toLowerCase()) delete categories[name];
@@ -3512,26 +3483,6 @@ Controllare immagini"></textarea>
           });
         } else if (state.view === "completed") {
           active.forEach((task) => { if (scheduledOn(task, now) && completedOn(task, now)) list.push({ task, date: now }); });
-        } else if (state.view === "open-all") {
-          active.filter((task) => taskHasPendingWork(task, now)).forEach((task) => {
-            const date = isWaitingTask(task)
-              ? waitingDisplayDate(task, now)
-              : (task.repeat === "none" ? task.date : (nextPendingOccurrence(task, now) || task.date));
-            if (date) list.push({ task, date });
-          });
-        } else if (state.view === "completed-week") {
-          const weekStart = addDays(now, -((parseDate(now).getDay() + 6) % 7));
-          const weekEnd = addDays(weekStart, 6);
-          state.entries
-            .filter((task) => taskMatchesArea(task))
-            .forEach((task) => safeArray(task.completedDates)
-              .filter((date) => date >= weekStart && date <= weekEnd)
-              .forEach((date) => list.push({ task, date })));
-        } else if (state.view === "completed-all") {
-          state.entries
-            .filter((task) => taskMatchesArea(task))
-            .forEach((task) => safeArray(task.completedDates)
-              .forEach((date) => list.push({ task, date })));
         } else if (state.view === "no-time") {
           active.filter((task) => !isWaitingTask(task) && !task.time).forEach((task) => {
             const date = task.repeat === "none" ? (!completedOn(task, task.date) ? task.date : "") : nextPendingOccurrence(task, now);
@@ -3616,9 +3567,6 @@ Controllare immagini"></textarea>
         week: ["Prossimi 7 giorni", `${humanDate(today())} – ${humanDate(addDays(today(), 6))}`],
         high: ["Priorità alta", "Prossime attività urgenti"],
         completed: ["Completati oggi", humanDate(today(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
-        "completed-week": ["Completati questa settimana", "Task completati nella settimana corrente"],
-        "completed-all": ["Totale completati", "Tutti i task completati registrati"],
-        "open-all": ["Task aperti", "Tutti i task ancora da completare"],
         "no-time": ["Task senza orario", "Attività da pianificare"],
         recurring: ["Task ricorrenti", state.recurringCategoryFilter === "all" ? "Prossime occorrenze delle serie attive" : `Categoria: ${state.recurringCategoryFilter}`],
         waiting: [WAITING_LABEL, "Task sospesi o da seguire più avanti"],
@@ -3714,11 +3662,6 @@ Controllare immagini"></textarea>
       document.querySelectorAll("[data-view]").forEach((button) => {
         const active = button.dataset.view === state.view;
         button.classList.toggle("active", active);
-        button.setAttribute("aria-pressed", String(active));
-      });
-      document.querySelectorAll("[data-stat-view]").forEach((button) => {
-        const active = button.dataset.statView === state.view;
-        button.classList.toggle("is-active", active);
         button.setAttribute("aria-pressed", String(active));
       });
       $("sort-select").value = state.sort;
@@ -3831,11 +3774,15 @@ Controllare immagini"></textarea>
       for (let day = 1; day <= totalDays; day++) {
         const date = ymd(new Date(year, month, day));
         const dayTasks = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task) && !isWaitingTask(task) && scheduledOn(task, date));
+        const waitingDayTasks = state.entries.filter((task) => task.status === "active" && taskMatchesArea(task) && isWaitingTask(task) && waitingDisplayDate(task, today()) === date && taskHasPendingWork(task));
         const hasTask = dayTasks.length > 0;
         const hasOverdue = dayTasks.some((task) => task.repeat === "none" && date < today() && !completedOn(task, date) && !isWaitingTask(task));
-        const hasWaiting = false;
+        const hasWaiting = waitingDayTasks.length > 0;
         const countLabel = hasTask ? `<span class="day-task-count">${dayTasks.length > 9 ? "9+" : dayTasks.length}</span>` : "";
-        const title = hasTask ? `${dayTasks.length} task` : "Nessun task";
+        const titleParts = [];
+        if (hasTask) titleParts.push(`${dayTasks.length} task`);
+        if (hasWaiting) titleParts.push(`${waitingDayTasks.length} in attesa`);
+        const title = titleParts.join(" · ") || "Nessun task";
         const selectedAttributes = date === state.selectedDate ? `aria-pressed="true"` : `aria-pressed="false"`;
         const currentAttribute = date === today() ? `aria-current="date"` : "";
         const ariaLabel = `${humanDate(date, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}: ${title}`;
@@ -3883,13 +3830,13 @@ Controllare immagini"></textarea>
     function renderTaskList() {
       const list = visibleOccurrences();
       const visibleIds = new Set(list.map(({ task }) => task.id));
-      const waitingPersistent = (["archive", "trash", "waiting", "completed", "completed-week", "completed-all", "open-all"].includes(state.view)) ? [] : state.entries
+      const waitingPersistent = (state.view === "archive" || state.view === "trash" || state.view === "waiting") ? [] : state.entries
         .filter((task) => taskHasPendingWork(task) && taskMatchesArea(task) && isWaitingTask(task) && !visibleIds.has(task.id))
         .map((task) => ({ task, date: waitingDisplayDate(task, today()) }))
         .filter((item) => item.date);
 
       const persistentIds = new Set([...visibleIds, ...waitingPersistent.map(({ task }) => task.id)]);
-      const permanent = (["archive", "trash", "completed", "completed-week", "completed-all", "open-all"].includes(state.view)) ? [] : state.permanentIds
+      const permanent = (state.view === "archive" || state.view === "trash") ? [] : state.permanentIds
         .map((id) => state.entries.find((task) => task.id === id))
         .filter((task) => task && taskHasPendingWork(task) && taskMatchesArea(task) && !persistentIds.has(task.id))
         .map((task) => ({ task, date: isRecurring(task) ? (nextPendingOccurrence(task, today()) || task.date) : task.date }))
@@ -3906,7 +3853,7 @@ Controllare immagini"></textarea>
       let html = "";
       if (list.length) html += taskRowsByArea(list);
       if (waitingPersistent.length) {
-        html += `<div class="section-row waiting-persistent-row"><span>⏳ In attesa · sempre visibili</span><span>${waitingPersistent.length}</span></div>`;
+        html += `<div class="section-row"><span>⏳ In attesa · sempre visibili</span><span>${waitingPersistent.length}</span></div>`;
         html += taskRowsByArea(waitingPersistent);
       }
       if (permanent.length) {
@@ -5142,6 +5089,7 @@ Controllare immagini"></textarea>
       let priority = "low";
       let repeat = "none";
       let waiting = false;
+      let newCategoryName = "";
       let area = state.areaFilter === "all" ? inferTaskArea({ cat, text }) : state.areaFilter;
 
       const categoryMatch = text.match(/#([\p{L}\p{N}_.-]+)/u);
@@ -5153,7 +5101,8 @@ Controllare immagini"></textarea>
           const found = Object.keys(state.categories).find((category) => category.toLowerCase() === wanted.toLowerCase());
           if (found) cat = found;
           else {
-            state.categories[wanted] = { subs: [], color: PALETTE[Object.keys(state.categories).length % PALETTE.length] };
+            // La categoria viene creata dentro mutate(), così backup e Annulla restano coerenti.
+            newCategoryName = wanted;
             cat = wanted;
           }
         }
@@ -5183,6 +5132,9 @@ Controllare immagini"></textarea>
       area = state.areaFilter === "all" ? inferTaskArea({ cat, text }) : state.areaFilter;
 
       await mutate("Task aggiunto rapidamente", async () => {
+        if (newCategoryName && !state.categories[newCategoryName]) {
+          state.categories[newCategoryName] = { subs: [], color: PALETTE[Object.keys(state.categories).length % PALETTE.length] };
+        }
         state.entries.push({
           id: uid(),
           text,
@@ -5689,18 +5641,6 @@ Controllare immagini"></textarea>
         await persistState();
         await renderAll();
         if (button.closest(".mobile-quick-nav") || window.matchMedia("(max-width: 820px)").matches) closeMobileDrawers();
-      });
-
-      document.addEventListener("click", async (event) => {
-        const button = event.target.closest("[data-stat-view]");
-        if (!button) return;
-        const view = button.dataset.statView;
-        if (!VALID_VIEWS.includes(view)) return;
-        state.view = view;
-        if (view === "day") selectDate(state.selectedDate, "day");
-        await persistState();
-        await renderAll();
-        document.querySelector(".task-list-wrap")?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
 
       document.addEventListener("click", async (event) => {
