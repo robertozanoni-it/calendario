@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#4f46e5" />
 <meta name="description" content="Calendario task locale con aree Lavoro e Personale, controllo guidato, ricorrenze, sottotask, archivio, backup e ricerca." />
-<title>Calendario Task Pro 45</title>
+<title>Calendario Task Pro 46</title>
 <style>
 :root {
 --bg: #f5f7fb;
@@ -603,12 +603,9 @@ background: var(--task-color, var(--primary));
 .task-card.is-waiting {
 background: color-mix(in srgb, #dc2626 13%, var(--surface));
 border-color: color-mix(in srgb, #dc2626 58%, var(--border));
-box-shadow: inset 8px 0 0 #dc2626, 0 8px 22px rgba(220, 38, 38, .12);
-}
-.task-card.is-waiting::before { display: none; }
-.task-card.is-waiting {
 box-shadow: 0 8px 22px rgba(220, 38, 38, .12);
 }
+.task-card.is-waiting::before { display: none; }
 .waiting-category-note {
 --cat-bg: var(--primary);
 --cat-text: #fff;
@@ -2336,7 +2333,7 @@ Controllare immagini"></textarea>
 <button type="button" data-mobile-action="menu">Menu</button>
 </nav>
 <script>
-const APP_VERSION = 45;
+const APP_VERSION = 46;
 const DB_NAME = "calendario_task_pro_db";
 const DB_VERSION = 1;
 const STORE_STATE = "state";
@@ -2721,6 +2718,15 @@ async function getImage(id) {
 if (!id) return null;
 if (memoryFallbackImages.has(id)) return memoryFallbackImages.get(id);
 return await dbGet(STORE_IMAGES, id);
+}
+function imageIsReferenced(imageId) {
+if (!imageId) return false;
+return state.entries.some((task) => task.imageId === imageId);
+}
+async function cleanupImageIfUnused(imageId) {
+if (!imageId || imageIsReferenced(imageId)) return;
+await dbDelete(STORE_IMAGES, imageId);
+memoryFallbackImages.delete(imageId);
 }
 async function compressImage(file) {
 if (!file || !file.type.startsWith("image/")) throw new Error("Formato immagine non valido.");
@@ -4301,6 +4307,7 @@ if (singleScope) singleScope.checked = true;
 openModal("modal-recurring");
 return;
 }
+const previousImageId = task.imageId;
 await mutate("Task aggiornato", async () => {
 const imageId = await resolveImageId(task.imageId);
 Object.assign(task, data, {
@@ -4308,6 +4315,7 @@ subtasks: mapSubtasks(task, data.subtasks),
 imageId,
 updatedAt: today()
 });
+if (previousImageId && previousImageId !== imageId) await cleanupImageIfUnused(previousImageId);
 });
 resetForm();
 await resumeWizardAfterManualSave(task.id);
@@ -4320,6 +4328,7 @@ if (!task) return;
 const mutationMessage = scope === "single" && data.repeat === "none"
 ? "Task salvato senza ricorrenza"
 : "Ricorrenza aggiornata";
+const previousImageId = task.imageId;
 await mutate(mutationMessage, async () => {
 const imageId = await resolveImageId(task.imageId);
 const updatedData = {
@@ -4331,6 +4340,7 @@ updatedAt: today()
 if (scope === "all") {
 const seriesDate = data.date === occurrence ? originalSeriesDate : data.date;
 Object.assign(task, updatedData, { date: seriesDate || task.date });
+if (previousImageId && previousImageId !== imageId) await cleanupImageIfUnused(previousImageId);
 } else if (scope === "single") {
 const newDate = data.date || occurrence;
 task.excludedDates = [...new Set([...task.excludedDates, occurrence])];
@@ -4601,10 +4611,12 @@ const key = String(new Date().getFullYear());
 state.completionArchive[key] = Number(state.completionArchive[key] || 0) + count;
 }
 async function deleteTaskForever(task) {
+const imageId = task.imageId;
 await mutate("Task eliminato definitivamente", async () => {
 archiveTaskCompletions(task);
 state.entries = state.entries.filter((entry) => entry.id !== task.id);
 state.permanentIds = state.permanentIds.filter((id) => id !== task.id);
+await cleanupImageIfUnused(imageId);
 });
 }
 async function archiveTask(task) {
@@ -5284,6 +5296,13 @@ const visibleIds = [...new Set(visibleOccurrences().map(({ task }) => task.id))]
 const from = visibleIds.indexOf(draggedId);
 const to = visibleIds.indexOf(target.dataset.taskId);
 if (from < 0 || to < 0) return;
+const draggedTask = state.entries.find((entry) => entry.id === draggedId);
+const targetTask = state.entries.find((entry) => entry.id === target.dataset.taskId);
+if (!draggedTask || !targetTask) return;
+if (taskArea(draggedTask) !== taskArea(targetTask) || draggedTask.cat !== targetTask.cat) {
+showToast("In ordine manuale puoi spostare un task solo dentro la stessa area e categoria.", true);
+return;
+}
 await mutate("Ordine manuale aggiornato", async () => {
 visibleIds.splice(to, 0, visibleIds.splice(from, 1)[0]);
 visibleIds.forEach((id, index) => {
@@ -5386,9 +5405,11 @@ title: "Svuota cestino",
 message: `Eliminare definitivamente ${trash.length} task? L'operazione può essere annullata dal messaggio successivo.`,
 confirmLabel: "Svuota cestino",
 action: () => mutate("Cestino svuotato", async () => {
+const imageIds = [...new Set(trash.map((task) => task.imageId).filter(Boolean))];
 trash.forEach(archiveTaskCompletions);
 state.entries = state.entries.filter((task) => task.status !== "trash" || !taskMatchesArea(task));
 state.permanentIds = state.permanentIds.filter((id) => state.entries.some((task) => task.id === id));
+for (const imageId of imageIds) await cleanupImageIfUnused(imageId);
 })
 });
 });
