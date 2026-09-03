@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#4f46e5" />
 <meta name="description" content="Calendario task locale con aree Lavoro e Personale, controllo guidato, ricorrenze, sottotask, archivio, backup e ricerca." />
-<title>Calendario Task Pro 46</title>
+<title>Calendario Task Pro 47</title>
 <style>
 :root {
 --bg: #f5f7fb;
@@ -1862,6 +1862,28 @@ box-shadow:
 inset 0 1px 0 rgba(255,255,255,.12),
 0 6px 15px rgba(0,0,0,.16);
 }
+
+.category-group-row[draggable="true"] {
+cursor: grab;
+user-select: none;
+}
+.category-group-row[draggable="true"]:active { cursor: grabbing; }
+.category-group-row.is-category-dragging { opacity: .58; }
+.category-group-row.is-category-drop-target {
+outline: 3px solid color-mix(in srgb, var(--primary) 48%, transparent);
+outline-offset: 2px;
+}
+.category-drag-handle {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+margin-right: 2px;
+font-size: .82rem;
+letter-spacing: -2px;
+opacity: .82;
+}
+.category-group-row[draggable="false"] .category-drag-handle { display: none; }
+
 .task-subcategory-badge {
 color: var(--muted);
 background: var(--surface-soft);
@@ -2333,7 +2355,7 @@ Controllare immagini"></textarea>
 <button type="button" data-mobile-action="menu">Menu</button>
 </nav>
 <script>
-const APP_VERSION = 46;
+const APP_VERSION = 47;
 const DB_NAME = "calendario_task_pro_db";
 const DB_VERSION = 1;
 const STORE_STATE = "state";
@@ -2392,6 +2414,7 @@ const DEFAULT_STATE = {
 version: APP_VERSION,
 entries: [],
 categories: clone(DEFAULT_CATEGORIES),
+categoryOrder: Object.keys(DEFAULT_CATEGORIES),
 permanentIds: [],
 selectedDate: "",
 view: "day",
@@ -2910,10 +2933,20 @@ const ids = new Set(entries.map((task) => task.id));
 const permanentIds = safeArray(data.permanentIds || data.permanentTasks)
 .map((value) => String(typeof value === "object" ? value.id : value))
 .filter((id) => ids.has(id));
+
+const categoryNames = Object.keys(categories);
+const storedCategoryOrder = safeArray(data.categoryOrder)
+.map((name) => cleanText(name))
+.filter((name) => categoryNames.includes(name));
+const categoryOrder = [
+...new Set(storedCategoryOrder),
+...categoryNames.filter((name) => !storedCategoryOrder.includes(name))
+];
 return {
 version: APP_VERSION,
 entries,
 categories,
+categoryOrder,
 permanentIds,
 selectedDate: cleanDate(data.selectedDate || data.selectedFocusDate),
 view: VALID_VIEWS.includes(data.view) ? data.view : "day",
@@ -3218,7 +3251,7 @@ if (aDone !== bDone) return aDone ? 1 : -1;
 if (mode === "time") return a.date.localeCompare(b.date) || minuteRank(a.task.time) - minuteRank(b.task.time);
 if (mode === "priority") return priorityRank(a.task.priority) - priorityRank(b.task.priority) || a.date.localeCompare(b.date) || minuteRank(a.task.time) - minuteRank(b.task.time);
 if (mode === "category") return a.task.cat.localeCompare(b.task.cat, "it") || a.date.localeCompare(b.date) || minuteRank(a.task.time) - minuteRank(b.task.time);
-if (mode === "manual") return (a.task.order || 0) - (b.task.order || 0);
+if (mode === "manual") return categoryOrderIndex(a.task.cat) - categoryOrderIndex(b.task.cat) || (a.task.order || 0) - (b.task.order || 0);
 const aOverdue = a.date < now && !aDone;
 const bOverdue = b.date < now && !bDone;
 if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
@@ -3360,8 +3393,33 @@ if (priority !== "all") chips.push({ key: "priority", label: `Priorità: ${prior
 if (content !== "all") chips.push({ key: "content", label: content === "has-link" ? "Con link" : "Con sottotask" });
 container.innerHTML = chips.map((chip) => `<button class="filter-chip" type="button" data-clear-filter="${chip.key}" aria-label="Rimuovi filtro ${escapeHtml(chip.label)}">${escapeHtml(chip.label)} ×</button>`).join("");
 }
+
+function orderedCategoryNames() {
+const names = Object.keys(state.categories).filter((category) => category !== WAITING_CATEGORY);
+const stored = safeArray(state.categoryOrder).filter((category) => names.includes(category));
+const missing = names.filter((category) => !stored.includes(category));
+state.categoryOrder = [...stored, ...missing];
+return [...state.categoryOrder];
+}
+
+function categoryOrderIndex(category) {
+const index = orderedCategoryNames().indexOf(category);
+return index < 0 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+function moveCategoryInState(sourceCategory, targetCategory) {
+if (!sourceCategory || !targetCategory || sourceCategory === targetCategory) return false;
+const order = orderedCategoryNames();
+const from = order.indexOf(sourceCategory);
+const to = order.indexOf(targetCategory);
+if (from < 0 || to < 0) return false;
+order.splice(to, 0, order.splice(from, 1)[0]);
+state.categoryOrder = order;
+return true;
+}
+
 function renderCategories() {
-const categories = Object.keys(state.categories).filter((category) => category !== WAITING_CATEGORY).sort((a, b) => a.localeCompare(b, "it"));
+const categories = orderedCategoryNames();
 const categoryOptions = categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
 const allOptions = `<option value="all">Tutte le categorie</option>${categoryOptions}`;
 const taskCategory = $("task-category");
@@ -3463,15 +3521,19 @@ function taskRowsByCategory(rows) {
 if (!rows.length) return "";
 const categories = [...new Set(
 rows.map(({ task }) => cleanText(task.cat)).filter(Boolean)
-)];
+)].sort((a, b) => categoryOrderIndex(a) - categoryOrderIndex(b));
+
+const categoryDragEnabled = state.sort === "manual" && !["archive", "trash", "waiting"].includes(state.view);
+
 return categories.map((category) => {
 const group = rows.filter(({ task }) => task.cat === category);
 if (!group.length) return "";
 const color = cleanColor(categoryColor(category), "#4f46e5");
 const textColor = textColorForBackground(color);
 return `
-<div class="section-row category-group-row" style="--category-accent:${escapeHtml(color)};--category-text:${escapeHtml(textColor)};">
+<div class="section-row category-group-row" draggable="${categoryDragEnabled}" data-category-group="${escapeHtml(category)}" style="--category-accent:${escapeHtml(color)};--category-text:${escapeHtml(textColor)};" title="${categoryDragEnabled ? "Trascina per spostare tutta la categoria con i suoi task" : "Seleziona ordine Manuale per spostare le categorie"}">
 <span>
+<span class="category-drag-handle" aria-hidden="true">⋮⋮</span>
 <span class="category-group-dot" aria-hidden="true"></span>
 <span class="category-group-name">${escapeHtml(category)}</span>
 </span>
@@ -3480,6 +3542,7 @@ return `
 ${group.map(taskCard).join("")}`;
 }).join("");
 }
+
 function taskRowsWaiting(rows) {
 if (!rows.length) return "";
 return `<div class="section-row section-waiting"><span>⏳ ${WAITING_LABEL}</span><span>${rows.length}</span></div>${rows.map(taskCard).join("")}`;
@@ -4706,6 +4769,7 @@ area = state.areaFilter === "all" ? inferTaskArea({ cat, text }) : state.areaFil
 await mutate("Task aggiunto rapidamente", async () => {
 if (newCategoryName && !state.categories[newCategoryName]) {
 state.categories[newCategoryName] = { subs: [], color: PALETTE[Object.keys(state.categories).length % PALETTE.length] };
+state.categoryOrder = [...safeArray(state.categoryOrder).filter((category) => category !== newCategoryName), newCategoryName];
 }
 state.entries.push({
 id: uid(),
@@ -4751,6 +4815,7 @@ if (name.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return showToast("“
 if (Object.keys(state.categories).some((category) => category.localeCompare(name, "it", { sensitivity: "accent" }) === 0)) return showToast("Categoria già presente.", true);
 await mutate("Categoria aggiunta", async () => {
 state.categories[name] = { subs: [], color: PALETTE[Object.keys(state.categories).length % PALETTE.length] };
+state.categoryOrder = [...safeArray(state.categoryOrder).filter((category) => category !== name), name];
 });
 $("new-category-name").value = "";
 }
@@ -4867,6 +4932,7 @@ Object.entries(pendingImport.state.categories).forEach(([name, value]) => {
 const existingName = Object.keys(state.categories).find((category) => category.localeCompare(name, "it", { sensitivity: "accent" }) === 0);
 if (!existingName) {
 state.categories[name] = value;
+if (!safeArray(state.categoryOrder).includes(name)) state.categoryOrder = [...safeArray(state.categoryOrder), name];
 } else {
 safeArray(value.subs).forEach((sub) => {
 if (!state.categories[existingName].subs.some((existingSub) => existingSub.localeCompare(sub, "it", { sensitivity: "accent" }) === 0)) {
@@ -5277,8 +5343,50 @@ const card = event.target.closest(".task-card");
 const task = state.entries.find((entry) => entry.id === card.dataset.taskId);
 if (task) await toggleSubtask(task, card.dataset.completionDate || card.dataset.date, event.target.dataset.subtaskId);
 });
+let draggedCategory = "";
+
+$("task-list").addEventListener("dragstart", (event) => {
+const categoryHeader = event.target.closest("[data-category-group]");
+if (!categoryHeader || state.sort !== "manual") return;
+draggedCategory = categoryHeader.dataset.categoryGroup || "";
+if (!draggedCategory) return;
+categoryHeader.classList.add("is-category-dragging");
+event.dataTransfer.effectAllowed = "move";
+event.dataTransfer.setData("text/plain", `category:${draggedCategory}`);
+});
+
+$("task-list").addEventListener("dragover", (event) => {
+const categoryHeader = event.target.closest("[data-category-group]");
+if (!categoryHeader || !draggedCategory || state.sort !== "manual") return;
+event.preventDefault();
+document.querySelectorAll(".category-group-row.is-category-drop-target").forEach((row) => row.classList.remove("is-category-drop-target"));
+if (categoryHeader.dataset.categoryGroup !== draggedCategory) categoryHeader.classList.add("is-category-drop-target");
+});
+
+$("task-list").addEventListener("drop", async (event) => {
+const categoryHeader = event.target.closest("[data-category-group]");
+if (!categoryHeader || !draggedCategory || state.sort !== "manual") return;
+event.preventDefault();
+const sourceCategory = draggedCategory;
+const targetCategory = categoryHeader.dataset.categoryGroup || "";
+draggedCategory = "";
+document.querySelectorAll(".category-group-row").forEach((row) => row.classList.remove("is-category-dragging", "is-category-drop-target"));
+if (!targetCategory || sourceCategory === targetCategory) return;
+await mutate(`Categoria “${sourceCategory}” spostata con tutti i suoi task`, async () => {
+moveCategoryInState(sourceCategory, targetCategory);
+state.sort = "manual";
+});
+});
+
+$("task-list").addEventListener("dragend", (event) => {
+if (!event.target.closest("[data-category-group]")) return;
+draggedCategory = "";
+document.querySelectorAll(".category-group-row").forEach((row) => row.classList.remove("is-category-dragging", "is-category-drop-target"));
+});
+
 let draggedId = "";
 $("task-list").addEventListener("dragstart", (event) => {
+if (event.target.closest("[data-category-group]")) return;
 const card = event.target.closest(".task-card");
 if (!card || state.sort !== "manual") return;
 draggedId = card.dataset.taskId;
@@ -5360,6 +5468,7 @@ await mutate("Categoria rinominata", async () => {
 const updated = {};
 Object.entries(state.categories).forEach(([name, value]) => { updated[name === renameCategory ? newName : name] = value; });
 state.categories = updated;
+state.categoryOrder = safeArray(state.categoryOrder).map((name) => name === renameCategory ? newName : name);
 state.entries.filter((task) => task.cat === renameCategory).forEach((task) => { task.cat = newName; task.updatedAt = today(); });
 if (state.categoryFilter === renameCategory) state.categoryFilter = newName;
 if (state.recurringCategoryFilter === renameCategory) state.recurringCategoryFilter = newName;
@@ -5393,7 +5502,7 @@ requestConfirmation({
 title: "Elimina categoria",
 message: `Eliminare la categoria “${removeCategory}”?`,
 confirmLabel: "Elimina",
-action: () => mutate("Categoria eliminata", async () => { delete state.categories[removeCategory]; })
+action: () => mutate("Categoria eliminata", async () => { delete state.categories[removeCategory]; state.categoryOrder = safeArray(state.categoryOrder).filter((category) => category !== removeCategory); })
 });
 }
 });
