@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#4f46e5" />
 <meta name="description" content="Calendario task locale con aree Lavoro e Personale, controllo guidato, ricorrenze, sottotask, archivio, backup e ricerca." />
-<title>Calendario Task Pro 47</title>
+<title>Calendario Task Pro 48</title>
 <style>
 :root {
 --bg: #f5f7fb;
@@ -63,6 +63,8 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
 a { color: inherit; }
 img { max-width: 100%; display: block; }
+/* hidden deve prevalere su classi che impostano display */
+[hidden] { display: none !important; }
 :focus-visible {
 outline: 3px solid color-mix(in srgb, var(--primary) 70%, transparent);
 outline-offset: 2px;
@@ -1112,7 +1114,7 @@ background: rgba(2, 6, 23, .66);
 }
 .mobile-drawer-backdrop.open { display: block; }
 .workspace.is-system-view .quick-add { display: none; }
-@media (max-width: 1320px) {
+@media (min-width: 821px) and (max-width: 1320px) {
 .app-shell { grid-template-columns: var(--nav-width) var(--resize-width) minmax(0, 1fr); }
 .editor-resizer { display: none; }
 .editor-panel {
@@ -1250,13 +1252,13 @@ box-shadow:
 inset 4px 0 0 var(--section-accent),
 0 10px 22px rgba(0, 0, 0, .16);
 }
-.nav-section-calendar { --section-accent: #3b82f6; }
-.nav-section-views { --section-accent: #8b5cf6; }
-.nav-section-search { --section-accent: #06b6d4; }
-.nav-section-legend { --section-accent: #ec4899; }
-.nav-section-tools { --section-accent: #6366f1; }
-.nav-section-categories { --section-accent: #10b981; }
-.nav-section-maintenance { --section-accent: #f59e0b; }
+.nav-panel .nav-section-calendar { --section-accent: #3b82f6; }
+.nav-panel .nav-section-views { --section-accent: #8b5cf6; }
+.nav-panel .nav-section-search { --section-accent: #06b6d4; }
+.nav-panel .nav-section-legend { --section-accent: #ec4899; }
+.nav-panel .nav-section-tools { --section-accent: #6366f1; }
+.nav-panel .nav-section-categories { --section-accent: #10b981; }
+.nav-panel .nav-section-maintenance { --section-accent: #f59e0b; }
 .nav-panel .nav-section > .section-title,
 .nav-panel .nav-section > summary {
 color: color-mix(in srgb, var(--section-accent) 78%, var(--text));
@@ -2026,7 +2028,7 @@ border-color: var(--border);
 <details class="clean-details" id="more-views-details">
 <summary>Altre viste</summary>
 <div class="details-body stack">
-<button class="view-btn" type="button" data-view="completed"><span>✅ Completati oggi</span><span class="view-count" id="count-completed">0</span></button>
+<button class="view-btn" type="button" data-view="completed"><span>✅ Task di oggi completati</span><span class="view-count" id="count-completed">0</span></button>
 <button class="view-btn" type="button" data-view="no-time"><span>🕒 Senza orario</span><span class="view-count" id="count-no-time">0</span></button>
 <button class="view-btn" type="button" data-view="archive"><span>🗂️ Archivio</span><span class="view-count" id="count-archive">0</span></button>
 <button class="view-btn" type="button" data-view="trash"><span>🗑️ Cestino</span><span class="view-count" id="count-trash">0</span></button>
@@ -2187,7 +2189,7 @@ border-color: var(--border);
 <section class="stats-strip" aria-label="Statistiche">
 <button class="stat-box" type="button" data-view="day" aria-label="Apri i task del giorno selezionato"><span>Task aperti</span><strong id="stat-active">0</strong></button>
 <button class="stat-box" type="button" data-view="waiting" aria-label="Apri i task in attesa"><span>In attesa</span><strong id="stat-waiting">0</strong></button>
-<button class="stat-box" type="button" data-view="completed" aria-label="Apri i task completati oggi"><span>Completati oggi</span><strong id="stat-today">0</strong></button>
+<button class="stat-box" type="button" data-view="completed" aria-label="Apri i task di oggi completati"><span>Task di oggi completati</span><strong id="stat-today">0</strong></button>
 <button class="stat-box" type="button" data-view="week" aria-label="Apri i task dei prossimi sette giorni"><span>Questa settimana</span><strong id="stat-week">0</strong></button>
 <div class="stat-box"><span>Totale completati</span><strong id="stat-all">0</strong></div>
 <div class="stat-box"><span>Focus giorno</span><strong id="stat-score">0%</strong><div class="progress"><div id="stat-progress"></div></div></div>
@@ -2355,13 +2357,14 @@ Controllare immagini"></textarea>
 <button type="button" data-mobile-action="menu">Menu</button>
 </nav>
 <script>
-const APP_VERSION = 47;
+const APP_VERSION = 48;
 const DB_NAME = "calendario_task_pro_db";
 const DB_VERSION = 1;
 const STORE_STATE = "state";
 const STORE_IMAGES = "images";
 const STATE_KEY = "main";
 const FALLBACK_STATE_KEY = "calendario_task_pro_fallback";
+const FALLBACK_IMAGES_KEY = "calendario_task_pro_fallback_images";
 const LEGACY_KEYS = [
 "calendario_task_v13_corretto",
 "calendario_task_v12_corretto",
@@ -2428,7 +2431,9 @@ editorWidth: 368,
 notificationsEnabled: false,
 completionArchive: {},
 wizard: clone(DEFAULT_WIZARD_STATE),
-createdAt: ""
+createdAt: "",
+storageRevision: 0,
+savedAt: ""
 };
 let db = null;
 let state = clone(DEFAULT_STATE);
@@ -2443,6 +2448,9 @@ let imageRemoved = false;
 let renderImageToken = 0;
 let memoryFallbackState = null;
 const memoryFallbackImages = new Map();
+const temporaryImageIds = new Set();
+const pendingImageCleanup = new Set();
+let lastKnownToday = "";
 let alarmTimer = null;
 let notified = new Set();
 let lastFocused = null;
@@ -2460,6 +2468,11 @@ return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 function safeArray(value) { return Array.isArray(value) ? value : []; }
 function safeObject(value) { return value && typeof value === "object" && !Array.isArray(value) ? value : {}; }
+const BLOCKED_OBJECT_KEYS = new Set(["__proto__", "prototype", "constructor"]);
+function isSafeCategoryName(value) {
+const name = cleanText(value);
+return !!name && !BLOCKED_OBJECT_KEYS.has(name.toLowerCase());
+}
 function cleanText(value, fallback = "") { return typeof value === "string" ? value.trim() : fallback; }
 function normalizeArea(value, fallback = "") {
 const normalized = cleanText(String(value || "")).toLowerCase();
@@ -2554,7 +2567,8 @@ const g = parseInt(hex.slice(3, 5), 16) / 255;
 const b = parseInt(hex.slice(5, 7), 16) / 255;
 const linear = [r, g, b].map((channel) => channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4));
 const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-return luminance > 0.58 ? "#111827" : "#ffffff";
+/* Soglia WCAG: sopra ~0.179 il testo scuro offre contrasto migliore del bianco. */
+return luminance > 0.179 ? "#111827" : "#ffffff";
 }
 function categoryColor(category) {
 return state.categories[category]?.color || "#4f46e5";
@@ -2591,10 +2605,11 @@ return ({ low: "bassa", med: "media", high: "alta" })[priority] || "bassa";
 }
 function highlight(text) {
 const query = cleanText($("search-input")?.value);
-const safe = escapeHtml(text);
-if (!query) return safe;
+const raw = String(text ?? "");
+if (!query) return escapeHtml(raw);
 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-return safe.replace(new RegExp(`(${escapedQuery})`, "ig"), "<mark>$1</mark>");
+const parts = raw.split(new RegExp(`(${escapedQuery})`, "ig"));
+return parts.map((part, index) => index % 2 ? `<mark>${escapeHtml(part)}</mark>` : escapeHtml(part)).join("");
 }
 function csvCell(value) {
 let text = String(value ?? "");
@@ -2632,6 +2647,34 @@ catch (error) {
 console.warn("Dati salvati non leggibili", error);
 return null;
 }
+}
+function stateFreshness(value) {
+const item = safeObject(value);
+const revision = Number(item.storageRevision) || 0;
+const savedAt = Date.parse(item.savedAt || "") || 0;
+return { revision, savedAt };
+}
+function newerStoredState(a, b) {
+if (!a) return b || null;
+if (!b) return a;
+const af = stateFreshness(a);
+const bf = stateFreshness(b);
+if (af.revision !== bf.revision) return af.revision > bf.revision ? a : b;
+return af.savedAt >= bf.savedAt ? a : b;
+}
+function getFallbackImages() {
+return safeObject(parseStoredJson(getLocalText(FALLBACK_IMAGES_KEY)));
+}
+function setFallbackImageDataUrl(id, dataUrl) {
+const images = getFallbackImages();
+images[id] = dataUrl;
+return setLocalText(FALLBACK_IMAGES_KEY, JSON.stringify(images));
+}
+function deleteFallbackImageDataUrl(id) {
+const images = getFallbackImages();
+if (!Object.prototype.hasOwnProperty.call(images, id)) return true;
+delete images[id];
+return setLocalText(FALLBACK_IMAGES_KEY, JSON.stringify(images));
 }
 function openDb() {
 return new Promise((resolve) => {
@@ -2676,33 +2719,30 @@ resolve(null);
 });
 }
 function dbPut(store, value, key) {
-if (!db) return Promise.resolve(key);
+if (!db) return Promise.reject(new Error("IndexedDB non disponibile"));
 return new Promise((resolve, reject) => {
 try {
-const request = db.transaction(store, "readwrite").objectStore(store).put(value, key);
-request.onsuccess = () => resolve(key);
-request.onerror = () => reject(request.error);
+const tx = db.transaction(store, "readwrite");
+tx.oncomplete = () => resolve(key);
+tx.onabort = () => reject(tx.error || new Error("Transazione IndexedDB annullata"));
+tx.onerror = () => reject(tx.error || new Error("Errore di transazione IndexedDB"));
+tx.objectStore(store).put(value, key);
 } catch (error) {
 reject(error);
 }
 });
 }
 function dbDelete(store, key) {
-if (!db) {
-if (store === STORE_IMAGES) memoryFallbackImages.delete(key);
-return Promise.resolve();
-}
-return new Promise((resolve) => {
+if (!db) return Promise.resolve();
+return new Promise((resolve, reject) => {
 try {
-const request = db.transaction(store, "readwrite").objectStore(store).delete(key);
-request.onsuccess = () => resolve();
-request.onerror = () => {
-console.warn("Eliminazione IndexedDB non riuscita", request.error);
-resolve();
-};
+const tx = db.transaction(store, "readwrite");
+tx.oncomplete = () => resolve();
+tx.onabort = () => reject(tx.error || new Error("Transazione IndexedDB annullata"));
+tx.onerror = () => reject(tx.error || new Error("Errore di transazione IndexedDB"));
+tx.objectStore(store).delete(key);
 } catch (error) {
-console.warn("Eliminazione IndexedDB non disponibile", error);
-resolve();
+reject(error);
 }
 });
 }
@@ -2724,32 +2764,74 @@ return new Blob([bytes], { type: mime });
 }
 async function putImage(blob, id = uid()) {
 if (!blob) return "";
-if (!db) {
-memoryFallbackImages.set(id, blob);
-return id;
-}
+if (db) {
 try {
 await dbPut(STORE_IMAGES, blob, id);
+temporaryImageIds.delete(id);
+deleteFallbackImageDataUrl(id);
 return id;
 } catch (error) {
-console.warn("Immagine non salvata in IndexedDB: uso memoria temporanea.", error);
-memoryFallbackImages.set(id, blob);
+console.warn("Immagine non salvata in IndexedDB: provo il salvataggio locale di riserva.", error);
+}
+}
+try {
+const dataUrl = await blobToDataUrl(blob);
+if (setFallbackImageDataUrl(id, dataUrl)) {
+temporaryImageIds.delete(id);
+memoryFallbackImages.delete(id);
 return id;
 }
+} catch (error) {
+console.warn("Immagine non salvata nel fallback persistente.", error);
+}
+memoryFallbackImages.set(id, blob);
+temporaryImageIds.add(id);
+return id;
 }
 async function getImage(id) {
 if (!id) return null;
 if (memoryFallbackImages.has(id)) return memoryFallbackImages.get(id);
-return await dbGet(STORE_IMAGES, id);
+const stored = await dbGet(STORE_IMAGES, id);
+if (stored) return stored;
+const dataUrl = cleanText(getFallbackImages()[id]);
+if (dataUrl && dataUrl.startsWith("data:image/")) {
+try { return dataUrlToBlob(dataUrl); }
+catch (error) { console.warn("Immagine fallback non leggibile", error); }
 }
-function imageIsReferenced(imageId) {
+return null;
+}
+function imageIsReferenced(imageId, includeUndo = true) {
 if (!imageId) return false;
-return state.entries.some((task) => task.imageId === imageId);
+if (state.entries.some((task) => task.imageId === imageId)) return true;
+return !!(includeUndo && undoSnapshot && safeArray(undoSnapshot.entries).some((task) => task.imageId === imageId));
+}
+function imageIdsFromState(snapshot) {
+return new Set(safeArray(snapshot?.entries).map((task) => task?.imageId).filter(Boolean));
+}
+async function deleteImageStorage(imageId) {
+if (!imageId) return;
+try { await dbDelete(STORE_IMAGES, imageId); }
+catch (error) { console.warn("Eliminazione immagine IndexedDB non riuscita", error); }
+deleteFallbackImageDataUrl(imageId);
+memoryFallbackImages.delete(imageId);
+temporaryImageIds.delete(imageId);
+pendingImageCleanup.delete(imageId);
 }
 async function cleanupImageIfUnused(imageId) {
-if (!imageId || imageIsReferenced(imageId)) return;
-await dbDelete(STORE_IMAGES, imageId);
-memoryFallbackImages.delete(imageId);
+if (!imageId || state.entries.some((task) => task.imageId === imageId)) return;
+if (undoSnapshot && safeArray(undoSnapshot.entries).some((task) => task.imageId === imageId)) {
+pendingImageCleanup.add(imageId);
+return;
+}
+await deleteImageStorage(imageId);
+}
+async function flushPendingImageCleanup() {
+for (const imageId of [...pendingImageCleanup]) {
+if (!imageIsReferenced(imageId, false)) await deleteImageStorage(imageId);
+}
+}
+function stateHasTemporaryImages() {
+return state.entries.some((task) => task.imageId && temporaryImageIds.has(task.imageId));
 }
 async function compressImage(file) {
 if (!file || !file.type.startsWith("image/")) throw new Error("Formato immagine non valido.");
@@ -2795,14 +2877,14 @@ cleanup();
 }
 function normalizeCategories(raw) {
 const data = safeObject(raw);
-const out = {};
+const out = Object.create(null);
 const hasStoredCategories = Object.prototype.hasOwnProperty.call(data, "categories");
 const customCats = safeObject(data.customCats);
 const colors = safeObject(data.catColors);
 if (hasStoredCategories) {
 Object.entries(safeObject(data.categories)).forEach(([name, value], index) => {
 const category = cleanText(name);
-if (!category || category.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return;
+if (!isSafeCategoryName(category) || category.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return;
 const item = safeObject(value);
 const existingName = Object.keys(out).find((name) => name.localeCompare(category, "it", { sensitivity: "accent" }) === 0);
 const normalizedSubs = safeArray(item.subs).map((sub) => cleanText(sub)).filter(Boolean);
@@ -2819,7 +2901,7 @@ color: cleanColor(item.color, PALETTE[index % PALETTE.length])
 Object.assign(out, clone(DEFAULT_CATEGORIES));
 Object.entries(customCats).forEach(([name, subs], index) => {
 const category = cleanText(name);
-if (!category || category.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return;
+if (!isSafeCategoryName(category) || category.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return;
 const existingName = Object.keys(out).find((name) => name.localeCompare(category, "it", { sensitivity: "accent" }) === 0);
 const normalizedSubs = safeArray(subs).map((sub) => cleanText(sub)).filter(Boolean);
 if (existingName) {
@@ -2839,7 +2921,8 @@ const item = safeObject(raw);
 const date = cleanDate(item.date);
 const subtasks = safeArray(item.subtasks).map((subtask) => {
 if (typeof subtask === "string") return { id: uid(), text: cleanText(subtask) };
-return { id: String(subtask.id || uid()), text: cleanText(subtask.text) };
+const safeSubtask = safeObject(subtask);
+return { id: String(safeSubtask.id || uid()), text: cleanText(safeSubtask.text) };
 }).filter((subtask) => subtask.text);
 let subtaskDone = safeObject(item.subtaskDone);
 if (!Object.keys(subtaskDone).length) {
@@ -2852,7 +2935,8 @@ const rawStatus = cleanText(item.status, "active");
 const status = ["active", "archived", "trash"].includes(rawStatus) ? rawStatus : "active";
 const repeat = ["none", "daily", "weekly", "monthly", "yearly"].includes(item.repeat) ? item.repeat : "none";
 const priority = ["low", "med", "high"].includes(item.priority || item.pri) ? (item.priority || item.pri) : "low";
-const category = cleanText(item.cat || item.category, DEFAULT_TASK_CATEGORY);
+const requestedCategory = cleanText(item.cat || item.category, DEFAULT_TASK_CATEGORY);
+const category = isSafeCategoryName(requestedCategory) ? requestedCategory : DEFAULT_TASK_CATEGORY;
 const area = normalizeArea(item.area || item.section || item.mainArea || item.mainCategory, inferTaskArea({ ...item, cat: category }));
 const legacyWaiting = rawStatus === "waiting" || cleanText(item.cat || item.category).toLowerCase() === WAITING_CATEGORY.toLowerCase() || cleanText(item.sub || item.subcategory).toLowerCase() === WAITING_CATEGORY.toLowerCase();
 const hasExplicitWaiting = Object.prototype.hasOwnProperty.call(item, "waiting") || Object.prototype.hasOwnProperty.call(item, "isWaiting");
@@ -2931,7 +3015,11 @@ else categories[task.cat].subs.push(task.sub);
 });
 const ids = new Set(entries.map((task) => task.id));
 const permanentIds = safeArray(data.permanentIds || data.permanentTasks)
-.map((value) => String(typeof value === "object" ? value.id : value))
+.map((value) => {
+if (typeof value === "string" || typeof value === "number") return String(value);
+const safeValue = safeObject(value);
+return safeValue.id ? String(safeValue.id) : "";
+})
 .filter((id) => ids.has(id));
 
 const categoryNames = Object.keys(categories);
@@ -2960,7 +3048,9 @@ editorWidth: clampNumber(data.editorWidth, 300, 680, 368),
 notificationsEnabled: !!data.notificationsEnabled,
 completionArchive: safeObject(data.completionArchive),
 wizard: normalizeWizardState(data.wizard || data.guidance),
-createdAt: validDate(data.createdAt) ? data.createdAt : today()
+createdAt: validDate(data.createdAt) ? data.createdAt : today(),
+storageRevision: Math.max(0, Number(data.storageRevision) || 0),
+savedAt: typeof data.savedAt === "string" ? data.savedAt : ""
 };
 }
 async function migrateLegacyImages() {
@@ -2974,11 +3064,10 @@ console.warn("Immagine legacy non migrata", error);
 }
 }
 }
-async function loadState() {
-let saved = await dbGet(STORE_STATE, STATE_KEY);
-if (!saved) {
-saved = parseStoredJson(getLocalText(FALLBACK_STATE_KEY));
-}
+async function loadState({ persist = true } = {}) {
+const idbSaved = await dbGet(STORE_STATE, STATE_KEY);
+const localSaved = parseStoredJson(getLocalText(FALLBACK_STATE_KEY));
+let saved = newerStoredState(idbSaved, localSaved);
 if (!saved) {
 for (const key of LEGACY_KEYS) {
 const legacy = parseStoredJson(getLocalText(key));
@@ -2990,41 +3079,89 @@ break;
 }
 state = normalizeState(saved || DEFAULT_STATE);
 if (!state.selectedDate) state.selectedDate = today();
+lastKnownToday = today();
 await migrateLegacyImages();
-await persistState();
+if (persist) await persistState();
 }
 async function persistState() {
 state.version = APP_VERSION;
+state.storageRevision = Math.max(0, Number(state.storageRevision) || 0) + 1;
+state.savedAt = new Date().toISOString();
+const snapshot = clone(state);
+let indexedDbSaved = false;
+let localSaved = false;
 if (db) {
 try {
-await dbPut(STORE_STATE, state, STATE_KEY);
-return;
+await dbPut(STORE_STATE, snapshot, STATE_KEY);
+indexedDbSaved = true;
 } catch (error) {
-console.warn("Salvataggio IndexedDB non riuscito: uso salvataggio locale di riserva.", error);
+console.warn("Salvataggio IndexedDB non riuscito: provo il salvataggio locale di riserva.", error);
 }
 }
-setLocalText(FALLBACK_STATE_KEY, JSON.stringify(state));
+localSaved = setLocalText(FALLBACK_STATE_KEY, JSON.stringify(snapshot));
+return {
+persistent: indexedDbSaved || localSaved,
+indexedDbSaved,
+localSaved,
+temporaryImages: stateHasTemporaryImages()
+};
 }
-function captureUndo() {
-undoSnapshot = clone(state);
+function armUndoTimer() {
 clearTimeout(undoTimer);
-undoTimer = setTimeout(() => { undoSnapshot = null; }, 14000);
+undoTimer = setTimeout(async () => {
+undoSnapshot = null;
+await flushPendingImageCleanup();
+}, 14000);
+}
+function captureUndo(snapshot = state) {
+undoSnapshot = clone(snapshot);
+armUndoTimer();
 }
 async function restoreUndo() {
 if (!undoSnapshot) return;
 const current = clone(state);
 state = undoSnapshot;
 undoSnapshot = current;
-await persistState();
+for (const imageId of imageIdsFromState(undoSnapshot)) {
+if (!state.entries.some((task) => task.imageId === imageId)) pendingImageCleanup.add(imageId);
+}
+armUndoTimer();
+const result = await persistState();
 await renderAll();
-showToast("Operazione annullata", false, "Ripristina", restoreUndo);
+renderWizard();
+showToast(
+result.persistent && !result.temporaryImages ? "Operazione annullata" : "Operazione annullata, ma il salvataggio è temporaneo",
+!result.persistent || result.temporaryImages,
+"Ripristina",
+restoreUndo
+);
 }
 async function mutate(message, callback, withUndo = true) {
-if (withUndo) captureUndo();
+const before = clone(state);
+const previousUndo = undoSnapshot ? clone(undoSnapshot) : null;
+if (withUndo) captureUndo(before);
+try {
 await callback();
-await persistState();
+const result = await persistState();
 await renderAll();
+if (!result.persistent || result.temporaryImages) {
+showToast("Modifica applicata, ma non completamente persistente: esporta un backup prima di chiudere l’app.", true, withUndo ? "Annulla" : null, withUndo ? restoreUndo : null);
+return false;
+}
 showToast(message, false, withUndo ? "Annulla" : null, withUndo ? restoreUndo : null);
+return true;
+} catch (error) {
+console.error("Operazione non completata", error);
+state = before;
+if (withUndo) {
+undoSnapshot = previousUndo;
+clearTimeout(undoTimer);
+if (undoSnapshot) armUndoTimer();
+}
+await renderAll();
+showToast("Operazione non completata: i dati precedenti sono stati ripristinati.", true);
+return false;
+}
 }
 function isRecurring(task) {
 return task.repeat !== "none";
@@ -3106,6 +3243,10 @@ return out;
 function completedOn(task, date) {
 return safeArray(task.completedDates).includes(date);
 }
+function effectiveCompletedDates(task) {
+const excluded = new Set(safeArray(task.excludedDates));
+return safeArray(task.completedDates).filter((date) => validDate(date) && !excluded.has(date));
+}
 function subtaskDoneOn(task, date, subtaskId) {
 return safeArray(task.subtaskDone?.[date]).includes(String(subtaskId));
 }
@@ -3126,6 +3267,11 @@ const sourceSubtaskDone = safeArray(task.subtaskDone?.[sourceDate]);
 const sourceSnooze = task.snoozed?.[sourceDate];
 if (isRecurring(task)) {
 task.excludedDates = [...new Set([...safeArray(task.excludedDates), sourceDate])];
+task.completedDates = safeArray(task.completedDates).filter((day) => day !== sourceDate);
+task.subtaskDone = safeObject(task.subtaskDone);
+delete task.subtaskDone[sourceDate];
+task.snoozed = safeObject(task.snoozed);
+delete task.snoozed[sourceDate];
 task.updatedAt = today();
 const movedTask = {
 ...clone(task),
@@ -3216,28 +3362,29 @@ if (!completedOn(task, completionDate)) list.push({ task, date: waitingDisplayDa
 });
 }
 }
-const query = cleanText($("search-input").value).toLowerCase();
-const area = state.areaFilter;
-const category = state.categoryFilter;
-const priority = $("priority-filter").value;
+return filterAndSortOccurrences(list);
+}
+function occurrenceMatchesCurrentFilters({ task, date }) {
+const query = cleanText($("search-input")?.value).toLowerCase();
+const priority = $("priority-filter")?.value || "all";
 const contentFilter = $("content-filter")?.value || "all";
-const filtered = list.filter(({ task, date }) => {
-const haystack = [task.text, areaLabel(taskArea(task)), task.cat, task.sub, task.link, task.notes, task.waitingReason, date, humanDate(date), task.followUpDate, ...task.subtasks.map((subtask) => subtask.text)].join(" ").toLowerCase();
+const haystack = [task.text, areaLabel(taskArea(task)), task.cat, task.sub, task.link, task.notes, task.waitingReason, date, humanDate(date), task.followUpDate, ...safeArray(task.subtasks).map((subtask) => subtask.text)].join(" ").toLowerCase();
 return (!query || haystack.includes(query))
-&& (area === "all" || taskArea(task) === area)
-&& (category === "all" || task.cat === category)
+&& (state.areaFilter === "all" || taskArea(task) === state.areaFilter)
+&& (state.categoryFilter === "all" || task.cat === state.categoryFilter)
 && (priority === "all" || task.priority === priority)
-&& (contentFilter === "all" || (contentFilter === "has-link" && !!task.link) || (contentFilter === "has-subtasks" && task.subtasks.length > 0))
+&& (contentFilter === "all" || (contentFilter === "has-link" && !!task.link) || (contentFilter === "has-subtasks" && safeArray(task.subtasks).length > 0))
 && validDate(date);
-});
+}
+function filterAndSortOccurrences(list) {
 const seen = new Set();
-const unique = filtered.filter(({ task, date }) => {
+const filtered = safeArray(list).filter(occurrenceMatchesCurrentFilters).filter(({ task, date }) => {
 const key = `${task.id}@${date}`;
 if (seen.has(key)) return false;
 seen.add(key);
 return true;
 });
-return sortOccurrences(unique);
+return sortOccurrences(filtered);
 }
 function sortOccurrences(list) {
 const mode = state.sort;
@@ -3270,7 +3417,7 @@ overdue: ["Task scaduti", "Attività non ricorrenti ancora aperte"],
 tomorrow: ["Domani", humanDate(addDays(today(), 1), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
 week: ["Prossimi 7 giorni", `${humanDate(today())} – ${humanDate(addDays(today(), 6))}`],
 high: ["Priorità alta", "Prossime attività urgenti"],
-completed: ["Completati oggi", humanDate(today(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
+completed: ["Task di oggi completati", humanDate(today(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })],
 "no-time": ["Task senza orario", "Attività da pianificare"],
 recurring: ["Task ricorrenti", state.recurringCategoryFilter === "all" ? "Prossime occorrenze delle serie attive" : `Categoria: ${state.recurringCategoryFilter}`],
 waiting: [WAITING_LABEL, "Task sospesi o da seguire più avanti"],
@@ -3419,6 +3566,9 @@ return true;
 }
 
 function renderCategories() {
+const manager = $("category-manager");
+const renameDrafts = manager ? Object.fromEntries([...manager.querySelectorAll("[data-category-rename-input]")].map((input) => [input.dataset.categoryRenameInput, input.value])) : {};
+const subcategoryDrafts = manager ? Object.fromEntries([...manager.querySelectorAll("[data-subcategory-input]")].map((input) => [input.dataset.subcategoryInput, input.value])) : {};
 const categories = orderedCategoryNames();
 const categoryOptions = categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("");
 const allOptions = `<option value="all">Tutte le categorie</option>${categoryOptions}`;
@@ -3458,6 +3608,14 @@ ${subs.length ? subs.map((sub) => `<span class="subcategory-chip">${escapeHtml(s
 </div>
 </div>`;
 }).join("");
+Object.entries(renameDrafts).forEach(([category, value]) => {
+const input = manager?.querySelector(`[data-category-rename-input="${CSS.escape(category)}"]`);
+if (input && value !== category) input.value = value;
+});
+Object.entries(subcategoryDrafts).forEach(([category, value]) => {
+const input = manager?.querySelector(`[data-subcategory-input="${CSS.escape(category)}"]`);
+if (input && value) input.value = value;
+});
 }
 function renderSubcategories() {
 const category = $("task-category").value;
@@ -3465,7 +3623,6 @@ const subs = state.categories[category]?.subs || [];
 const current = $("task-subcategory").value;
 $("task-subcategory").innerHTML = `<option value="">Generale</option>${subs.map((sub) => `<option value="${escapeHtml(sub)}">${escapeHtml(sub)}</option>`).join("")}`;
 $("task-subcategory").value = subs.includes(current) ? current : "";
-if (!$("task-id").value) $("task-color").value = categoryColor(category);
 }
 function renderCalendar() {
 const year = currentMonth.getFullYear();
@@ -3521,7 +3678,9 @@ function taskRowsByCategory(rows) {
 if (!rows.length) return "";
 const categories = [...new Set(
 rows.map(({ task }) => cleanText(task.cat)).filter(Boolean)
-)].sort((a, b) => categoryOrderIndex(a) - categoryOrderIndex(b));
+)].sort((a, b) => state.sort === "category"
+? a.localeCompare(b, "it")
+: categoryOrderIndex(a) - categoryOrderIndex(b));
 
 const categoryDragEnabled = state.sort === "manual" && !["archive", "trash", "waiting"].includes(state.view);
 
@@ -3563,38 +3722,53 @@ return `
 ${taskRowsByCategory(areaRows)}`;
 }).join("");
 }
-function renderTaskList() {
+function currentRenderedOccurrences() {
 const list = visibleOccurrences();
+if (state.view === "archive" || state.view === "trash") {
+return { list, waitingPersistent: [], permanent: [], all: list };
+}
 const visibleIds = new Set(list.map(({ task }) => task.id));
-const waitingPersistent = (state.view === "archive" || state.view === "trash" || state.view === "waiting") ? [] : state.entries
-.filter((task) => taskHasPendingWork(task) && taskMatchesArea(task) && isWaitingTask(task) && !visibleIds.has(task.id))
+const waitingPersistent = filterAndSortOccurrences(state.view === "waiting" ? [] : state.entries
+.filter((task) => taskHasPendingWork(task) && isWaitingTask(task) && !visibleIds.has(task.id))
 .map((task) => ({ task, date: waitingDisplayDate(task, today()) }))
-.filter((item) => item.date);
+.filter((item) => item.date));
 const persistentIds = new Set([...visibleIds, ...waitingPersistent.map(({ task }) => task.id)]);
-const permanent = (state.view === "archive" || state.view === "trash") ? [] : state.permanentIds
+const permanent = filterAndSortOccurrences(state.permanentIds
 .map((id) => state.entries.find((task) => task.id === id))
-.filter((task) => task && taskHasPendingWork(task) && taskMatchesArea(task) && !persistentIds.has(task.id))
+.filter((task) => task && taskHasPendingWork(task) && !persistentIds.has(task.id))
 .map((task) => ({ task, date: isRecurring(task) ? (nextPendingOccurrence(task, today()) || task.date) : task.date }))
-.filter((item) => item.date);
+.filter((item) => item.date));
+return { list, waitingPersistent, permanent, all: [...list, ...waitingPersistent, ...permanent] };
+}
+function taskRowsForSort(rows) {
+if (!rows.length) return "";
+if (state.sort === "time" || state.sort === "priority") return rows.map(taskCard).join("");
+if (state.sort === "category") return taskRowsByCategory(rows);
+return taskRowsByArea(rows);
+}
+function renderTaskList() {
+const { list, waitingPersistent, permanent } = currentRenderedOccurrences();
 const renderedOpenKeys = new Set();
 [...list, ...waitingPersistent, ...permanent].forEach(({ task, date }) => {
-if (!completedOn(task, date)) renderedOpenKeys.add(`${task.id}@${date}`);
+const completionDate = isWaitingTask(task) ? taskCompletionDate(task, today()) : date;
+if (!completedOn(task, completionDate)) renderedOpenKeys.add(`${task.id}@${completionDate}`);
 });
 $("open-count").textContent = (state.view === "archive" || state.view === "trash")
 ? list.length
 : renderedOpenKeys.size;
 let html = "";
-if (list.length) html += state.view === "waiting" ? taskRowsWaiting(list) : taskRowsByArea(list);
+if (list.length) html += state.view === "waiting" ? taskRowsWaiting(list) : taskRowsForSort(list);
 if (waitingPersistent.length) html += taskRowsWaiting(waitingPersistent);
 if (permanent.length) {
 html += `<div class="section-row"><span>Task permanenti</span><span>${permanent.length}</span></div>`;
-html += taskRowsByArea(permanent);
+html += taskRowsForSort(permanent);
 }
 $("task-list").innerHTML = html || `<div class="empty-state"><strong>Nessun task da mostrare</strong><br>Prova a cambiare vista, categoria o ricerca.</div>`;
 }
 function taskCard({ task, date }) {
 const waiting = isWaitingTask(task);
-const completionDate = waiting ? taskCompletionDate(task, today()) : date;
+const occurrenceDate = waiting ? taskCompletionDate(task, today()) : date;
+const completionDate = occurrenceDate;
 const done = completedOn(task, completionDate);
 const overdue = task.status === "active" && date < today() && !done && !waiting;
 const subtasksDone = safeArray(task.subtaskDone?.[completionDate]);
@@ -3640,7 +3814,7 @@ const storedActions = `
 <button class="btn btn-soft" type="button" data-action="restore">Ripristina</button>
 ${task.status === "trash" ? `<button class="btn btn-danger" type="button" data-action="delete-forever">Elimina definitivamente</button>` : ""}`;
 return `
-<article class="task-card ${done ? "is-complete" : ""} ${overdue ? "is-overdue" : ""} ${waiting ? "is-waiting" : ""}" draggable="${draggable}" data-task-id="${escapeHtml(task.id)}" data-date="${escapeHtml(date)}" data-completion-date="${escapeHtml(completionDate)}" style="--task-color:${escapeHtml(cleanColor(task.color, categoryColor(task.cat)))}">
+<article class="task-card ${done ? "is-complete" : ""} ${overdue ? "is-overdue" : ""} ${waiting ? "is-waiting" : ""}" draggable="${draggable}" data-task-id="${escapeHtml(task.id)}" data-date="${escapeHtml(date)}" data-occurrence-date="${escapeHtml(occurrenceDate)}" data-completion-date="${escapeHtml(completionDate)}" style="--task-color:${escapeHtml(cleanColor(task.color, categoryColor(task.cat)))}">
 <div class="task-timebox">
 <strong>${escapeHtml(task.time || "—")}</strong>
 <span>${humanDate(date, { day: "2-digit", month: "short" })}</span>
@@ -3681,9 +3855,9 @@ const active = activeEntries.filter((task) => taskHasPendingWork(task, now));
 const activeWork = activeEntries.filter((task) => !isWaitingTask(task));
 const todayOccurrences = activeWork.filter((task) => scheduledOn(task, now));
 const todayDone = todayOccurrences.filter((task) => completedOn(task, now)).length;
-const weekDone = activeWork.reduce((sum, task) => sum + safeArray(task.completedDates).filter((date) => date >= weekStart && date <= weekEnd).length, 0);
+const weekDone = activeWork.reduce((sum, task) => sum + effectiveCompletedDates(task).filter((date) => date >= weekStart && date <= weekEnd).length, 0);
 const archivedDone = state.areaFilter === "all" ? Object.values(state.completionArchive).reduce((sum, value) => sum + Number(value || 0), 0) : 0;
-const allDone = state.entries.filter(taskMatchesArea).reduce((sum, task) => sum + safeArray(task.completedDates).length, 0) + archivedDone;
+const allDone = state.entries.filter(taskMatchesArea).reduce((sum, task) => sum + effectiveCompletedDates(task).length, 0) + archivedDone;
 const score = todayOccurrences.length ? Math.round((todayDone / todayOccurrences.length) * 100) : 0;
 $("stat-active").textContent = active.length;
 $("stat-waiting").textContent = active.filter(isWaitingTask).length;
@@ -4128,8 +4302,7 @@ const issue = currentWizardIssue();
 const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
 if (!issue || !task) return nextWizardIssue();
 await mutate("Task spostato a oggi", async () => {
-task.date = today();
-task.updatedAt = today();
+moveTaskOccurrenceInState(task, task.date, today());
 });
 await verifyWizardIssue(issue.id);
 }
@@ -4373,6 +4546,8 @@ return;
 const previousImageId = task.imageId;
 await mutate("Task aggiornato", async () => {
 const imageId = await resolveImageId(task.imageId);
+const originalDate = task.date;
+if (data.date && data.date !== originalDate) moveTaskOccurrenceInState(task, originalDate, data.date);
 Object.assign(task, data, {
 subtasks: mapSubtasks(task, data.subtasks),
 imageId,
@@ -4406,7 +4581,15 @@ Object.assign(task, updatedData, { date: seriesDate || task.date });
 if (previousImageId && previousImageId !== imageId) await cleanupImageIfUnused(previousImageId);
 } else if (scope === "single") {
 const newDate = data.date || occurrence;
-task.excludedDates = [...new Set([...task.excludedDates, occurrence])];
+const occurrenceDone = completedOn(task, occurrence);
+const occurrenceSubtasks = safeArray(task.subtaskDone?.[occurrence]);
+const occurrenceSnooze = task.snoozed?.[occurrence];
+task.excludedDates = [...new Set([...safeArray(task.excludedDates), occurrence])];
+task.completedDates = safeArray(task.completedDates).filter((date) => date !== occurrence);
+task.subtaskDone = safeObject(task.subtaskDone);
+delete task.subtaskDone[occurrence];
+task.snoozed = safeObject(task.snoozed);
+delete task.snoozed[occurrence];
 state.entries.push({
 ...clone(task),
 ...updatedData,
@@ -4414,10 +4597,10 @@ id: uid(),
 date: newDate,
 repeat: "none",
 untilDate: "",
-completedDates: completedOn(task, occurrence) ? [newDate] : [],
+completedDates: occurrenceDone ? [newDate] : [],
 excludedDates: [],
-subtaskDone: { [newDate]: safeArray(task.subtaskDone?.[occurrence]) },
-snoozed: task.snoozed?.[occurrence] ? { [newDate]: task.snoozed[occurrence] } : {},
+subtaskDone: occurrenceSubtasks.length ? { [newDate]: occurrenceSubtasks } : {},
+snoozed: occurrenceSnooze ? { [newDate]: occurrenceSnooze } : {},
 status: "active",
 archivedAt: "",
 deletedAt: "",
@@ -4471,13 +4654,14 @@ pendingRecurringEdit = null;
 closeModal("modal-recurring");
 resetForm();
 }
-async function editTask(id, date) {
+async function editTask(id, occurrenceDate) {
 const task = state.entries.find((entry) => entry.id === id);
 if (!task) return;
+const editableOccurrence = isRecurring(task) ? cleanDate(occurrenceDate, nextPendingOccurrence(task, today()) || task.date) : task.date;
 $("task-id").value = task.id;
-$("task-occurrence-date").value = isRecurring(task) ? date : "";
+$("task-occurrence-date").value = isRecurring(task) ? editableOccurrence : "";
 $("task-text").value = task.text;
-$("task-date").value = date || task.date;
+$("task-date").value = editableOccurrence;
 $("task-time").value = task.time;
 $("task-area").value = taskArea(task);
 $("task-category").value = task.cat;
@@ -4514,7 +4698,7 @@ $("image-preview-wrap").hidden = true;
 const openedFromWizard = state.wizard.manualTaskId === task.id;
 $("editor-title").textContent = openedFromWizard
 ? `Task da decidere: ${task.text}`
-: isRecurring(task) ? `Modifica occorrenza del ${humanDate(date)}` : "Modifica task";
+: isRecurring(task) ? `Modifica occorrenza del ${humanDate(editableOccurrence)}` : "Modifica task";
 $("editor-help").textContent = openedFromWizard
 ? "Hai aperto il task rilevato dal controllo. Modifica ciò che serve e salva: verificheremo subito il risultato."
 : isRecurring(task) ? "Questo task è ricorrente: al salvataggio potrai scegliere il tipo di modifica." : "Modifica i campi e salva.";
@@ -4545,6 +4729,7 @@ toggleWaitingExtra();
 $("task-link").value = "";
 $("task-notes").value = "";
 $("task-subtasks").value = "";
+$("task-color").value = categoryColor($("task-category").value);
 $("task-image").value = "";
 $("image-preview-wrap").hidden = true;
 pendingImageBlob = null;
@@ -4668,7 +4853,7 @@ task.updatedAt = today();
 });
 }
 function archiveTaskCompletions(task) {
-const count = safeArray(task.completedDates).length;
+const count = effectiveCompletedDates(task).length;
 if (!count) return;
 const key = String(new Date().getFullYear());
 state.completionArchive[key] = Number(state.completionArchive[key] || 0) + count;
@@ -4811,6 +4996,7 @@ $("quick-add-input").value = "";
 async function addCategory() {
 const name = cleanText($("new-category-name").value);
 if (!name) return showToast("Inserisci il nome della categoria.", true);
+if (!isSafeCategoryName(name)) return showToast("Nome categoria non valido.", true);
 if (name.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return showToast("“In attesa” è uno stato protetto, non una categoria eliminabile.", true);
 if (Object.keys(state.categories).some((category) => category.localeCompare(name, "it", { sensitivity: "accent" }) === 0)) return showToast("Categoria già presente.", true);
 await mutate("Categoria aggiunta", async () => {
@@ -4842,7 +5028,7 @@ return [task.id, task.text, areaLabel(taskArea(task)), task.cat, task.sub, date,
 downloadBlob(new Blob(["﻿" + [headers.join(","), ...csvRows].join("\r\n")], { type: "text/csv;charset=utf-8" }), filename);
 }
 function exportCurrentCsv() {
-const rows = visibleOccurrences();
+const rows = currentRenderedOccurrences().all;
 if (!rows.length) return showToast("La vista corrente non contiene task da esportare.", true);
 csvDownloadFromEntries(rows, `calendario_task_vista_${today()}.csv`);
 showToast("Vista corrente esportata.");
@@ -4871,10 +5057,20 @@ showToast("CSV esportato.");
 function openImport() {
 $("import-file").click();
 }
+function validateBackupPayload(data) {
+if (Array.isArray(data)) return data.every((item) => item && typeof item === "object" && !Array.isArray(item));
+if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+const taskArray = Array.isArray(data.entries) ? data.entries : Array.isArray(data.tasks) ? data.tasks : Array.isArray(data.data) ? data.data : null;
+if (!taskArray) return false;
+if (!taskArray.every((item) => item && typeof item === "object" && !Array.isArray(item))) return false;
+if (data.images !== undefined && (typeof data.images !== "object" || data.images === null || Array.isArray(data.images))) return false;
+return true;
+}
 async function previewImport(file) {
 try {
 const text = await file.text();
 const data = JSON.parse(text);
+if (!validateBackupPayload(data)) throw new Error("Schema backup non riconosciuto");
 const normalized = normalizeState(data);
 pendingImport = { state: normalized, images: safeObject(data.images) };
 $("import-summary").textContent = `Il file contiene ${normalized.entries.length} task e ${Object.keys(pendingImport.images).length} immagini.`;
@@ -4892,6 +5088,7 @@ if (mode === "replace") await exportJson();
 await mutate("Backup importato", async () => {
 const imageIdMap = {};
 for (const [imageId, dataUrl] of Object.entries(pendingImport.images)) {
+if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) continue;
 try {
 let targetId = imageId;
 if (mode === "merge") {
@@ -4907,19 +5104,46 @@ console.warn("Immagine non importata", imageId, error);
 }
 if (mode === "replace") {
 state = normalizeState(pendingImport.state);
+Object.entries(imageIdMap).forEach(([oldId, newId]) => {
+state.entries.forEach((task) => {
+if (task.imageId === oldId) task.imageId = newId;
+});
+});
 } else {
+const categoryNameMap = {};
+Object.entries(pendingImport.state.categories).forEach(([name, value]) => {
+if (!isSafeCategoryName(name)) return;
+const existingName = Object.keys(state.categories).find((category) => category.localeCompare(name, "it", { sensitivity: "accent" }) === 0);
+if (!existingName) {
+state.categories[name] = clone(value);
+categoryNameMap[name] = name;
+if (!safeArray(state.categoryOrder).includes(name)) state.categoryOrder = [...safeArray(state.categoryOrder), name];
+} else {
+categoryNameMap[name] = existingName;
+safeArray(value.subs).forEach((sub) => {
+if (!state.categories[existingName].subs.some((existingSub) => existingSub.localeCompare(sub, "it", { sensitivity: "accent" }) === 0)) {
+state.categories[existingName].subs.push(sub);
+}
+});
+}
+});
 const existingIds = new Set(state.entries.map((task) => task.id));
 const taskIdMap = {};
-pendingImport.state.entries.forEach((task) => {
+const importedTasks = pendingImport.state.entries.map((task) => {
 const importedTask = clone(task);
 const originalId = importedTask.id;
 if (existingIds.has(importedTask.id)) importedTask.id = uid();
 existingIds.add(importedTask.id);
 taskIdMap[originalId] = importedTask.id;
+if (categoryNameMap[importedTask.cat]) importedTask.cat = categoryNameMap[importedTask.cat];
 if (importedTask.imageId && Object.prototype.hasOwnProperty.call(pendingImport.images, importedTask.imageId)) {
 importedTask.imageId = imageIdMap[importedTask.imageId] || "";
 }
-state.entries.push(importedTask);
+return importedTask;
+});
+importedTasks.forEach((task) => {
+if (task.originSeriesId) task.originSeriesId = taskIdMap[task.originSeriesId] || task.originSeriesId;
+state.entries.push(task);
 });
 pendingImport.state.permanentIds.forEach((id) => {
 const mappedId = taskIdMap[id] || id;
@@ -4928,20 +5152,8 @@ if (state.entries.some((task) => task.id === mappedId) && !state.permanentIds.in
 Object.entries(safeObject(pendingImport.state.completionArchive)).forEach(([key, value]) => {
 state.completionArchive[key] = Number(state.completionArchive[key] || 0) + Number(value || 0);
 });
-Object.entries(pendingImport.state.categories).forEach(([name, value]) => {
-const existingName = Object.keys(state.categories).find((category) => category.localeCompare(name, "it", { sensitivity: "accent" }) === 0);
-if (!existingName) {
-state.categories[name] = value;
-if (!safeArray(state.categoryOrder).includes(name)) state.categoryOrder = [...safeArray(state.categoryOrder), name];
-} else {
-safeArray(value.subs).forEach((sub) => {
-if (!state.categories[existingName].subs.some((existingSub) => existingSub.localeCompare(sub, "it", { sensitivity: "accent" }) === 0)) {
-state.categories[existingName].subs.push(sub);
 }
-});
-}
-});
-}
+await migrateLegacyImages();
 });
 pendingImport = null;
 closeModal("modal-import");
@@ -5128,10 +5340,12 @@ handle.classList.remove("is-dragging");
 document.body.classList.remove("is-resizing");
 window.removeEventListener("pointermove", onMove);
 window.removeEventListener("pointerup", onEnd);
+window.removeEventListener("pointercancel", onEnd);
 await saveWidths();
 };
 window.addEventListener("pointermove", onMove);
 window.addEventListener("pointerup", onEnd, { once: true });
+window.addEventListener("pointercancel", onEnd, { once: true });
 };
 const keyboardResize = async (event, side) => {
 if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
@@ -5167,7 +5381,10 @@ if (!action) return;
 event.preventDefault();
 await handleWizardAction(action);
 });
-$("task-category").addEventListener("change", renderSubcategories);
+$("task-category").addEventListener("change", () => {
+renderSubcategories();
+if (!$("task-id").value) $("task-color").value = categoryColor($("task-category").value);
+});
 $("task-waiting").addEventListener("change", toggleWaitingExtra);
 $("task-repeat").addEventListener("change", toggleRepeatUntil);
 $("task-date").addEventListener("change", toggleRepeatUntil);
@@ -5322,20 +5539,21 @@ const card = event.target.closest(".task-card");
 if (!card) return;
 const task = state.entries.find((entry) => entry.id === card.dataset.taskId);
 const date = card.dataset.date;
+const occurrenceDate = card.dataset.occurrenceDate || date;
 const action = event.target.closest("[data-action]")?.dataset.action;
 if (!task || !action || action === "subtask") return;
-if (action === "edit") await editTask(task.id, date);
+if (action === "edit") await editTask(task.id, occurrenceDate);
 if (action === "toggle") await toggleComplete(task, card.dataset.completionDate || date);
-if (action === "move-next") await moveOccurrence(task, date);
-if (action === "move-date") openMoveDate({ mode: "single", task, date });
+if (action === "move-next") await moveOccurrence(task, occurrenceDate);
+if (action === "move-date") openMoveDate({ mode: "single", task, date: occurrenceDate });
 if (action === "waiting") await toggleWaiting(task);
 if (action === "snooze") await snoozeTask(task, date);
-if (action === "duplicate") await duplicateTask(task, date);
+if (action === "duplicate") await duplicateTask(task, occurrenceDate);
 if (action === "permanent") await togglePermanent(task);
 if (action === "archive") await archiveTask(task);
 if (action === "restore") await restoreStoredTask(task);
 if (action === "delete-forever") requestConfirmation({ title: "Elimina definitivamente", message: `Eliminare definitivamente “${task.text}”?`, confirmLabel: "Elimina", action: () => deleteTaskForever(task) });
-if (action === "delete") openDelete(task, date);
+if (action === "delete") openDelete(task, occurrenceDate);
 });
 $("task-list").addEventListener("change", async (event) => {
 if (event.target.dataset.action !== "subtask") return;
@@ -5419,6 +5637,11 @@ if (task) task.order = index;
 });
 state.sort = "manual";
 });
+draggedId = "";
+});
+$("task-list").addEventListener("dragend", (event) => {
+if (event.target.closest("[data-category-group]")) return;
+draggedId = "";
 });
 $("toggle-theme").addEventListener("click", async () => {
 await mutate("Tema aggiornato", async () => { state.theme = state.theme === "dark" ? "light" : "dark"; }, false);
@@ -5564,6 +5787,34 @@ clearTimeout(timer);
 timer = setTimeout(renderAll, 160);
 };
 })();
+
+function bindCrossTabSync() {
+window.addEventListener("storage", async (event) => {
+if (event.key !== FALLBACK_STATE_KEY || !event.newValue) return;
+const incoming = parseStoredJson(event.newValue);
+if (!incoming) return;
+const currentFreshness = stateFreshness(state);
+const incomingFreshness = stateFreshness(incoming);
+if (incomingFreshness.revision < currentFreshness.revision) return;
+if (incomingFreshness.revision === currentFreshness.revision && incomingFreshness.savedAt <= currentFreshness.savedAt) return;
+state = normalizeState(incoming);
+if (!state.selectedDate) state.selectedDate = today();
+currentMonth = parseDate(state.selectedDate);
+await renderAll();
+showToast("Dati aggiornati da un’altra scheda.");
+});
+}
+function startDayRolloverWatcher() {
+lastKnownToday = today();
+setInterval(async () => {
+const currentToday = today();
+if (currentToday === lastKnownToday) return;
+lastKnownToday = currentToday;
+if (state.view === "today") selectDate(currentToday, "today");
+await persistState();
+await renderAll();
+}, 60000);
+}
 async function init() {
 try {
 db = await openDb();
@@ -5572,6 +5823,8 @@ if (!("Notification" in window) || Notification.permission !== "granted") state.
 currentMonth = parseDate(state.selectedDate || today());
 $("task-date").value = state.selectedDate;
 bindEvents();
+bindCrossTabSync();
+startDayRolloverWatcher();
 await renderAll();
 resetForm();
 startAlarm();
