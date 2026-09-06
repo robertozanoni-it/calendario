@@ -603,9 +603,9 @@ background: var(--task-color, var(--primary));
 .task-card.is-complete { opacity: .62; }
 .task-card.is-overdue { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
 .task-card.is-waiting {
-background: color-mix(in srgb, #dc2626 13%, var(--surface));
-border-color: color-mix(in srgb, #dc2626 58%, var(--border));
-box-shadow: 0 8px 22px rgba(220, 38, 38, .12);
+background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+border-color: color-mix(in srgb, var(--warning) 48%, var(--border));
+box-shadow: 0 8px 22px color-mix(in srgb, var(--warning) 12%, transparent);
 }
 .task-card.is-waiting::before { display: none; }
 .waiting-category-note {
@@ -626,10 +626,10 @@ white-space: nowrap;
 .section-row.section-waiting {
 margin-top: 14px;
 padding: 9px 12px;
-border: 1px solid color-mix(in srgb, #dc2626 58%, var(--border));
+border: 1px solid color-mix(in srgb, var(--warning) 58%, var(--border));
 border-radius: var(--radius-md);
-background: color-mix(in srgb, #dc2626 16%, var(--surface));
-color: color-mix(in srgb, #dc2626 82%, var(--text));
+background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+color: color-mix(in srgb, var(--warning) 82%, var(--text));
 }
 .task-timebox {
 border-radius: var(--radius-md);
@@ -2190,7 +2190,7 @@ border-color: var(--border);
 <button class="stat-box" type="button" data-view="day" aria-label="Apri i task del giorno selezionato"><span>Task aperti</span><strong id="stat-active">0</strong></button>
 <button class="stat-box" type="button" data-view="waiting" aria-label="Apri i task in attesa"><span>In attesa</span><strong id="stat-waiting">0</strong></button>
 <button class="stat-box" type="button" data-view="completed" aria-label="Apri i task di oggi completati"><span>Task di oggi completati</span><strong id="stat-today">0</strong></button>
-<button class="stat-box" type="button" data-view="week" aria-label="Apri i task dei prossimi sette giorni"><span>Questa settimana</span><strong id="stat-week">0</strong></button>
+<button class="stat-box" type="button" data-view="week" aria-label="Apri i task dei prossimi sette giorni"><span>Prossimi 7 giorni</span><strong id="stat-week">0</strong></button>
 <div class="stat-box"><span>Totale completati</span><strong id="stat-all">0</strong></div>
 <div class="stat-box"><span>Focus giorno</span><strong id="stat-score">0%</strong><div class="progress"><div id="stat-progress"></div></div></div>
 </section>
@@ -2237,12 +2237,12 @@ border-color: var(--border);
 <div class="editor-section editor-section-category">
 <div class="field-grid-category field-grid-category--areas">
 <div>
-<label class="field-label" for="task-area">Sezione principale</label>
+<label class="field-label" for="task-area">Area</label>
 <select class="select" id="task-area">
 <option value="work">💼 Lavoro</option>
 <option value="personal">⌂ Personale</option>
 </select>
-<p class="field-hint">Dove vuoi ritrovare questo task.</p>
+<p class="field-hint">Scegli se appartiene a Lavoro o Personale.</p>
 </div>
 <div>
 <label class="field-label" for="task-category">Categoria</label>
@@ -2357,7 +2357,7 @@ Controllare immagini"></textarea>
 <button type="button" data-mobile-action="menu">Menu</button>
 </nav>
 <script>
-const APP_VERSION = 48;
+const APP_VERSION = 49;
 const DB_NAME = "calendario_task_pro_db";
 const DB_VERSION = 1;
 const STORE_STATE = "state";
@@ -2365,6 +2365,10 @@ const STORE_IMAGES = "images";
 const STATE_KEY = "main";
 const FALLBACK_STATE_KEY = "calendario_task_pro_fallback";
 const FALLBACK_IMAGES_KEY = "calendario_task_pro_fallback_images";
+const MAX_IMPORT_BYTES = 50 * 1024 * 1024;
+const MAX_IMPORT_TASKS = 20000;
+const MAX_IMPORT_IMAGES = 5000;
+const MAX_IMPORT_IMAGE_DATA_URL_LENGTH = 8 * 1024 * 1024;
 const LEGACY_KEYS = [
 "calendario_task_v13_corretto",
 "calendario_task_v12_corretto",
@@ -2746,6 +2750,22 @@ reject(error);
 }
 });
 }
+function dbGetAllKeys(store) {
+if (!db) return Promise.resolve([]);
+return new Promise((resolve) => {
+try {
+const request = db.transaction(store, "readonly").objectStore(store).getAllKeys();
+request.onsuccess = () => resolve(safeArray(request.result).map(String));
+request.onerror = () => {
+console.warn("Lettura chiavi IndexedDB non riuscita", request.error);
+resolve([]);
+};
+} catch (error) {
+console.warn("Lettura chiavi IndexedDB non disponibile", error);
+resolve([]);
+}
+});
+}
 function blobToDataUrl(blob) {
 return new Promise((resolve, reject) => {
 const reader = new FileReader();
@@ -2828,6 +2848,33 @@ await deleteImageStorage(imageId);
 async function flushPendingImageCleanup() {
 for (const imageId of [...pendingImageCleanup]) {
 if (!imageIsReferenced(imageId, false)) await deleteImageStorage(imageId);
+}
+}
+async function cleanupOrphanImages() {
+const referenced = imageIdsFromState(state);
+if (undoSnapshot) {
+for (const imageId of imageIdsFromState(undoSnapshot)) referenced.add(imageId);
+}
+for (const imageId of await dbGetAllKeys(STORE_IMAGES)) {
+if (!referenced.has(imageId)) await deleteImageStorage(imageId);
+}
+const fallbackImages = getFallbackImages();
+let fallbackChanged = false;
+for (const imageId of Object.keys(fallbackImages)) {
+if (!referenced.has(imageId)) {
+delete fallbackImages[imageId];
+memoryFallbackImages.delete(imageId);
+temporaryImageIds.delete(imageId);
+pendingImageCleanup.delete(imageId);
+fallbackChanged = true;
+}
+}
+if (fallbackChanged) setLocalText(FALLBACK_IMAGES_KEY, JSON.stringify(fallbackImages));
+for (const imageId of [...memoryFallbackImages.keys()]) {
+if (!referenced.has(imageId)) {
+memoryFallbackImages.delete(imageId);
+temporaryImageIds.delete(imageId);
+}
 }
 }
 function stateHasTemporaryImages() {
@@ -3030,6 +3077,14 @@ const categoryOrder = [
 ...new Set(storedCategoryOrder),
 ...categoryNames.filter((name) => !storedCategoryOrder.includes(name))
 ];
+const requestedCategoryFilter = cleanText(data.categoryFilter || data.focusCatFilter, "all");
+const requestedRecurringCategoryFilter = cleanText(data.recurringCategoryFilter, "all");
+const categoryFilter = requestedCategoryFilter !== WAITING_CATEGORY && ["all", ...categoryNames].includes(requestedCategoryFilter)
+? requestedCategoryFilter
+: "all";
+const recurringCategoryFilter = requestedRecurringCategoryFilter !== WAITING_CATEGORY && ["all", ...categoryNames].includes(requestedRecurringCategoryFilter)
+? requestedRecurringCategoryFilter
+: "all";
 return {
 version: APP_VERSION,
 entries,
@@ -3039,8 +3094,8 @@ permanentIds,
 selectedDate: cleanDate(data.selectedDate || data.selectedFocusDate),
 view: VALID_VIEWS.includes(data.view) ? data.view : "day",
 areaFilter: ["all", ...AREA_VALUES].includes(data.areaFilter) ? data.areaFilter : "all",
-categoryFilter: cleanText(data.categoryFilter || data.focusCatFilter, "all") === WAITING_CATEGORY ? "all" : cleanText(data.categoryFilter || data.focusCatFilter, "all"),
-recurringCategoryFilter: cleanText(data.recurringCategoryFilter, "all") === WAITING_CATEGORY ? "all" : cleanText(data.recurringCategoryFilter, "all"),
+categoryFilter,
+recurringCategoryFilter,
 sort: ["smart", "time", "priority", "category", "manual"].includes(data.sort) ? data.sort : "smart",
 theme: data.theme === "dark" ? "dark" : "light",
 navWidth: clampNumber(data.navWidth || data.sideWidth, 230, 560, 292),
@@ -3111,6 +3166,7 @@ clearTimeout(undoTimer);
 undoTimer = setTimeout(async () => {
 undoSnapshot = null;
 await flushPendingImageCleanup();
+await cleanupOrphanImages();
 }, 14000);
 }
 function captureUndo(snapshot = state) {
@@ -3578,10 +3634,12 @@ taskCategory.innerHTML = categoryOptions;
 taskCategory.value = categories.includes(oldTaskCategory) ? oldTaskCategory : (categories[0] || "");
 const categoryFilter = $("category-filter");
 categoryFilter.innerHTML = allOptions;
-categoryFilter.value = ["all", ...categories].includes(state.categoryFilter) ? state.categoryFilter : "all";
+if (!["all", ...categories].includes(state.categoryFilter)) state.categoryFilter = "all";
+categoryFilter.value = state.categoryFilter;
 const recurringCategoryFilter = $("recurring-category-filter");
 recurringCategoryFilter.innerHTML = `<option value="all">Tutte le categorie ricorrenti</option>${categoryOptions}`;
-recurringCategoryFilter.value = ["all", ...categories].includes(state.recurringCategoryFilter) ? state.recurringCategoryFilter : "all";
+if (!["all", ...categories].includes(state.recurringCategoryFilter)) state.recurringCategoryFilter = "all";
+recurringCategoryFilter.value = state.recurringCategoryFilter;
 renderSubcategories();
 $("category-manager").innerHTML = categories.map((category) => {
 const subs = state.categories[category].subs.slice().sort((a, b) => a.localeCompare(b, "it"));
@@ -3640,9 +3698,12 @@ const waitingDayTasks = state.entries.filter((task) => task.status === "active" 
 const hasTask = dayTasks.length > 0;
 const hasOverdue = dayTasks.some((task) => task.repeat === "none" && date < today() && !completedOn(task, date) && !isWaitingTask(task));
 const hasWaiting = waitingDayTasks.length > 0;
-const countLabel = hasTask ? `<span class="day-task-count">${dayTasks.length > 9 ? "9+" : dayTasks.length}</span>` : "";
+const openDayTasks = dayTasks.filter((task) => !completedOn(task, date));
+const completedDayTasks = dayTasks.length - openDayTasks.length;
+const countLabel = openDayTasks.length ? `<span class="day-task-count">${openDayTasks.length > 9 ? "9+" : openDayTasks.length}</span>` : "";
 const titleParts = [];
-if (hasTask) titleParts.push(`${dayTasks.length} task`);
+if (openDayTasks.length) titleParts.push(`${openDayTasks.length} aperti`);
+if (completedDayTasks) titleParts.push(`${completedDayTasks} completati`);
 if (hasWaiting) titleParts.push(`${waitingDayTasks.length} in attesa`);
 const title = titleParts.join(" · ") || "Nessun task";
 const selectedAttributes = date === state.selectedDate ? `aria-pressed="true"` : `aria-pressed="false"`;
@@ -3760,7 +3821,7 @@ let html = "";
 if (list.length) html += state.view === "waiting" ? taskRowsWaiting(list) : taskRowsForSort(list);
 if (waitingPersistent.length) html += taskRowsWaiting(waitingPersistent);
 if (permanent.length) {
-html += `<div class="section-row"><span>Task permanenti</span><span>${permanent.length}</span></div>`;
+html += `<div class="section-row"><span>📌 In evidenza</span><span>${permanent.length}</span></div>`;
 html += taskRowsForSort(permanent);
 }
 $("task-list").innerHTML = html || `<div class="empty-state"><strong>Nessun task da mostrare</strong><br>Prova a cambiare vista, categoria o ricerca.</div>`;
@@ -3805,7 +3866,7 @@ ${waiting ? "" : `<button class="btn btn-ghost btn-icon" type="button" data-acti
 ${waiting ? "" : `<button class="btn btn-ghost" type="button" data-action="move-date">📅 Scegli data…</button>`}
 ${task.time ? `<button class="btn btn-ghost" type="button" data-action="snooze">🔔 Ricorda tra 10 min</button>` : ""}
 <button class="btn btn-ghost" type="button" data-action="duplicate">⧉ Duplica task</button>
-${waiting ? "" : `<button class="btn btn-ghost" type="button" data-action="permanent">${state.permanentIds.includes(task.id) ? "📍 Non mantenere sempre visibile" : "📌 Mantieni sempre visibile"}</button>`}
+${waiting ? "" : `<button class="btn btn-ghost" type="button" data-action="permanent">${state.permanentIds.includes(task.id) ? "📍 Rimuovi da In evidenza" : "📌 Metti in evidenza"}</button>`}
 <button class="btn btn-ghost" type="button" data-action="archive">🗂 Archivia</button>
 <button class="btn btn-danger" type="button" data-action="delete">🗑 Elimina</button>
 </div>
@@ -3832,7 +3893,7 @@ ${durationText}
 ${waiting ? `<span class="badge badge-warning">⏳ ${WAITING_LABEL}</span>` : ""}
 ${followUpText}
 ${overdue ? `<span class="badge badge-danger">Scaduto</span>` : ""}
-${state.permanentIds.includes(task.id) ? `<span class="badge">📌 fisso</span>` : ""}
+${state.permanentIds.includes(task.id) ? `<span class="badge">📌 In evidenza</span>` : ""}
 ${statusBadge}
 </div>
 ${waiting && task.waitingReason ? `<p class="task-notes"><strong>Motivo attesa:</strong> ${highlight(task.waitingReason)}</p>` : ""}
@@ -3855,14 +3916,14 @@ const active = activeEntries.filter((task) => taskHasPendingWork(task, now));
 const activeWork = activeEntries.filter((task) => !isWaitingTask(task));
 const todayOccurrences = activeWork.filter((task) => scheduledOn(task, now));
 const todayDone = todayOccurrences.filter((task) => completedOn(task, now)).length;
-const weekDone = activeWork.reduce((sum, task) => sum + effectiveCompletedDates(task).filter((date) => date >= weekStart && date <= weekEnd).length, 0);
+const weekOpen = activeWork.reduce((sum, task) => sum + occurrencesBetween(task, now, addDays(now, 6)).filter((date) => !completedOn(task, date)).length, 0);
 const archivedDone = state.areaFilter === "all" ? Object.values(state.completionArchive).reduce((sum, value) => sum + Number(value || 0), 0) : 0;
 const allDone = state.entries.filter(taskMatchesArea).reduce((sum, task) => sum + effectiveCompletedDates(task).length, 0) + archivedDone;
 const score = todayOccurrences.length ? Math.round((todayDone / todayOccurrences.length) * 100) : 0;
-$("stat-active").textContent = active.length;
+$("stat-active").textContent = activeWork.filter((task) => scheduledOn(task, state.selectedDate) && !completedOn(task, state.selectedDate)).length;
 $("stat-waiting").textContent = active.filter(isWaitingTask).length;
 $("stat-today").textContent = todayDone;
-$("stat-week").textContent = weekDone;
+$("stat-week").textContent = weekOpen;
 $("stat-all").textContent = allDone;
 $("stat-score").textContent = `${score}%`;
 $("stat-progress").style.width = `${score}%`;
@@ -4301,9 +4362,10 @@ async function moveWizardOverdueTask() {
 const issue = currentWizardIssue();
 const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
 if (!issue || !task) return nextWizardIssue();
-await mutate("Task spostato a oggi", async () => {
+const saved = await mutate("Task spostato a oggi", async () => {
 moveTaskOccurrenceInState(task, task.date, today());
 });
+if (!saved) return showToast("Correzione applicata ma non verificata: il salvataggio non è persistente.", true);
 await verifyWizardIssue(issue.id);
 }
 async function saveWizardFollowUp() {
@@ -4312,10 +4374,11 @@ const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
 const followUpDate = $("wizard-followup-date")?.value || "";
 if (!issue || !task) return nextWizardIssue();
 if (!validDate(followUpDate)) return showToast("Scegli una data di follow-up valida.", true);
-await mutate("Data di follow-up salvata", async () => {
+const saved = await mutate("Data di follow-up salvata", async () => {
 task.followUpDate = followUpDate;
 task.updatedAt = today();
 });
+if (!saved) return showToast("Correzione applicata ma non verificata: il salvataggio non è persistente.", true);
 await verifyWizardIssue(issue.id);
 }
 async function saveWizardArea() {
@@ -4324,17 +4387,18 @@ const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
 const area = normalizeArea($("wizard-area-input")?.value, "");
 if (!issue || !task) return nextWizardIssue();
 if (!AREA_VALUES.includes(area)) return showToast("Scegli Lavoro o Personale.", true);
-await mutate("Sezione principale aggiornata", async () => {
+const saved = await mutate("Sezione principale aggiornata", async () => {
 task.area = area;
 task.updatedAt = today();
 });
+if (!saved) return showToast("Correzione applicata ma non verificata: il salvataggio non è persistente.", true);
 await verifyWizardIssue(issue.id);
 }
 async function restoreWizardCategory() {
 const issue = currentWizardIssue();
 const task = issue && state.entries.find((entry) => entry.id === issue.taskId);
 if (!issue || !task) return nextWizardIssue();
-await mutate("Categoria ripristinata", async () => {
+const saved = await mutate("Categoria ripristinata", async () => {
 const category = cleanText(task.cat, DEFAULT_TASK_CATEGORY);
 task.cat = category;
 if (!state.categories[category]) {
@@ -4347,6 +4411,7 @@ if (task.sub && !state.categories[category].subs.includes(task.sub)) state.categ
 if (!task.color) task.color = state.categories[category].color;
 task.updatedAt = today();
 });
+if (!saved) return showToast("Correzione applicata ma non verificata: il salvataggio non è persistente.", true);
 await verifyWizardIssue(issue.id);
 }
 async function openWizardTaskForManualFix() {
@@ -4393,14 +4458,14 @@ renderWizard();
 async function hydrateImages() {
 const token = ++renderImageToken;
 const images = [...document.querySelectorAll("img[data-image-id]")];
-for (const image of images) {
+await Promise.all(images.map(async (image) => {
 const blob = await getImage(image.dataset.imageId);
-if (token !== renderImageToken) return;
-if (!blob) continue;
+if (token !== renderImageToken || !blob || !image.isConnected) return;
 const url = URL.createObjectURL(blob);
 image.src = url;
 image.onload = () => URL.revokeObjectURL(url);
-}
+image.onerror = () => URL.revokeObjectURL(url);
+}));
 }
 function toggleRepeatUntil() {
 const repeatSelect = $("task-repeat");
@@ -4811,6 +4876,8 @@ async function toggleWaiting(task) {
 const wasWaiting = isWaitingTask(task);
 await mutate(wasWaiting ? "Task riattivato" : "Task in attesa: resterà sempre visibile fino alla risoluzione", async () => {
 task.waiting = !wasWaiting;
+task.waitingReason = "";
+task.followUpDate = "";
 task.updatedAt = today();
 });
 }
@@ -4927,6 +4994,7 @@ waiting = true;
 const found = Object.keys(state.categories).find((category) => category.toLowerCase() === wanted.toLowerCase());
 if (found) cat = found;
 else {
+if (!isSafeCategoryName(wanted)) return showToast("Nome categoria non valido.", true);
 newCategoryName = wanted;
 cat = wanted;
 }
@@ -5068,15 +5136,25 @@ return true;
 }
 async function previewImport(file) {
 try {
+if (!file || file.size > MAX_IMPORT_BYTES) throw new Error("file troppo grande");
 const text = await file.text();
 const data = JSON.parse(text);
-if (!validateBackupPayload(data)) throw new Error("Schema backup non riconosciuto");
+if (!validateBackupPayload(data)) throw new Error("schema backup non riconosciuto");
+const rawEntries = Array.isArray(data) ? data : (data.entries || data.tasks || data.data || []);
+if (rawEntries.length > MAX_IMPORT_TASKS) throw new Error("troppi task nel backup");
+const images = safeObject(data.images);
+const imageEntries = Object.entries(images);
+if (imageEntries.length > MAX_IMPORT_IMAGES) throw new Error("troppe immagini nel backup");
+if (imageEntries.some(([, value]) => typeof value === "string" && value.length > MAX_IMPORT_IMAGE_DATA_URL_LENGTH)) {
+throw new Error("una o più immagini superano il limite consentito");
+}
 const normalized = normalizeState(data);
-pendingImport = { state: normalized, images: safeObject(data.images) };
+pendingImport = { state: normalized, images };
 $("import-summary").textContent = `Il file contiene ${normalized.entries.length} task e ${Object.keys(pendingImport.images).length} immagini.`;
 openModal("modal-import");
 } catch (error) {
-showToast("Backup non valido o non leggibile.", true);
+console.warn("Import rifiutato", error);
+showToast(`Backup non valido: ${error.message || "file non leggibile"}.`, true);
 } finally {
 $("import-file").value = "";
 }
@@ -5155,6 +5233,7 @@ state.completionArchive[key] = Number(state.completionArchive[key] || 0) + Numbe
 }
 await migrateLegacyImages();
 });
+await cleanupOrphanImages();
 pendingImport = null;
 closeModal("modal-import");
 }
@@ -5169,8 +5248,9 @@ const now = new Date();
 state.entries.filter((task) => task.status === "active").forEach((task) => {
 [today(), addDays(today(), 1)].forEach((date) => {
 const occurrenceDate = isWaitingTask(task) && task.followUpDate ? task.followUpDate : date;
+const waitingCompletionDate = isRecurring(task) ? (nextPendingOccurrence(task, date) || task.date) : task.date;
 const shouldNotify = isWaitingTask(task) && task.followUpDate
-? task.followUpDate === date && !completedOn(task, task.date)
+? task.followUpDate === date && !completedOn(task, waitingCompletionDate)
 : scheduledOn(task, date) && !completedOn(task, date);
 if (!shouldNotify) return;
 const snoozed = task.snoozed?.[occurrenceDate] ? new Date(task.snoozed[occurrenceDate]) : null;
@@ -5618,7 +5698,7 @@ $("task-list").addEventListener("drop", async (event) => {
 const target = event.target.closest(".task-card");
 if (!target || !draggedId || target.dataset.taskId === draggedId) return;
 event.preventDefault();
-const visibleIds = [...new Set(visibleOccurrences().map(({ task }) => task.id))];
+const visibleIds = [...new Set(currentRenderedOccurrences().all.map(({ task }) => task.id))];
 const from = visibleIds.indexOf(draggedId);
 const to = visibleIds.indexOf(target.dataset.taskId);
 if (from < 0 || to < 0) return;
@@ -5685,10 +5765,11 @@ const row = event.target.closest("[data-category-row]");
 const input = row?.querySelector("[data-category-rename-input]");
 const newName = cleanText(input?.value);
 if (!newName || newName === renameCategory) return;
+if (!isSafeCategoryName(newName)) return showToast("Nome categoria non valido.", true);
 if (newName.toLowerCase() === WAITING_CATEGORY.toLowerCase()) return showToast("Nome riservato.", true);
 if (Object.keys(state.categories).some((name) => name !== renameCategory && name.localeCompare(newName, "it", { sensitivity: "accent" }) === 0)) return showToast("Categoria già presente.", true);
 await mutate("Categoria rinominata", async () => {
-const updated = {};
+const updated = Object.create(null);
 Object.entries(state.categories).forEach(([name, value]) => { updated[name === renameCategory ? newName : name] = value; });
 state.categories = updated;
 state.categoryOrder = safeArray(state.categoryOrder).map((name) => name === renameCategory ? newName : name);
@@ -5725,7 +5806,12 @@ requestConfirmation({
 title: "Elimina categoria",
 message: `Eliminare la categoria “${removeCategory}”?`,
 confirmLabel: "Elimina",
-action: () => mutate("Categoria eliminata", async () => { delete state.categories[removeCategory]; state.categoryOrder = safeArray(state.categoryOrder).filter((category) => category !== removeCategory); })
+action: () => mutate("Categoria eliminata", async () => {
+delete state.categories[removeCategory];
+state.categoryOrder = safeArray(state.categoryOrder).filter((category) => category !== removeCategory);
+if (state.categoryFilter === removeCategory) state.categoryFilter = "all";
+if (state.recurringCategoryFilter === removeCategory) state.recurringCategoryFilter = "all";
+})
 });
 }
 });
@@ -5784,7 +5870,11 @@ const debounceRender = (() => {
 let timer = null;
 return () => {
 clearTimeout(timer);
-timer = setTimeout(renderAll, 160);
+timer = setTimeout(async () => {
+renderTaskList();
+renderActiveFilters();
+await hydrateImages();
+}, 160);
 };
 })();
 
@@ -5819,6 +5909,7 @@ async function init() {
 try {
 db = await openDb();
 await loadState();
+await cleanupOrphanImages();
 if (!("Notification" in window) || Notification.permission !== "granted") state.notificationsEnabled = false;
 currentMonth = parseDate(state.selectedDate || today());
 $("task-date").value = state.selectedDate;
