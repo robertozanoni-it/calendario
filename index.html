@@ -1982,6 +1982,18 @@ border-color: var(--border);
 <div class="wizard-content" id="wizard-content" aria-live="polite"></div>
 </section>
 </div>
+<div id="modal-alarm" class="modal-backdrop" aria-hidden="true">
+<div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="alarm-title" aria-describedby="alarm-message">
+<h3 id="alarm-title">⏰ Task in scadenza</h3>
+<p id="alarm-message" class="muted small"></p>
+<div class="modal-actions">
+<button class="btn btn-success" type="button" id="alarm-complete">✓ Completa</button>
+<button class="btn btn-soft" type="button" id="alarm-snooze">🔔 Ricorda tra 10 min</button>
+<button class="btn btn-primary" type="button" id="alarm-open-task">Apri task</button>
+<button class="btn btn-ghost" type="button" id="alarm-close">Chiudi</button>
+</div>
+</div>
+</div>
 <button id="mobile-drawer-backdrop" class="mobile-drawer-backdrop" type="button" aria-label="Chiudi pannello" aria-hidden="true"></button>
 <div class="app-shell">
 <aside class="nav-panel panel" aria-label="Navigazione e strumenti">
@@ -2357,7 +2369,7 @@ Controllare immagini"></textarea>
 <button type="button" data-mobile-action="menu">Menu</button>
 </nav>
 <script>
-const APP_VERSION = 49;
+const APP_VERSION = 50;
 const DB_NAME = "calendario_task_pro_db";
 const DB_VERSION = 1;
 const STORE_STATE = "state";
@@ -2460,6 +2472,8 @@ let notified = new Set();
 let lastFocused = null;
 let pendingGenericConfirm = null;
 let pendingMove = null;
+let pendingAlarm = null;
+let audioContext = null;
 let wizardRunToken = 0;
 const $ = (id) => document.getElementById(id);
 function clone(value) {
@@ -5266,8 +5280,77 @@ setTimeout(() => notified.delete(key), 3600000);
 });
 });
 }
+function playAlarmSound() {
+try {
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+if (!AudioCtx) return;
+audioContext = audioContext || new AudioCtx();
+if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+const start = audioContext.currentTime;
+[0, .22, .44].forEach((offset) => {
+const oscillator = audioContext.createOscillator();
+const gain = audioContext.createGain();
+oscillator.type = "sine";
+oscillator.frequency.setValueAtTime(880, start + offset);
+gain.gain.setValueAtTime(.0001, start + offset);
+gain.gain.exponentialRampToValueAtTime(.16, start + offset + .015);
+gain.gain.exponentialRampToValueAtTime(.0001, start + offset + .15);
+oscillator.connect(gain);
+gain.connect(audioContext.destination);
+oscillator.start(start + offset);
+oscillator.stop(start + offset + .17);
+});
+} catch (error) {
+console.warn("Avviso sonoro non disponibile", error);
+}
+}
+
+function openAlarmPopup(task, date) {
+pendingAlarm = { taskId: task.id, date };
+$("alarm-message").textContent = `${task.text}${task.time ? ` · ore ${task.time}` : ""} · ${task.cat} · Priorità ${priorityLabel(task.priority)}`;
+openModal("modal-alarm");
+}
+
+async function completeAlarmTask() {
+if (!pendingAlarm) return;
+const { taskId, date } = pendingAlarm;
+const task = state.entries.find((entry) => entry.id === taskId);
+pendingAlarm = null;
+closeModal("modal-alarm");
+if (task && !completedOn(task, date)) await toggleComplete(task, date);
+}
+
+async function snoozeAlarmTask() {
+if (!pendingAlarm) return;
+const { taskId, date } = pendingAlarm;
+const task = state.entries.find((entry) => entry.id === taskId);
+pendingAlarm = null;
+closeModal("modal-alarm");
+if (task) await snoozeTask(task, date);
+}
+
+async function openAlarmTask() {
+if (!pendingAlarm) return;
+const { taskId, date } = pendingAlarm;
+const task = state.entries.find((entry) => entry.id === taskId);
+pendingAlarm = null;
+closeModal("modal-alarm");
+if (!task) return;
+selectDate(date);
+await persistState();
+await renderAll();
+await editTask(task.id, date);
+}
+
+function closeAlarmPopup() {
+pendingAlarm = null;
+closeModal("modal-alarm");
+}
+
 function notifyTask(task, date) {
 showToast(`🔔 ${task.text}${task.time ? ` · ${task.time}` : ""}`);
+playAlarmSound();
+openAlarmPopup(task, date);
 if ("Notification" in window && Notification.permission === "granted") {
 const notification = new Notification("Task in scadenza", {
 body: `${task.text} · ${task.cat}${task.time ? ` alle ${task.time}` : ""}`,
@@ -5333,6 +5416,7 @@ if (id === "modal-delete") pendingDelete = null;
 if (id === "modal-import") pendingImport = null;
 if (id === "modal-confirm") pendingGenericConfirm = null;
 if (id === "modal-move-date") pendingMove = null;
+if (id === "modal-alarm") pendingAlarm = null;
 if (!document.querySelector(".modal-backdrop.open")) {
 document.querySelector(".app-shell")?.removeAttribute("inert");
 document.querySelector(".mobile-quick-nav")?.removeAttribute("inert");
@@ -5727,6 +5811,10 @@ $("toggle-theme").addEventListener("click", async () => {
 await mutate("Tema aggiornato", async () => { state.theme = state.theme === "dark" ? "light" : "dark"; }, false);
 });
 $("enable-notifications").addEventListener("click", enableNotifications);
+$("alarm-complete").addEventListener("click", completeAlarmTask);
+$("alarm-snooze").addEventListener("click", snoozeAlarmTask);
+$("alarm-open-task").addEventListener("click", openAlarmTask);
+$("alarm-close").addEventListener("click", closeAlarmPopup);
 $("export-json").addEventListener("click", exportJson);
 $("export-csv").addEventListener("click", exportCsv);
 $("export-current-csv").addEventListener("click", exportCurrentCsv);
